@@ -1,6 +1,6 @@
 
 "use client"
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -169,6 +169,7 @@ const MediaGrid = ({ files, selectedFiles, onSelect, onAction, emptyState }: { f
 
 export default function AdminMediaPage() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(placeholderMedia);
   const [trashedFiles, setTrashedFiles] = useState<MediaFile[]>(placeholderTrashedMedia);
@@ -256,6 +257,52 @@ export default function AdminMediaPage() {
     setSelectedFiles([]);
   }
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const getFileType = (fileName: string): MediaType => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
+    if (['mp4', 'mov', 'avi', 'webm'].includes(extension || '')) return 'video';
+    if (extension === 'pdf') return 'pdf';
+    return 'file';
+  };
+  
+  const formatFileSize = (bytes: number): string => {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles: MediaFile[] = Array.from(files).map(file => ({
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: getFileType(file.name),
+        // In a real app, this URL would come from a cloud storage service after upload
+        url: 'https://placehold.co/600x400.png', 
+        size: formatFileSize(file.size),
+    }));
+
+    setMediaFiles(prev => [...newFiles, ...prev]);
+    toast({
+        title: "Upload Successful",
+        description: `${files.length} file(s) have been added to the library.`
+    })
+
+    // Reset the file input
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  };
+
   const isAllSelected = selectedFiles.length > 0 && selectedFiles.length === currentFileList.length;
 
   return (
@@ -267,7 +314,14 @@ export default function AdminMediaPage() {
             <CardDescription>Manage your uploaded files.</CardDescription>
             </div>
             <div className="flex gap-2">
-            <Button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange}
+                className="hidden" 
+                multiple 
+            />
+            <Button onClick={handleUploadClick}>
                 <UploadCloud className="mr-2 h-4 w-4" />
                 Upload Files
             </Button>
@@ -397,5 +451,3 @@ export default function AdminMediaPage() {
     </Card>
   );
 }
-
-    
