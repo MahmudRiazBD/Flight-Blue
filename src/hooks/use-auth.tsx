@@ -1,6 +1,9 @@
 
 'use client';
 
+import { config } from "dotenv";
+config();
+
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Check if the user is the designated superadmin and update role if needed
     const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+
     if (firebaseUser.email === superAdminEmail) {
       const userDocData = userDoc.exists() ? userDoc.data() : {};
       if (userDocData.role !== 'superadmin') {
