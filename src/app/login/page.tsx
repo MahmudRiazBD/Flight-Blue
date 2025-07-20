@@ -22,65 +22,65 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import type { UserRole } from "@/hooks/use-auth";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password cannot be empty." }),
-  rememberMe: z.boolean().default(false).optional(),
 });
-
-// In a real app, these would come from environment variables.
-const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@admin.com";
-const ADMIN_EMAIL = "admin@example.com";
 
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loading: authLoading } = useAuth();
+  const [formLoading, setFormLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    console.log("Login Submitted", values);
+    setFormLoading(true);
+    try {
+      const user = await login(values.email, values.password);
 
-    let role: UserRole = "customer";
-    // This is a simulation. In a real app, you'd verify credentials against a backend.
-    if (values.email === SUPER_ADMIN_EMAIL) {
-       // In a real app, you'd also check the password securely.
-       // For this demo, we are simplifying.
-       role = "superadmin";
-    } else if (values.email === ADMIN_EMAIL) {
-       role = "admin";
-    }
-
-    login(role);
-
-    toast({
-      title: "Login Successful!",
-      description: "Welcome back! Redirecting you...",
-    });
-
-    const redirectPath = (role === "admin" || role === "superadmin") ? "/admin" : "/dashboard";
-
-    setTimeout(() => {
+      toast({
+        title: "Login Successful!",
+        description: "Welcome back! Redirecting you...",
+      });
+      
+      const redirectPath = (user.role === "admin" || user.role === "superadmin") ? "/admin" : "/dashboard";
+      
       router.push(redirectPath);
-      router.refresh(); 
-    }, 1500);
+      router.refresh();
+
+    } catch (error: any) {
+      console.error("Login Failed", error);
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setFormLoading(false);
+    }
   }
+  
+  const isLoading = formLoading || authLoading;
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-secondary">
@@ -104,7 +104,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="m@example.com" {...field} />
+                      <Input placeholder="m@example.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -117,30 +117,13 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="flex items-center justify-between">
-                <FormField
-                  control={form.control}
-                  name="rememberMe"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        Remember me
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
+              <div className="flex items-center justify-end">
                 <Link
                   href="#"
                   className="text-sm text-primary hover:underline"
@@ -150,7 +133,8 @@ export default function LoginPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Login
               </Button>
               <div className="text-center text-sm text-muted-foreground">

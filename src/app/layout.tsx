@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -6,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
+import { AuthProvider } from "@/hooks/use-auth";
 
 export const metadata: Metadata = {
   title: "Flight Blu",
@@ -36,13 +38,15 @@ export default function RootLayout({
           "min-h-screen bg-background font-body antialiased"
         )}
       >
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-        <Toaster />
-        <Chatbot />
+        <AuthProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+          <Toaster />
+          <Chatbot />
+        </AuthProvider>
       </body>
     </html>
   );

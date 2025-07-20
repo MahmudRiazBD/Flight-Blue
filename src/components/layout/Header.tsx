@@ -4,21 +4,40 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, User, LogOut, LayoutDashboard } from "lucide-react";
 import Logo from "../icons/Logo";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
 ];
 
+function getInitials(name: string = ""): string {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+}
+
 export default function Header() {
   const pathname = usePathname();
-  const { isLoggedIn, role, logout } = useAuth();
-  const isAdmin = role === 'admin' || role === 'superadmin';
+  const { user, loading, logout } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,23 +64,51 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center justify-end space-x-2">
-          {isLoggedIn ? (
-            <>
-              <Button variant="ghost" asChild>
-                <Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link>
-              </Button>
-              <Button onClick={logout}>Logout</Button>
-            </>
+        <div className="hidden md:flex items-center justify-end space-x-4">
+          {loading ? (
+             <div className="h-8 w-20 bg-muted rounded-md animate-pulse" />
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                    <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                   <Link href={isAdmin ? "/admin" : "/dashboard"}>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                   <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <>
+            <div className="space-x-2">
               <Button variant="ghost" asChild>
                 <Link href="/login">Login</Link>
               </Button>
               <Button asChild>
                 <Link href="/signup">Sign Up</Link>
               </Button>
-            </>
+            </div>
           )}
         </div>
 
@@ -94,7 +141,7 @@ export default function Header() {
                   ))}
                 </nav>
                 <div className="mt-8 pt-4 border-t border-border flex flex-col space-y-2">
-                    {isLoggedIn ? (
+                    {loading ? <div className="h-10 w-full bg-muted rounded-md animate-pulse" /> : user ? (
                        <>
                           <Button asChild><Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link></Button>
                           <Button variant="outline" onClick={logout}>Logout</Button>

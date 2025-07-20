@@ -26,6 +26,9 @@ import Link from "next/link";
 import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const signupSchema = z
   .object({
@@ -42,6 +45,8 @@ const signupSchema = z
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { signup } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -54,18 +59,33 @@ export default function SignupPage() {
   });
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
-    // In a real application, you would handle user creation here (e.g., call a server action or API).
-    console.log("Signup Submitted", values);
+    setIsLoading(true);
+    try {
+      await signup(values.email, values.password, values.name);
+      
+      toast({
+        title: "Account Created!",
+        description: "You have successfully created an account. Please log in.",
+      });
 
-    toast({
-      title: "Account Created!",
-      description: "You have successfully created an account. Please log in.",
-    });
+      setTimeout(() => {
+          router.push("/login");
+      }, 1500);
 
-    // Redirect to login page after a short delay
-    setTimeout(() => {
-        router.push("/login");
-    }, 1500);
+    } catch (error: any) {
+      console.error("Signup Failed", error);
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Please login or use a different email.";
+      }
+      toast({
+        title: "Signup Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -92,7 +112,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder="John Doe" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -105,7 +125,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="m@example.com" {...field} />
+                      <Input placeholder="m@example.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +138,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +151,7 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -139,7 +159,8 @@ export default function SignupPage() {
               />
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
               <div className="text-center text-sm text-muted-foreground">
