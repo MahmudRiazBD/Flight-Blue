@@ -48,18 +48,18 @@ export default function LoginPage() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    // In a real application, you would handle authentication here.
-    // For this prototype, we'll simulate a successful login.
     console.log("Login Submitted", values);
 
     toast({
       title: "Login Successful!",
-      description: "Welcome back! Redirecting you to the dashboard...",
+      description: "Welcome back! Redirecting you to your dashboard...",
     });
 
-    // Redirect to admin dashboard after a short delay
+    const isAdmin = values.email === "admin@example.com";
+    const redirectPath = isAdmin ? "/admin" : "/dashboard";
+
     setTimeout(() => {
-      router.push("/admin");
+      router.push(redirectPath);
     }, 1500);
   }
 
