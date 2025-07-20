@@ -19,33 +19,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import MediaDetailModal from '@/components/admin/MediaDetailModal';
 
 type MediaType = "image" | "video" | "pdf" | "file";
 
-type MediaFile = {
+export type MediaFile = {
   id: string;
   name: string;
   type: MediaType;
   url: string;
   size: string;
+  uploadedAt: Date;
+  altText?: string;
   deletedAt?: Date;
   dataAiHint?: string;
 };
 
 const placeholderMedia: MediaFile[] = [
-  { id: "1", name: "eiffel-tower.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "1.2 MB", dataAiHint: "eiffel tower" },
-  { id: "2", name: "promo-video.mp4", type: "video", url: "https://placehold.co/600x400.png", size: "15.8 MB" },
-  { id: "3", name: "travel-guide.pdf", type: "pdf", url: "https://placehold.co/600x400.png", size: "5.4 MB" },
-  { id: "4", name: "kaaba-mecca.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "2.1 MB", dataAiHint: "kaaba mecca" },
-  { id: "5", name: "terms.docx", type: "file", url: "https://placehold.co/600x400.png", size: "87 KB" },
-  { id: "6", name: "tokyo-skyline.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "3.5 MB", dataAiHint: "tokyo skyline" },
+  { id: "1", name: "eiffel-tower.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "1.2 MB", dataAiHint: "eiffel tower", uploadedAt: new Date(), altText: "The Eiffel Tower in Paris" },
+  { id: "2", name: "promo-video.mp4", type: "video", url: "https://placehold.co/600x400.png", size: "15.8 MB", uploadedAt: new Date() },
+  { id: "3", name: "travel-guide.pdf", type: "pdf", url: "https://placehold.co/600x400.png", size: "5.4 MB", uploadedAt: new Date() },
+  { id: "4", name: "kaaba-mecca.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "2.1 MB", dataAiHint: "kaaba mecca", uploadedAt: new Date() },
+  { id: "5", name: "terms.docx", type: "file", url: "https://placehold.co/600x400.png", size: "87 KB", uploadedAt: new Date() },
+  { id: "6", name: "tokyo-skyline.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "3.5 MB", dataAiHint: "tokyo skyline", uploadedAt: new Date(), altText: "Night view of Tokyo skyline" },
 ];
 
 const placeholderTrashedMedia: MediaFile[] = [
-    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo" },
-    { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
+    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo", uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+    { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), uploadedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
 ]
 
 const getIconForType = (type: MediaType) => {
@@ -57,23 +59,27 @@ const getIconForType = (type: MediaType) => {
     }
 }
 
-const MediaFileCard = ({ file, onSelect, isSelected, onAction }: { file: MediaFile, onSelect: (id: string, checked: boolean) => void, isSelected: boolean, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void }) => {
+const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { file: MediaFile, onSelect: (id: string, checked: boolean) => void, isSelected: boolean, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void }) => {
     const isTrashed = !!file.deletedAt;
     const daysInTrash = file.deletedAt ? Math.ceil((Date.now() - file.deletedAt.getTime()) / (1000 * 60 * 60 * 24)) : 0;
     const daysLeft = 30 - daysInTrash;
 
     const imageProps = file.dataAiHint ? { "data-ai-hint": file.dataAiHint } : {};
 
+    const handleCheckboxClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click when checkbox is clicked
+    };
+
     return (
-        <Card className="relative group overflow-hidden">
-            <div className="absolute top-2 left-2 z-10">
+        <Card className="relative group overflow-hidden cursor-pointer" onClick={() => onCardClick(file)}>
+            <div className="absolute top-2 left-2 z-10" onClick={handleCheckboxClick}>
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelect(file.id, !!checked)}
                     aria-label={`Select file ${file.name}`}
                 />
             </div>
-             <div className="absolute top-1 right-1 z-10">
+             <div className="absolute top-1 right-1 z-10" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -126,7 +132,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction }: { file: MediaFi
             </div>
           <div className="aspect-square bg-muted flex items-center justify-center">
              {file.type === 'image' ? (
-                 <Image src={file.url} alt={file.name} width={200} height={200} className="object-cover h-full w-full" {...imageProps} />
+                 <Image src={file.url} alt={file.altText || file.name} width={200} height={200} className="object-cover h-full w-full" {...imageProps} />
              ) : (
                 getIconForType(file.type)
              )}
@@ -148,7 +154,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction }: { file: MediaFi
     )
 }
 
-const MediaGrid = ({ files, selectedFiles, onSelect, onAction, emptyState }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, emptyState: React.ReactNode }) => {
+const MediaGrid = ({ files, selectedFiles, onSelect, onAction, onCardClick }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void, emptyState: React.ReactNode }) => {
     if (files.length === 0) {
         return <>{emptyState}</>;
     }
@@ -161,6 +167,7 @@ const MediaGrid = ({ files, selectedFiles, onSelect, onAction, emptyState }: { f
                     isSelected={selectedFiles.includes(file.id)}
                     onSelect={onSelect}
                     onAction={onAction}
+                    onCardClick={onCardClick}
                 />
             ))}
         </div>
@@ -174,6 +181,8 @@ export default function AdminMediaPage() {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(placeholderMedia);
   const [trashedFiles, setTrashedFiles] = useState<MediaFile[]>(placeholderTrashedMedia);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedFileForDetail, setSelectedFileForDetail] = useState<MediaFile | null>(null);
 
   const currentFileList = activeTab === 'all' ? mediaFiles : trashedFiles;
 
@@ -288,6 +297,7 @@ export default function AdminMediaPage() {
         type: getFileType(file.name),
         url: URL.createObjectURL(file),
         size: formatFileSize(file.size),
+        uploadedAt: new Date(),
     }));
 
     setMediaFiles(prev => [...newFiles, ...prev]);
@@ -302,9 +312,32 @@ export default function AdminMediaPage() {
     }
   };
 
+  const handleCardClick = (file: MediaFile) => {
+    setSelectedFileForDetail(file);
+    setDetailModalOpen(true);
+  };
+
+  const handleSaveFileDetails = (updatedFile: MediaFile) => {
+    const allFiles = [...mediaFiles, ...trashedFiles];
+    const fileIndexInAll = allFiles.findIndex(f => f.id === updatedFile.id);
+
+    if (fileIndexInAll !== -1) {
+        const isTrashed = !!updatedFile.deletedAt;
+        if (isTrashed) {
+            setTrashedFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
+        } else {
+            setMediaFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
+        }
+    }
+    setDetailModalOpen(false);
+    toast({ title: "File details saved!" });
+  };
+
+
   const isAllSelected = selectedFiles.length > 0 && selectedFiles.length === currentFileList.length;
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
@@ -415,6 +448,7 @@ export default function AdminMediaPage() {
                     selectedFiles={selectedFiles}
                     onSelect={handleSelectOne}
                     onAction={handleAction}
+                    onCardClick={handleCardClick}
                     emptyState={
                         <div className="text-center py-16 text-muted-foreground">
                             <UploadCloud className="mx-auto h-16 w-16 mb-4" />
@@ -436,6 +470,7 @@ export default function AdminMediaPage() {
                     selectedFiles={selectedFiles}
                     onSelect={handleSelectOne}
                     onAction={handleAction}
+                    onCardClick={handleCardClick}
                     emptyState={
                         <div className="text-center py-16 text-muted-foreground">
                             <Trash className="mx-auto h-16 w-16 mb-4" />
@@ -448,5 +483,14 @@ export default function AdminMediaPage() {
          </Tabs>
       </CardContent>
     </Card>
+    {selectedFileForDetail && (
+        <MediaDetailModal
+            isOpen={detailModalOpen}
+            onClose={() => setDetailModalOpen(false)}
+            file={selectedFileForDetail}
+            onSave={handleSaveFileDetails}
+        />
+    )}
+    </>
   );
 }
