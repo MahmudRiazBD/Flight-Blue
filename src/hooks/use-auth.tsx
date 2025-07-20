@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
-    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    if (!firebaseInstances) throw new Error("Firebase is not initialized. Please try again.");
     const { auth, db } = firebaseInstances;
 
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string, displayName: string) => {
-    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    if (!firebaseInstances) throw new Error("Firebase is not initialized. Please try again.");
     const { auth, db } = firebaseInstances;
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    if (!firebaseInstances) throw new Error("Firebase is not initialized. Please try again.");
     const { auth } = firebaseInstances;
     await signOut(auth);
     setUser(null);
