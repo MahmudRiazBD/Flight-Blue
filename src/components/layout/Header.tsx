@@ -24,6 +24,7 @@ import { getInitials } from "@/lib/utils";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
+  { href: "/blog", label: "Blog" },
 ];
 
 export default function Header() {

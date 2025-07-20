@@ -1,4 +1,15 @@
 
+export type Post = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  imageUrl: string;
+  imageHint: string;
+  author: string;
+  publishedAt: string; // ISO date string
+};
+
 export type Package = {
   id: string;
   title: string;
@@ -172,5 +183,38 @@ export const packages: Package[] = [
     ],
     inclusions: ["5 nights accommodation", "Airport transfers", "Guided tours", "Bosphorus cruise", "Daily breakfast"],
     exclusions: ["Flights", "Visa fees", "Lunches & Dinners"],
+  },
+];
+
+export const posts: Post[] = [
+  {
+    id: 'post-1',
+    title: '10 Tips for Your First Trip to Japan',
+    slug: '10-tips-for-your-first-trip-to-japan',
+    content: 'Japan is a country of amazing contrasts. Here are 10 tips to help you navigate your first adventure in the Land of the Rising Sun. From mastering the railway system to understanding basic etiquette, we\'ve got you covered. Don\'t forget to try the ramen!',
+    imageUrl: 'https://placehold.co/1200x600.png',
+    imageHint: 'tokyo street',
+    author: 'Admin User',
+    publishedAt: '2024-05-15T10:00:00Z',
+  },
+  {
+    id: 'post-2',
+    title: 'A Spiritual Journey: Performing Umrah',
+    slug: 'a-spiritual-journey-performing-umrah',
+    content: 'Performing Umrah is a profound spiritual experience for Muslims worldwide. This guide covers the essential rituals, preparations, and advice for a meaningful pilgrimage to Makkah and Madinah. Learn about the state of Ihram, the Tawaf, and the Sa\'i to make your journey a success.',
+    imageUrl: 'https://placehold.co/1200x600.png',
+    imageHint: 'kaaba mecca',
+    author: 'Admin User',
+    publishedAt: '2024-05-20T12:30:00Z',
+  },
+   {
+    id: 'post-3',
+    title: 'The Ultimate Guide to Parisian Cafes',
+    slug: 'the-ultimate-guide-to-parisian-cafes',
+    content: 'No trip to Paris is complete without whiling away an afternoon at a classic cafe. From historical literary haunts to modern specialty coffee shops, discover the best places to sip an espresso and watch the world go by. Learn the difference between a café crème and a noisette!',
+    imageUrl: 'https://placehold.co/1200x600.png',
+    imageHint: 'paris cafe',
+    author: 'Staff Member',
+    publishedAt: '2024-06-01T08:00:00Z',
   },
 ];
