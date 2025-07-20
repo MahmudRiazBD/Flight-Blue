@@ -10,6 +10,7 @@ import PackageCard from "@/components/PackageCard";
 import { packages as initialPackages, Package, posts as initialPosts, Post } from "@/lib/data";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { useAppContext } from '@/context/AppContext';
 
 type HomePageSettings = {
     heroImageUrl: string;
@@ -67,11 +68,12 @@ function BlogCard({ post }: { post: Post }) {
 }
 
 
-export default function Home({ onContactClick }: { onContactClick?: () => void }) {
+export default function Home() {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const { setContactFormOpen } = useAppContext();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -214,7 +216,7 @@ export default function Home({ onContactClick }: { onContactClick?: () => void }
               <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
                 Let us help you plan the trip of a lifetime. Our travel experts are here to assist you every step of the way.
               </p>
-              <Button size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onContactClick}>
+              <Button size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setContactFormOpen(true)}>
                     Contact Us Today
               </Button>
            </div>

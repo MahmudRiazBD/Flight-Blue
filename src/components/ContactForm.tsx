@@ -1,5 +1,5 @@
 
-"use client"
+"use-client"
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { contactMessages as initialMessages, ContactMessage } from "@/lib/data";
+import { useAppContext } from "@/context/AppContext";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -19,12 +20,8 @@ const contactSchema = z.object({
   message: z.string().min(20, "Message must be at least 20 characters long."),
 });
 
-type ContactFormProps = {
-  isOpen: boolean;
-  onClose: () => void;
-};
-
-export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
+export default function ContactForm() {
+  const { isContactFormOpen, setContactFormOpen } = useAppContext();
   const { toast } = useToast();
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
@@ -35,6 +32,11 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
       message: "",
     },
   });
+
+  const handleClose = () => {
+    setContactFormOpen(false);
+    form.reset();
+  }
 
   const onSubmit = (data: z.infer<typeof contactSchema>) => {
     const storedMessages = localStorage.getItem('contactMessages');
@@ -55,12 +57,11 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
       description: "Thank you for contacting us. We will get back to you shortly.",
     });
 
-    form.reset();
-    onClose();
+    handleClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isContactFormOpen} onOpenChange={setContactFormOpen}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Contact Us</DialogTitle>
@@ -91,9 +92,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
             </div>
             
             <DialogFooter className="pt-4">
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">Cancel</Button>
-                </DialogClose>
+                <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
                 <Button type="submit">Send Message</Button>
             </DialogFooter>
         </form>

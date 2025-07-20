@@ -11,8 +11,8 @@ import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { usePathname } from "next/navigation";
-import { cloneElement, useState } from "react";
 import ContactForm from "@/components/ContactForm";
+import { AppProvider } from "@/context/AppContext";
 
 // Metadata cannot be exported from a "use client" file, 
 // so we define it here and then use it in the component.
@@ -28,13 +28,6 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
-  const [isContactFormOpen, setContactFormOpen] = useState(false);
-
-  // Pass contact form toggle function to child components
-  const childrenWithProps = cloneElement(children as React.ReactElement, {
-    onContactClick: () => setContactFormOpen(true),
-  });
-
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -58,25 +51,24 @@ export default function RootLayout({
         )}
       >
         <AuthProvider>
-          {isAdminRoute ? (
-             <div className="relative flex min-h-screen flex-col">
-              {children}
-            </div>
-          ) : (
-            <>
+          <AppProvider>
+            {isAdminRoute ? (
               <div className="relative flex min-h-screen flex-col">
-                <Header onContactClick={() => setContactFormOpen(true)} />
-                <main className="flex-1">{childrenWithProps}</main>
-                <Footer />
+                {children}
               </div>
-              <Chatbot />
-            </>
-          )}
-          <Toaster />
-           <ContactForm 
-              isOpen={isContactFormOpen} 
-              onClose={() => setContactFormOpen(false)} 
-            />
+            ) : (
+              <>
+                <div className="relative flex min-h-screen flex-col">
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                </div>
+                <Chatbot />
+              </>
+            )}
+            <Toaster />
+            <ContactForm />
+          </AppProvider>
         </AuthProvider>
       </body>
     </html>

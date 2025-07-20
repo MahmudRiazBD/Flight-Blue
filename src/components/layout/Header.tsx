@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { useAppContext } from "@/context/AppContext";
 
 
 const navLinks = [
@@ -27,10 +28,11 @@ const navLinks = [
   { href: "/blog", label: "Blog" },
 ];
 
-export default function Header({ onContactClick }: { onContactClick: () => void }) {
+export default function Header() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const { setContactFormOpen } = useAppContext();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -56,7 +58,7 @@ export default function Header({ onContactClick }: { onContactClick: () => void 
             </Link>
           ))}
             <button
-              onClick={onContactClick}
+              onClick={() => setContactFormOpen(true)}
               className="transition-colors hover:text-primary text-muted-foreground"
             >
               Contact
@@ -143,7 +145,7 @@ export default function Header({ onContactClick }: { onContactClick: () => void 
                     </Link>
                   ))}
                    <button
-                    onClick={onContactClick}
+                    onClick={() => setContactFormOpen(true)}
                     className="text-lg text-muted-foreground text-left"
                    >
                     Contact
