@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 
 export const metadata: Metadata = {
-  title: "Global Roam",
+  title: "Flight Blu",
   description: "Your adventure starts here.",
 };
 

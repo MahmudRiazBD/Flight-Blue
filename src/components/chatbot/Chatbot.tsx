@@ -72,7 +72,7 @@ export default function Chatbot() {
       <PopoverContent side="top" align="end" className="w-80 md:w-96 p-0 rounded-lg overflow-hidden">
         <div className="flex flex-col h-[60vh]">
           <header className="p-4 bg-primary text-primary-foreground font-bold font-headline text-lg text-center">
-            Global Roam Assistant
+            Flight Blu Assistant
           </header>
           
           <Tabs defaultValue="travel" className="w-full flex-grow flex flex-col">

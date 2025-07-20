@@ -11,7 +11,7 @@ export default function Footer() {
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Logo className="h-8 w-8 text-primary" />
-              <span className="font-bold font-headline text-xl">Global Roam</span>
+              <span className="font-bold font-headline text-xl">Flight Blu</span>
             </Link>
             <p className="text-sm text-muted-foreground">Your adventure starts here. Discover breathtaking destinations with us.</p>
           </div>
@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Global Roam. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Flight Blu. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

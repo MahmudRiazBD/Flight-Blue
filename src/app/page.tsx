@@ -26,7 +26,7 @@ export default function Home() {
               Your Adventure Awaits
             </h1>
             <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto drop-shadow-md">
-              Discover breathtaking destinations and create unforgettable memories with Global Roam.
+              Discover breathtaking destinations and create unforgettable memories with Flight Blu.
             </p>
             <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
               <Link href="/packages">
@@ -57,7 +57,7 @@ export default function Home() {
         <section className="py-16 md:py-24 bg-secondary">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
-              Why Choose Global Roam?
+              Why Choose Flight Blu?
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div className="flex flex-col items-center">

@@ -14,7 +14,7 @@ export default function SignupPage() {
             <Logo className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
-          <CardDescription>Join Global Roam to start your next adventure</CardDescription>
+          <CardDescription>Join Flight Blu to start your next adventure</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">

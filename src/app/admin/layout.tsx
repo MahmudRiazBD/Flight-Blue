@@ -46,7 +46,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-2 p-2">
             <Logo className="size-8 text-sidebar-primary" />
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
-              Global Roam
+              Flight Blu
             </span>
           </div>
         </SidebarHeader>
