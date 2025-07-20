@@ -27,6 +27,7 @@ import Link from "next/link";
 import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -37,6 +38,7 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { login } = useAuth();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -50,16 +52,19 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     console.log("Login Submitted", values);
 
+    const isAdmin = values.email === "admin@example.com";
+    login(isAdmin);
+
     toast({
       title: "Login Successful!",
-      description: "Welcome back! Redirecting you to your dashboard...",
+      description: "Welcome back! Redirecting you...",
     });
 
-    const isAdmin = values.email === "admin@example.com";
     const redirectPath = isAdmin ? "/admin" : "/dashboard";
 
     setTimeout(() => {
       router.push(redirectPath);
+      router.refresh(); // Force a refresh to update header state
     }, 1500);
   }
 

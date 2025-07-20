@@ -4,20 +4,20 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Mountain } from "lucide-react";
+import { Menu } from "lucide-react";
 import Logo from "../icons/Logo";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export default function Header() {
   const pathname = usePathname();
+  const { isLoggedIn, isAdmin } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,12 +45,20 @@ export default function Header() {
         </nav>
 
         <div className="hidden md:flex items-center justify-end space-x-2">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/signup">Sign Up</Link>
-          </Button>
+          {isLoggedIn ? (
+            <Button asChild>
+              <Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="md:hidden">
@@ -68,7 +76,7 @@ export default function Header() {
                   <span className="font-bold font-headline text-xl">Flight Blu</span>
                 </Link>
                 <nav className="flex flex-col space-y-4">
-                  {navLinks.map((link) => (
+                  {[...navLinks, ...(isLoggedIn ? [{href: isAdmin ? "/admin" : "/dashboard", label: "Dashboard"}] : [])].map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
@@ -82,8 +90,12 @@ export default function Header() {
                   ))}
                 </nav>
                 <div className="mt-8 pt-4 border-t border-border flex flex-col space-y-2">
-                    <Button variant="outline" asChild><Link href="/login">Login</Link></Button>
-                    <Button asChild><Link href="/signup">Sign Up</Link></Button>
+                    {!isLoggedIn && (
+                        <>
+                            <Button variant="outline" asChild><Link href="/login">Login</Link></Button>
+                            <Button asChild><Link href="/signup">Sign Up</Link></Button>
+                        </>
+                    )}
                 </div>
               </div>
             </SheetContent>
