@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Package, Destination, PackageType } from "@/lib/data";
 import { destinations as initialDestinations, packageTypes as initialPackageTypes } from "@/lib/data";
 import { useState, useEffect } from "react";
+import MediaPicker from "./MediaPicker";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters."),
@@ -60,7 +61,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      type: "Tour",
+      type: "",
       destination: "",
       duration: 7,
       price: 100000,
@@ -212,34 +213,33 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
             />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                        <Input placeholder="https://placehold.co/600x400.png" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-             <FormField
-                control={form.control}
-                name="imageHint"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Image Hint</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. paris eiffel tower" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-        </div>
+        <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Package Image</FormLabel>
+                <FormControl>
+                    <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        
+        <FormField
+            control={form.control}
+            name="imageHint"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Image Hint (for AI)</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g. paris eiffel tower" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
 
         <div className="flex justify-end pt-4">
             <Button type="submit">Save Package</Button>

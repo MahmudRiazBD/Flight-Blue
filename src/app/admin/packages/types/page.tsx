@@ -12,12 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import MediaPicker from "@/components/admin/MediaPicker";
 
 export default function AdminPackageTypesPage() {
   const [packageTypes, setPackageTypes] = useState<PackageType[]>(initialPackageTypes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<PackageType | null>(null);
-  const [newTypeName, setNewTypeName] = useState("");
+  const [currentType, setCurrentType] = useState<Partial<PackageType>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,13 +39,16 @@ export default function AdminPackageTypesPage() {
   
   const handleAddNew = () => {
     setEditingType(null);
-    setNewTypeName("");
+    setCurrentType({
+      name: "",
+      imageUrl: "https://placehold.co/600x400.png"
+    });
     setIsDialogOpen(true);
   }
 
   const handleEdit = (type: PackageType) => {
     setEditingType(type);
-    setNewTypeName(type.name);
+    setCurrentType(type);
     setIsDialogOpen(true);
   }
 
@@ -57,7 +62,7 @@ export default function AdminPackageTypesPage() {
   }
 
   const handleSave = () => {
-    if (!newTypeName.trim()) {
+    if (!currentType.name?.trim()) {
       toast({
         title: "Error",
         description: "Package type name cannot be empty.",
@@ -69,7 +74,7 @@ export default function AdminPackageTypesPage() {
     if (editingType) {
       // Editing existing type
       setPackageTypes(packageTypes.map(t => 
-        t.id === editingType.id ? { ...t, name: newTypeName } : t
+        t.id === editingType.id ? { ...editingType, ...currentType } : t
       ));
       toast({
         title: "Package Type Updated",
@@ -79,17 +84,18 @@ export default function AdminPackageTypesPage() {
       // Adding new type
       const newPackageType: PackageType = {
         id: `type-${new Date().getTime()}`,
-        name: newTypeName,
+        name: currentType.name,
+        imageUrl: currentType.imageUrl || "https://placehold.co/600x400.png"
       };
       setPackageTypes([...packageTypes, newPackageType]);
       toast({
         title: "Package Type Added",
-        description: `"${newTypeName}" has been added.`,
+        description: `"${currentType.name}" has been added.`,
       });
     }
 
     setIsDialogOpen(false);
-    setNewTypeName("");
+    setCurrentType({});
     setEditingType(null);
   };
 
@@ -109,15 +115,23 @@ export default function AdminPackageTypesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Type Name</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {packageTypes.map((type) => (
               <TableRow key={type.id}>
+                 <TableCell>
+                  <Image 
+                    src={type.imageUrl} 
+                    alt={type.name} 
+                    width={64} 
+                    height={48} 
+                    className="rounded-md object-cover aspect-[4/3]"
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{type.name}</TableCell>
                  <TableCell className="text-right">
                   <DropdownMenu>
@@ -151,21 +165,26 @@ export default function AdminPackageTypesPage() {
             <DialogHeader>
               <DialogTitle>{editingType ? "Edit Package Type" : "Add New Package Type"}</DialogTitle>
               <DialogDescription>
-                {editingType ? "Update the name of the package type." : "Enter the name for the new package type."}
+                {editingType ? "Update the details of the package type." : "Enter the details for the new package type."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                        Name
-                    </Label>
+                <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
                     <Input 
                         id="name" 
-                        value={newTypeName}
-                        onChange={(e) => setNewTypeName(e.target.value)}
+                        value={currentType.name || ""}
+                        onChange={(e) => setCurrentType(prev => ({...prev, name: e.target.value}))}
                         className="col-span-3"
                         placeholder="e.g., Special Tour"
                     />
+                </div>
+                 <div className="space-y-2">
+                  <Label>Image</Label>
+                  <MediaPicker 
+                    imageUrl={currentType.imageUrl || ""}
+                    onImageUrlChange={(url) => setCurrentType(prev => ({...prev, imageUrl: url}))}
+                  />
                 </div>
             </div>
             <div className="flex justify-end gap-2">

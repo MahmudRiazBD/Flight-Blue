@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { destinations as initialDestinations, Destination } from "@/lib/data";
-import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import MediaPicker from "@/components/admin/MediaPicker";
 
 export default function AdminDestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>(initialDestinations);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDestination, setEditingDestination] = useState<Destination | null>(null);
-  const [newDestinationName, setNewDestinationName] = useState("");
+  const [currentDestination, setCurrentDestination] = useState<Partial<Destination>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,13 +39,16 @@ export default function AdminDestinationsPage() {
   
   const handleAddNew = () => {
     setEditingDestination(null);
-    setNewDestinationName("");
+    setCurrentDestination({
+      name: "",
+      imageUrl: "https://placehold.co/600x400.png"
+    });
     setIsDialogOpen(true);
   }
 
   const handleEdit = (destination: Destination) => {
     setEditingDestination(destination);
-    setNewDestinationName(destination.name);
+    setCurrentDestination(destination);
     setIsDialogOpen(true);
   }
 
@@ -57,7 +62,7 @@ export default function AdminDestinationsPage() {
   }
 
   const handleSave = () => {
-    if (!newDestinationName.trim()) {
+    if (!currentDestination.name?.trim()) {
       toast({
         title: "Error",
         description: "Destination name cannot be empty.",
@@ -69,7 +74,7 @@ export default function AdminDestinationsPage() {
     if (editingDestination) {
       // Editing existing destination
       setDestinations(destinations.map(d => 
-        d.id === editingDestination.id ? { ...d, name: newDestinationName } : d
+        d.id === editingDestination.id ? { ...editingDestination, ...currentDestination } : d
       ));
       toast({
         title: "Destination Updated",
@@ -79,20 +84,20 @@ export default function AdminDestinationsPage() {
       // Adding new destination
       const newDestination: Destination = {
         id: `dest-${new Date().getTime()}`,
-        name: newDestinationName,
+        name: currentDestination.name,
+        imageUrl: currentDestination.imageUrl || "https://placehold.co/600x400.png"
       };
       setDestinations([...destinations, newDestination]);
       toast({
         title: "Destination Added",
-        description: `"${newDestinationName}" has been added.`,
+        description: `"${currentDestination.name}" has been added.`,
       });
     }
 
     setIsDialogOpen(false);
-    setNewDestinationName("");
+    setCurrentDestination({});
     setEditingDestination(null);
   };
-
 
   return (
     <Card>
@@ -110,15 +115,23 @@ export default function AdminDestinationsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Destination Name</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {destinations.map((dest) => (
               <TableRow key={dest.id}>
+                <TableCell>
+                  <Image 
+                    src={dest.imageUrl} 
+                    alt={dest.name} 
+                    width={64} 
+                    height={48} 
+                    className="rounded-md object-cover aspect-[4/3]"
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{dest.name}</TableCell>
                  <TableCell className="text-right">
                   <DropdownMenu>
@@ -148,25 +161,29 @@ export default function AdminDestinationsPage() {
       </CardContent>
 
        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingDestination ? "Edit Destination" : "Add New Destination"}</DialogTitle>
               <DialogDescription>
-                {editingDestination ? "Update the name of the destination." : "Enter the name for the new destination."}
+                {editingDestination ? "Update the details of the destination." : "Enter the details for the new destination."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                        Name
-                    </Label>
+                <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
                     <Input 
                         id="name" 
-                        value={newDestinationName}
-                        onChange={(e) => setNewDestinationName(e.target.value)}
-                        className="col-span-3"
+                        value={currentDestination.name || ""}
+                        onChange={(e) => setCurrentDestination(prev => ({...prev, name: e.target.value}))}
                         placeholder="e.g., London, UK"
                     />
+                </div>
+                <div className="space-y-2">
+                  <Label>Image</Label>
+                  <MediaPicker 
+                    imageUrl={currentDestination.imageUrl || ""}
+                    onImageUrlChange={(url) => setCurrentDestination(prev => ({...prev, imageUrl: url}))}
+                  />
                 </div>
             </div>
             <div className="flex justify-end gap-2">

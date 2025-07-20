@@ -18,25 +18,27 @@ export type Package = {
 export type Destination = {
   id: string;
   name: string;
+  imageUrl: string;
 }
 
 export type PackageType = {
   id: string;
   name: string;
+  imageUrl: string;
 }
 
 export const destinations: Destination[] = [
-    { id: "dest-1", name: "Paris, France" },
-    { id: "dest-2", name: "Makkah & Madinah, Saudi Arabia" },
-    { id: "dest-3", name: "Tokyo, Japan" },
-    { id: "dest-4", name: "Rome, Italy" },
-    { id: "dest-5", name: "Istanbul, Turkey" },
+    { id: "dest-1", name: "Paris, France", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-2", name: "Makkah & Madinah, Saudi Arabia", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-3", name: "Tokyo, Japan", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-4", name: "Rome, Italy", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-5", name: "Istanbul, Turkey", imageUrl: "https://placehold.co/600x400.png" },
 ]
 
 export const packageTypes: PackageType[] = [
-    { id: "type-1", name: "Tour" },
-    { id: "type-2", name: "Hajj" },
-    { id: "type-3", name: "Umrah" },
+    { id: "type-1", name: "Tour", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "type-2", name: "Hajj", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "type-3", name: "Umrah", imageUrl: "https://placehold.co/600x400.png" },
 ]
 
 
