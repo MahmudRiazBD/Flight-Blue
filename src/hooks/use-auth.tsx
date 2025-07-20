@@ -15,8 +15,9 @@ import {
   type Auth,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { getAuth } from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
 
 export type UserRole = 'customer' | 'admin' | 'superadmin';
@@ -42,9 +43,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firebaseInstances, setFirebaseInstances] = useState<{ auth: Auth; db: Firestore } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    setFirebaseInstances({ auth, db });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
@@ -81,6 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
+    if (!firebaseInstances) {
+      throw new Error("Firebase is not initialized. Please try again.");
+    }
+    const { auth, db } = firebaseInstances;
+    
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -105,6 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string, displayName: string) => {
+    if (!firebaseInstances) {
+      throw new Error("Firebase is not initialized. Please try again.");
+    }
+    const { auth, db } = firebaseInstances;
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
@@ -124,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (!firebaseInstances) {
+      return;
+    }
+    const { auth } = firebaseInstances;
     await signOut(auth);
     setUser(null);
     router.push('/');
