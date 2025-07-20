@@ -14,10 +14,12 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+} from "@/components/ui/sidebar"
+import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/collapsible";
 import Logo from "@/components/icons/Logo"
 import { usePathname } from "next/navigation"
 import {
