@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,26 +16,28 @@ export default function AdminAllPackagesPage() {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const addPackage = (newPackage: Package) => {
-    const newPackages = [...packages, newPackage];
-    setPackages(newPackages);
-    // In a real app, you'd also save this to your database
-    // For demo purposes, we can use localStorage to persist across refreshes
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('packages', JSON.stringify(newPackages));
-    }
-  };
-
-  // This effect will run on the client side to load packages from localStorage
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      const storedPackages = localStorage.getItem('packages');
-      if (storedPackages) {
-        setPackages(JSON.parse(storedPackages));
+  useEffect(() => {
+    const storedPackages = localStorage.getItem('packages');
+    if (storedPackages) {
+      try {
+        const parsedPackages = JSON.parse(storedPackages);
+        setPackages(parsedPackages);
+      } catch (e) {
+        console.error("Failed to parse packages from localStorage", e);
+        setPackages(initialPackages);
       }
     }
-  });
+  }, []);
 
+  const addPackage = (newPackage: Package) => {
+    setPackages((prevPackages) => {
+      const newPackages = [...prevPackages, newPackage];
+      // In a real app, you'd also save this to your database
+      // For demo purposes, we can use localStorage to persist across refreshes
+      localStorage.setItem('packages', JSON.stringify(newPackages));
+      return newPackages;
+    });
+  };
 
   return (
     <Card>
