@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Package, Destination } from "@/lib/data";
+import type { Package, Destination, PackageType } from "@/lib/data";
 import { destinations as initialDestinations, packageTypes as initialPackageTypes } from "@/lib/data";
 import { useState, useEffect } from "react";
 
@@ -41,7 +41,7 @@ type AddPackageFormProps = {
 export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageFormProps) {
   const { toast } = useToast();
   const [destinations, setDestinations] = useState<Destination[]>(initialDestinations);
-  const [packageTypes, setPackageTypes] = useState(initialPackageTypes);
+  const [packageTypes, setPackageTypes] = useState<PackageType[]>(initialPackageTypes);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -49,7 +49,10 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
       if (storedDestinations) {
         setDestinations(JSON.parse(storedDestinations));
       }
-      // Similarly for package types if they become dynamic
+      const storedPackageTypes = localStorage.getItem('packageTypes');
+      if (storedPackageTypes) {
+        setPackageTypes(JSON.parse(storedPackageTypes));
+      }
     }
   }, []);
 
