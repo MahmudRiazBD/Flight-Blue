@@ -31,19 +31,20 @@ type MediaFile = {
   url: string;
   size: string;
   deletedAt?: Date;
+  dataAiHint?: string;
 };
 
 const placeholderMedia: MediaFile[] = [
-  { id: "1", name: "eiffel-tower.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "1.2 MB", data-ai-hint: "eiffel tower" },
+  { id: "1", name: "eiffel-tower.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "1.2 MB", dataAiHint: "eiffel tower" },
   { id: "2", name: "promo-video.mp4", type: "video", url: "https://placehold.co/600x400.png", size: "15.8 MB" },
   { id: "3", name: "travel-guide.pdf", type: "pdf", url: "https://placehold.co/600x400.png", size: "5.4 MB" },
-  { id: "4", name: "kaaba-mecca.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "2.1 MB", data-ai-hint: "kaaba mecca" },
+  { id: "4", name: "kaaba-mecca.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "2.1 MB", dataAiHint: "kaaba mecca" },
   { id: "5", name: "terms.docx", type: "file", url: "https://placehold.co/600x400.png", size: "87 KB" },
-  { id: "6", name: "tokyo-skyline.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "3.5 MB", data-ai-hint: "tokyo skyline" },
+  { id: "6", name: "tokyo-skyline.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "3.5 MB", dataAiHint: "tokyo skyline" },
 ];
 
 const placeholderTrashedMedia: MediaFile[] = [
-    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), data-ai-hint: "old logo" },
+    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo" },
     { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
 ]
 
@@ -60,6 +61,8 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction }: { file: MediaFi
     const isTrashed = !!file.deletedAt;
     const daysInTrash = file.deletedAt ? Math.ceil((Date.now() - file.deletedAt.getTime()) / (1000 * 60 * 60 * 24)) : 0;
     const daysLeft = 30 - daysInTrash;
+
+    const imageProps = file.dataAiHint ? { "data-ai-hint": file.dataAiHint } : {};
 
     return (
         <Card className="relative group overflow-hidden">
@@ -123,7 +126,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction }: { file: MediaFi
             </div>
           <div className="aspect-square bg-muted flex items-center justify-center">
              {file.type === 'image' ? (
-                 <Image src={file.url} alt={file.name} width={200} height={200} className="object-cover h-full w-full" />
+                 <Image src={file.url} alt={file.name} width={200} height={200} className="object-cover h-full w-full" {...imageProps} />
              ) : (
                 getIconForType(file.type)
              )}
