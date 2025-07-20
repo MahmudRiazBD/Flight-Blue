@@ -68,6 +68,7 @@ function processEmbedCode(code: string): string {
   const srcMatch = code.match(/src="([^"]*)"/);
   if (!srcMatch || !srcMatch[1]) return '';
   
+  // This is a client component, so we can use document
   const iframe = document.createElement('iframe');
   iframe.src = srcMatch[1];
   iframe.width = '100%';
@@ -168,3 +169,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+    
