@@ -1,50 +1,72 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Paintbrush, Image as ImageIcon, TextCursorInput, Link as LinkIcon } from "lucide-react";
+import { Paintbrush, Image as ImageIcon, TextCursorInput, Link as LinkIcon, Home } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import MediaPicker from "@/components/admin/MediaPicker";
+import { Textarea } from "@/components/ui/textarea";
+
+// Define a type for home page settings
+type HomePageSettings = {
+    heroImageUrl: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    heroButtonLabel: string;
+    heroButtonLink: string;
+};
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
 
-    // These states would typically be fetched from a database
+    // General settings states
     const [siteTitle, setSiteTitle] = useState("Flight Blu");
-    const [logoUrl, setLogoUrl] = useState("/logo.svg"); // Assuming a default logo
+    const [logoUrl, setLogoUrl] = useState("/logo.svg");
     const [faviconUrl, setFaviconUrl] = useState("/favicon.ico");
     
-    // HSL values for theme colors
+    // Theme settings states
     const [primaryColor, setPrimaryColor] = useState("211 100% 50%");
     const [backgroundColor, setBackgroundColor] = useState("0 0% 100%");
     const [accentColor, setAccentColor] = useState("195 100% 50%");
 
-    // Permalink settings
+    // Permalink settings states
     const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
     const [mediaPermalink, setMediaPermalink] = useState("/uploads/%filename%");
+    
+    // Home Page settings states
+    const [homePageSettings, setHomePageSettings] = useState<HomePageSettings>({
+        heroImageUrl: "https://placehold.co/1920x1080.png",
+        heroTitle: "Your Adventure Awaits",
+        heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+        heroButtonLabel: "Explore Packages",
+        heroButtonLink: "/packages",
+    });
 
+    // Load all settings from localStorage on component mount
+    useEffect(() => {
+        const savedHomePageSettings = localStorage.getItem('homePageSettings');
+        if (savedHomePageSettings) {
+            setHomePageSettings(JSON.parse(savedHomePageSettings));
+        }
+        // ... any other settings loading logic would go here
+    }, []);
+
+    const handleHomePageSettingsChange = (field: keyof HomePageSettings, value: string) => {
+        setHomePageSettings(prev => ({...prev, [field]: value}));
+    }
 
     const handleSaveChanges = () => {
         // Here you would typically send the data to your backend to save in a database
-        console.log("Saving settings:", {
-            siteTitle,
-            logoUrl,
-            faviconUrl,
-            theme: {
-                primary: primaryColor,
-                background: backgroundColor,
-                accent: accentColor,
-            },
-            permalinks: {
-                package: packagePermalink,
-                media: mediaPermalink,
-            }
-        });
+        // For this demo, we use localStorage.
+        
+        // Save Home Page Settings
+        localStorage.setItem('homePageSettings', JSON.stringify(homePageSettings));
 
         // This is a simulation. In a real app, you'd apply these styles globally.
         // For example, by updating a CSS file or injecting a <style> tag.
@@ -67,11 +89,12 @@ export default function AdminSettingsPage() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
                 <TabsTrigger value="branding"><ImageIcon className="mr-2"/>Branding</TabsTrigger>
                 <TabsTrigger value="theme"><Paintbrush className="mr-2"/>Theme</TabsTrigger>
                 <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
+                <TabsTrigger value="homepage"><Home className="mr-2"/>Home Page</TabsTrigger>
             </TabsList>
             
             <TabsContent value="general" className="pt-6">
@@ -212,6 +235,56 @@ export default function AdminSettingsPage() {
                     </div>
                 </div>
             </TabsContent>
+
+            <TabsContent value="homepage" className="pt-6">
+                <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Hero Section</h3>
+                    <div className="space-y-2">
+                        <Label>Hero Image</Label>
+                        <MediaPicker 
+                            imageUrl={homePageSettings.heroImageUrl} 
+                            onImageUrlChange={(url) => handleHomePageSettingsChange('heroImageUrl', url)}
+                        />
+                        <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="heroTitle">Hero Title</Label>
+                        <Input 
+                            id="heroTitle" 
+                            value={homePageSettings.heroTitle}
+                            onChange={(e) => handleHomePageSettingsChange('heroTitle', e.target.value)}
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+                        <Textarea 
+                            id="heroSubtitle" 
+                            value={homePageSettings.heroSubtitle}
+                            onChange={(e) => handleHomePageSettingsChange('heroSubtitle', e.target.value)}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="heroButtonLabel">Button Label</Label>
+                            <Input 
+                                id="heroButtonLabel" 
+                                value={homePageSettings.heroButtonLabel}
+                                onChange={(e) => handleHomePageSettingsChange('heroButtonLabel', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="heroButtonLink">Button Link</Label>
+                            <Input 
+                                id="heroButtonLink" 
+                                value={homePageSettings.heroButtonLink}
+                                onChange={(e) => handleHomePageSettingsChange('heroButtonLink', e.target.value)}
+                                placeholder="/packages"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </TabsContent>
+
         </Tabs>
         
         <div className="mt-8 pt-6 border-t flex justify-end">
@@ -221,3 +294,5 @@ export default function AdminSettingsPage() {
     </Card>
   );
 }
+
+    

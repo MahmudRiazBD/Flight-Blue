@@ -3,15 +3,32 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle, Star, Users } from "lucide-react";
+import { ArrowRight, CheckCircle, Star, Users, Loader2 } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
 import { packages as initialPackages, Package } from "@/lib/data";
 
+type HomePageSettings = {
+    heroImageUrl: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    heroButtonLabel: string;
+    heroButtonLink: string;
+};
+
+const defaultHomePageSettings: HomePageSettings = {
+    heroImageUrl: "https://placehold.co/1920x1080.png",
+    heroTitle: "Your Adventure Awaits",
+    heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+    heroButtonLabel: "Explore Packages",
+    heroButtonLink: "/packages",
+};
+
 export default function Home() {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
+  const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -19,6 +36,12 @@ export default function Home() {
       if (storedPackages) {
         setPackages(JSON.parse(storedPackages));
       }
+      
+      const storedSettings = localStorage.getItem('homePageSettings');
+      if (storedSettings) {
+        setHomeSettings(JSON.parse(storedSettings));
+      }
+      setLoadingSettings(false);
     }
   }, []);
 
@@ -27,28 +50,35 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
-        <section className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center text-center text-white">
-          <Image
-            src="https://placehold.co/1920x1080.png"
-            alt="Exotic travel destination"
-            layout="fill"
-            objectFit="cover"
-            className="absolute z-0 brightness-50"
-            data-ai-hint="exotic travel destination"
-          />
-          <div className="relative z-10 p-4">
-            <h1 className="text-4xl md:text-6xl font-headline font-bold drop-shadow-lg">
-              Your Adventure Awaits
-            </h1>
-            <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto drop-shadow-md">
-              Discover breathtaking destinations and create unforgettable memories with Flight Blu.
-            </p>
-            <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Link href="/packages">
-                Explore Packages <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
+        <section className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center text-center text-white bg-black">
+          {loadingSettings ? (
+             <Loader2 className="h-12 w-12 animate-spin text-white" />
+          ) : (
+            <>
+              <Image
+                src={homeSettings.heroImageUrl}
+                alt="Exotic travel destination"
+                layout="fill"
+                objectFit="cover"
+                className="absolute z-0 brightness-50"
+                data-ai-hint="exotic travel destination"
+                key={homeSettings.heroImageUrl} // Force re-render on image change
+              />
+              <div className="relative z-10 p-4">
+                <h1 className="text-4xl md:text-6xl font-headline font-bold drop-shadow-lg">
+                  {homeSettings.heroTitle}
+                </h1>
+                <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto drop-shadow-md">
+                  {homeSettings.heroSubtitle}
+                </p>
+                <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Link href={homeSettings.heroButtonLink}>
+                    {homeSettings.heroButtonLabel} <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
         </section>
 
         <section id="featured-packages" className="py-16 md:py-24 bg-background">
@@ -124,3 +154,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
