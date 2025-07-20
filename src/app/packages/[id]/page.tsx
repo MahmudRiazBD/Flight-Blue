@@ -1,16 +1,23 @@
+
+"use client";
+
+import { useState } from "react";
 import { packages } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Star, Clock, MapPin, Check, X, Calendar, Users, DollarSign, Package } from "lucide-react";
+import { Star, Clock, MapPin, Check, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import BookingForm from "@/components/BookingForm";
 
 type Props = {
   params: { id: string };
 };
 
 export default function PackageDetailPage({ params }: Props) {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const pkg = packages.find((p) => p.id === params.id);
 
   if (!pkg) {
@@ -56,7 +63,7 @@ export default function PackageDetailPage({ params }: Props) {
             <h2 className="text-3xl font-headline font-semibold mt-12 mb-4">Itinerary</h2>
             <Accordion type="single" collapsible className="w-full">
               {pkg.itinerary.map((item, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
+                <AccordionItem value={`item-${index}`} key={`itinerary-${pkg.id}-${index}`}>
                   <AccordionTrigger className="text-lg font-semibold font-headline">
                     Day {item.day}: {item.title}
                   </AccordionTrigger>
@@ -77,9 +84,22 @@ export default function PackageDetailPage({ params }: Props) {
                         <span className="text-sm text-muted-foreground">per person</span>
                     </div>
 
-                    <Button className="w-full text-lg" size="lg">
-                        Book Now
-                    </Button>
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="w-full text-lg" size="lg">
+                          Book Now
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle className="font-headline">Book: {pkg.title}</DialogTitle>
+                          <DialogDescription>
+                            Fill out the form below and we'll get back to you shortly to confirm your booking.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <BookingForm packageId={pkg.id} packageName={pkg.title} setDialogOpen={setDialogOpen} />
+                      </DialogContent>
+                    </Dialog>
 
                     <div className="mt-8 space-y-4">
                        <h3 className="text-xl font-headline font-semibold text-center">Package Details</h3>
