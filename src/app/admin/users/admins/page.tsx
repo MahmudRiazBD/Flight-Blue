@@ -21,9 +21,16 @@ export default function AdminAdminsPage() {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // In a real app, you would fetch users from your database
-    // For now, we use mock data filtered for admins and superadmins
+    // Filter for admin and superadmin users
     const adminUsers = mockUsers.filter(u => u.role === 'admin' || u.role === 'superadmin');
+    
+    // Sort users to show superadmin first
+    adminUsers.sort((a, b) => {
+        if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
+        if (a.role !== 'superadmin' && b.role === 'superadmin') return 1;
+        return 0; // or sort by name if roles are the same
+    });
+
     setUsers(adminUsers);
   }, []);
 
