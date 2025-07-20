@@ -23,9 +23,11 @@ type HomePageSettings = {
     heroButtonLink: string;
 };
 
+type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
+
 type SocialLink = {
     id: string;
-    platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
+    platform: SocialLinkPlatform;
     url: string;
 };
 
@@ -47,16 +49,14 @@ type FooterSettings = {
     }
 }
 
-const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
-    switch (platform) {
-        case 'twitter': return <Twitter className="h-5 w-5" />;
-        case 'facebook': return <Facebook className="h-5 w-5" />;
-        case 'instagram': return <Instagram className="h-5 w-5" />;
-        case 'linkedin': return <Linkedin className="h-5 w-5" />;
-        case 'youtube': return <Youtube className="h-5 w-5" />;
-        default: return null;
-    }
-};
+const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
+    { value: 'twitter', label: 'Twitter' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'linkedin', label: 'LinkedIn' },
+    { value: 'youtube', label: 'YouTube' },
+];
+
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
@@ -409,11 +409,7 @@ export default function AdminSettingsPage() {
                                             onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
                                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            <option value="twitter">Twitter</option>
-                                            <option value="facebook">Facebook</option>
-                                            <option value="instagram">Instagram</option>
-                                            <option value="linkedin">LinkedIn</option>
-                                            <option value="youtube">YouTube</option>
+                                            {socialPlatforms.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                                         </select>
                                         <Input
                                             type="url"
@@ -525,5 +521,3 @@ export default function AdminSettingsPage() {
     </Card>
   );
 }
-
-    
