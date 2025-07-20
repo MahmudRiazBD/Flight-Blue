@@ -12,6 +12,7 @@ import { Paintbrush, Image as ImageIcon, TextCursorInput, Link as LinkIcon, Home
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
 // Define a type for home page settings
 type HomePageSettings = {
@@ -89,97 +90,100 @@ export default function AdminSettingsPage() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
-                <TabsTrigger value="branding"><ImageIcon className="mr-2"/>Branding</TabsTrigger>
-                <TabsTrigger value="theme"><Paintbrush className="mr-2"/>Theme</TabsTrigger>
                 <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
                 <TabsTrigger value="homepage"><Home className="mr-2"/>Home Page</TabsTrigger>
             </TabsList>
             
             <TabsContent value="general" className="pt-6">
                 <div className="space-y-6">
-                    <div>
-                        <Label htmlFor="siteTitle">Site Title</Label>
-                        <Input 
-                            id="siteTitle" 
-                            value={siteTitle} 
-                            onChange={(e) => setSiteTitle(e.target.value)}
-                            placeholder="Your awesome travel agency"
-                        />
-                         <p className="text-sm text-muted-foreground mt-2">
-                            This will appear in the browser tab and search engine results.
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Site Identity</h3>
+                         <div>
+                            <Label htmlFor="siteTitle">Site Title</Label>
+                            <Input 
+                                id="siteTitle" 
+                                value={siteTitle} 
+                                onChange={(e) => setSiteTitle(e.target.value)}
+                                placeholder="Your awesome travel agency"
+                            />
+                             <p className="text-sm text-muted-foreground mt-2">
+                                This will appear in the browser tab and search engine results.
+                            </p>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                     <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Branding</h3>
+                        <div>
+                            <Label htmlFor="logoUrl">Site Logo URL</Label>
+                            <Input 
+                                id="logoUrl" 
+                                value={logoUrl} 
+                                onChange={(e) => setLogoUrl(e.target.value)}
+                                placeholder="https://example.com/logo.png"
+                            />
+                             <p className="text-sm text-muted-foreground mt-2">
+                                Enter the full URL for your site's logo.
+                            </p>
+                        </div>
+                        <div>
+                            <Label htmlFor="faviconUrl">Favicon URL</Label>
+                            <Input 
+                                id="faviconUrl" 
+                                value={faviconUrl} 
+                                onChange={(e) => setFaviconUrl(e.target.value)}
+                                placeholder="https://example.com/favicon.ico"
+                            />
+                             <p className="text-sm text-muted-foreground mt-2">
+                                Enter the full URL for your site's favicon (the little icon in the browser tab).
+                            </p>
+                        </div>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Theme Customization</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Customize the look and feel of your site. Colors are defined using HSL values (Hue Saturation Lightness), e.g., <code className="bg-muted px-1 py-0.5 rounded">211 100% 50%</code>.
                         </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <Label htmlFor="primaryColor">Primary Color</Label>
+                                <Input 
+                                    id="primaryColor" 
+                                    value={primaryColor} 
+                                    onChange={(e) => setPrimaryColor(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="backgroundColor">Background Color</Label>
+                                <Input 
+                                    id="backgroundColor" 
+                                    value={backgroundColor} 
+                                    onChange={(e) => setBackgroundColor(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="accentColor">Accent Color</Label>
+                                <Input 
+                                    id="accentColor" 
+                                    value={accentColor} 
+                                    onChange={(e) => setAccentColor(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                         <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${primaryColor})`}}></div>
+                            <div className="w-12 h-12 rounded-lg border" style={{ backgroundColor: `hsl(${backgroundColor})`}}></div>
+                            <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
+                        </div>
                     </div>
                 </div>
-            </TabsContent>
-
-            <TabsContent value="branding" className="pt-6">
-                 <div className="space-y-6">
-                    <div>
-                        <Label htmlFor="logoUrl">Site Logo URL</Label>
-                        <Input 
-                            id="logoUrl" 
-                            value={logoUrl} 
-                            onChange={(e) => setLogoUrl(e.target.value)}
-                            placeholder="https://example.com/logo.png"
-                        />
-                         <p className="text-sm text-muted-foreground mt-2">
-                            Enter the full URL for your site's logo.
-                        </p>
-                    </div>
-                    <div>
-                        <Label htmlFor="faviconUrl">Favicon URL</Label>
-                        <Input 
-                            id="faviconUrl" 
-                            value={faviconUrl} 
-                            onChange={(e) => setFaviconUrl(e.target.value)}
-                            placeholder="https://example.com/favicon.ico"
-                        />
-                         <p className="text-sm text-muted-foreground mt-2">
-                            Enter the full URL for your site's favicon (the little icon in the browser tab).
-                        </p>
-                    </div>
-                </div>
-            </TabsContent>
-
-            <TabsContent value="theme" className="pt-6">
-                 <div className="space-y-6">
-                    <p className="text-sm text-muted-foreground">
-                        Customize the look and feel of your site. Colors are defined using HSL values (Hue Saturation Lightness), e.g., <code className="bg-muted px-1 py-0.5 rounded">211 100% 50%</code>.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <Label htmlFor="primaryColor">Primary Color</Label>
-                            <Input 
-                                id="primaryColor" 
-                                value={primaryColor} 
-                                onChange={(e) => setPrimaryColor(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="backgroundColor">Background Color</Label>
-                            <Input 
-                                id="backgroundColor" 
-                                value={backgroundColor} 
-                                onChange={(e) => setBackgroundColor(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="accentColor">Accent Color</Label>
-                            <Input 
-                                id="accentColor" 
-                                value={accentColor} 
-                                onChange={(e) => setAccentColor(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                     <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${primaryColor})`}}></div>
-                        <div className="w-12 h-12 rounded-lg border" style={{ backgroundColor: `hsl(${backgroundColor})`}}></div>
-                        <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
-                    </div>
-                 </div>
             </TabsContent>
 
             <TabsContent value="permalinks" className="pt-6">
