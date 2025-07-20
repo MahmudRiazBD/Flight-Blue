@@ -55,8 +55,8 @@ export default function PackageDetailPage({ params }: Props) {
             
             <h2 className="text-3xl font-headline font-semibold mt-12 mb-4">Itinerary</h2>
             <Accordion type="single" collapsible className="w-full">
-              {pkg.itinerary.map((item) => (
-                <AccordionItem value={`day-${item.day}`} key={item.day}>
+              {pkg.itinerary.map((item, index) => (
+                <AccordionItem value={`item-${index}`} key={index}>
                   <AccordionTrigger className="text-lg font-semibold font-headline">
                     Day {item.day}: {item.title}
                   </AccordionTrigger>
