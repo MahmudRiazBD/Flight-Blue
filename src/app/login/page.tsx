@@ -29,10 +29,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password cannot be empty." }),
+  rememberMe: z.boolean().default(false).optional(),
 });
 
 export default function LoginPage() {
@@ -46,13 +48,14 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: true,
     },
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setFormLoading(true);
     try {
-      const user = await login(values.email, values.password);
+      const user = await login(values.email, values.password, values.rememberMe);
 
       toast({
         title: "Login Successful!",
@@ -123,7 +126,27 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <div className="flex items-center justify-end">
+              <div className="flex items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name="rememberMe"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="cursor-pointer">
+                          Remember me
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <Link
                   href="#"
                   className="text-sm text-primary hover:underline"

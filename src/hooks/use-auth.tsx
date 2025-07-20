@@ -13,6 +13,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  setPersistence,
+  browserSessionPersistence,
+  browserLocalPersistence,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
@@ -31,7 +34,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => void;
 }
@@ -74,8 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [handleUser]);
 
-  const login = async (email: string, password: string): Promise<User> => {
+  const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
     const auth = getAuth(app);
+    
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
