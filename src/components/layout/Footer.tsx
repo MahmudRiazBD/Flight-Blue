@@ -8,6 +8,7 @@ import Logo from "../icons/Logo";
 import { Twitter, Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 
 type SocialLink = {
+    id: string;
     platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
     url: string;
 };
@@ -51,7 +52,6 @@ const defaultFooterSettings: FooterSettings = {
     }
 };
 
-
 const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     switch (platform) {
         case 'twitter': return <Twitter className="h-5 w-5" />;
@@ -63,10 +63,27 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     }
 };
 
+function processEmbedCode(code: string): string {
+  if (!code || !code.includes('iframe')) return '';
+  const srcMatch = code.match(/src="([^"]*)"/);
+  if (!srcMatch || !srcMatch[1]) return '';
+  
+  const iframe = document.createElement('iframe');
+  iframe.src = srcMatch[1];
+  iframe.width = '100%';
+  iframe.height = '100%';
+  iframe.style.border = '0';
+  iframe.setAttribute('allowfullscreen', '');
+  iframe.setAttribute('loading', 'lazy');
+  iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+  
+  return iframe.outerHTML;
+}
+
+
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [googleMapCompanyName, setGoogleMapCompanyName] = useState('');
-  const [googleMapCoordinates, setGoogleMapCoordinates] = useState('');
+  const [googleMapEmbedCode, setGoogleMapEmbedCode] = useState('');
   const [footerSettings, setFooterSettings] = useState<FooterSettings>(defaultFooterSettings);
 
 
@@ -75,13 +92,9 @@ export default function Footer() {
     if (savedSocialLinks) {
         setSocialLinks(JSON.parse(savedSocialLinks));
     }
-    const savedMapName = localStorage.getItem('googleMapCompanyName');
-    if(savedMapName) {
-        setGoogleMapCompanyName(savedMapName);
-    }
-     const savedMapCoords = localStorage.getItem('googleMapCoordinates');
-    if(savedMapCoords) {
-        setGoogleMapCoordinates(savedMapCoords);
+    const savedMapCode = localStorage.getItem('googleMapEmbedCode');
+    if(savedMapCode) {
+        setGoogleMapEmbedCode(savedMapCode);
     }
     const savedFooterSettings = localStorage.getItem('footerSettings');
     if(savedFooterSettings) {
@@ -89,22 +102,7 @@ export default function Footer() {
     }
   }, []);
 
-  const getMapEmbedUrl = (): string => {
-    if (!googleMapCoordinates) return "";
-
-    const parts = googleMapCoordinates.split(',');
-    if (parts.length < 2) return "";
-    
-    const lat = parts[0];
-    const lng = parts[1];
-    const zoom = parts[2] ? parts[2].replace('z', '') : '15'; // Default zoom if not provided
-    const companyName = googleMapCompanyName || 'Our Location';
-    
-    // Construct the URL for embedding
-    return `https://maps.google.com/maps?q=${encodeURIComponent(companyName)}&t=&z=${zoom}&ie=UTF8&iwloc=&output=embed&ll=${lat},${lng}`;
-  }
-
-  const mapEmbedUrl = getMapEmbedUrl();
+  const cleanMapHtml = processEmbedCode(googleMapEmbedCode);
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -118,8 +116,8 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground">{footerSettings.description}</p>
              {socialLinks.length > 0 && (
                 <div className="flex space-x-2">
-                    {socialLinks.slice(0, 4).map((link, index) => (
-                        <Button key={index} variant="ghost" size="icon" asChild>
+                    {socialLinks.map((link) => (
+                        <Button key={link.id} variant="ghost" size="icon" asChild>
                             <Link href={link.url} target="_blank" rel="noopener noreferrer">
                                 <SocialIcon platform={link.platform} />
                             </Link>
@@ -154,19 +152,10 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
-            {mapEmbedUrl ? (
-                <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md">
-                    <iframe
-                        src={mapEmbedUrl}
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        allowFullScreen={false}
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        title="Google Map Location"
-                    ></iframe>
-                </div>
+            {cleanMapHtml ? (
+                 <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md"
+                    dangerouslySetInnerHTML={{ __html: cleanMapHtml }}
+                 />
             ) : (
                 <p className="text-sm text-muted-foreground">Location map will be shown here.</p>
             )}
