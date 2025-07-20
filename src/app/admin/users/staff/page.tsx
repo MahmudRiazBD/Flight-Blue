@@ -2,42 +2,70 @@
 "use client"
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { User } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "@/lib/users"; 
-
-function getInitials(name: string | null = ""): string {
-    if (!name) return "U";
-    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-}
-
+import UserProfileModal from "@/components/admin/UserProfileModal";
+import { getInitials } from "@/lib/utils";
 
 export default function AdminStaffPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const staffUsers = mockUsers.filter(u => u.role === 'staff');
+  const loadUsers = () => {
+    const storedUsers = localStorage.getItem('mockUsers');
+    const currentUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
+    setAllUsers(currentUsers);
+    const staffUsers = currentUsers.filter((u:User) => u.role === 'staff');
     setUsers(staffUsers);
+  };
+
+  useEffect(() => {
+    loadUsers();
+    window.addEventListener('storage', loadUsers);
+    return () => {
+      window.removeEventListener('storage', loadUsers);
+    };
   }, []);
 
   const handleDeleteUser = (userId: string) => {
-    const user = users.find(u => u.uid === userId);
-    setUsers(prevUsers => prevUsers.filter(user => user.uid !== userId));
+    const user = allUsers.find(u => u.uid === userId);
+    const updatedAllUsers = allUsers.filter(u => u.uid !== userId);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedAllUsers));
+    loadUsers();
      toast({
         title: "User Deleted",
-        description: `User ${user?.displayName} has been removed.`,
+        description: `User ${user?.firstName} has been removed.`,
         variant: "destructive"
+    })
+  }
+  
+  const handleViewProfile = (user: User) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  }
+
+  const handleSaveUser = (updatedUser: User) => {
+    const updatedAllUsers = allUsers.map(u => u.uid === updatedUser.uid ? updatedUser : u);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedAllUsers));
+    loadUsers();
+    setIsModalOpen(false);
+    toast({
+      title: "User Updated",
+      description: `${updatedUser.firstName}'s profile has been saved.`
     })
   }
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -64,10 +92,10 @@ export default function AdminStaffPage() {
                         <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar>
-                                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                                    <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                                    <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
                                 </Avatar>
-                                <span className="font-medium">{user.displayName}</span>
+                                <span className="font-medium">{user.firstName} {user.lastName}</span>
                             </div>
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
@@ -81,7 +109,10 @@ export default function AdminStaffPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                    <UserIcon className="mr-2 h-4 w-4"/>
+                                    View Profile
+                                </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)}>
                                     <Trash2 className="mr-2 h-4 w-4"/>
                                     Delete User
@@ -95,5 +126,14 @@ export default function AdminStaffPage() {
         </Table>
       </CardContent>
     </Card>
+    {selectedUser && (
+        <UserProfileModal 
+            user={selectedUser}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSave={handleSaveUser}
+        />
+      )}
+    </>
   );
 }

@@ -8,35 +8,44 @@ export const mockUsers: User[] = [
     {
         uid: 'user-1-superadmin',
         email: 'super@example.com',
-        displayName: 'Super Admin',
+        firstName: 'Super',
+        lastName: 'Admin',
+        phone: '111-222-3333',
         role: 'superadmin',
         photoURL: 'https://placehold.co/100x100.png'
     },
     {
         uid: 'user-2-admin',
         email: 'admin@example.com',
-        displayName: 'Admin User',
+        firstName: 'Admin',
+        lastName: 'User',
+        phone: '222-333-4444',
         role: 'admin',
         photoURL: 'https://placehold.co/100x100.png'
     },
     {
         uid: 'user-3-staff',
         email: 'staff@example.com',
-        displayName: 'Staff Member',
+        firstName: 'Staff',
+        lastName: 'Member',
+        phone: '333-444-5555',
         role: 'staff',
         photoURL: 'https://placehold.co/100x100.png'
     },
     {
         uid: 'user-4-customer',
         email: 'customer1@example.com',
-        displayName: 'Alice Johnson',
+        firstName: 'Alice',
+        lastName: 'Johnson',
+        phone: '444-555-6666',
         role: 'customer',
         photoURL: 'https://placehold.co/100x100.png'
     },
     {
         uid: 'user-5-customer',
         email: 'customer2@example.com',
-        displayName: 'Bob Williams',
+        firstName: 'Bob',
+        lastName: 'Williams',
         role: 'customer',
         photoURL: 'https://placehold.co/100x100.png'
     }

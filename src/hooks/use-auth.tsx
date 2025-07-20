@@ -25,7 +25,9 @@ export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 export interface User {
   uid: string;
   email: string | null;
-  displayName: string | null;
+  firstName: string;
+  lastName: string;
+  phone?: string;
   role: UserRole;
   photoURL?: string | null;
 }
@@ -34,7 +36,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -67,9 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
            const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
            const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
+           const [firstName, lastName] = (firebaseUser.displayName || "New User").split(" ");
            const newUser: Omit<User, 'uid'> = {
             email: firebaseUser.email!,
-            displayName: firebaseUser.displayName || 'New User',
+            firstName: firstName || "New",
+            lastName: lastName || "User",
             role: userRole,
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), {
@@ -130,11 +134,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isSuperAdmin = email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
     const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
 
+    const [firstName, lastName] = displayName.split(' ');
+
     const userRef = doc(db, 'users', firebaseUser.uid);
     await setDoc(userRef, {
       uid: firebaseUser.uid,
       email,
-      displayName,
+      firstName: firstName || displayName,
+      lastName: lastName || '',
       role: userRole,
       createdAt: serverTimestamp(),
     });

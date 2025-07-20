@@ -2,40 +2,73 @@
 "use client"
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, ShieldAlert } from "lucide-react";
+import { PlusCircle, MoreHorizontal, ShieldAlert, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { User, UserRole } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "@/lib/users";
+import UserProfileModal from "@/components/admin/UserProfileModal";
+import { useToast } from "@/hooks/use-toast";
+import { getInitials } from "@/lib/utils";
 
-function getInitials(name: string | null = ""): string {
-    if (!name) return "U";
-    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-}
 
 export default function AdminAdminsPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    // Filter for admin and superadmin users
-    const adminUsers = mockUsers.filter(u => u.role === 'admin' || u.role === 'superadmin');
+  const loadUsers = () => {
+    const storedUsers = localStorage.getItem('mockUsers');
+    const allUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
     
-    // Sort users to show superadmin first
-    adminUsers.sort((a, b) => {
+    const adminUsers = allUsers.filter((u: User) => u.role === 'admin' || u.role === 'superadmin');
+    
+    adminUsers.sort((a: User, b: User) => {
         if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
         if (a.role !== 'superadmin' && b.role === 'superadmin') return 1;
-        return 0; // or sort by name if roles are the same
+        if (a.firstName < b.firstName) return -1;
+        if (a.firstName > b.firstName) return 1;
+        return 0;
     });
 
     setUsers(adminUsers);
+  };
+  
+  useEffect(() => {
+    loadUsers();
+    // Listen to storage changes to update if another tab changes the users
+    window.addEventListener('storage', loadUsers);
+    return () => {
+      window.removeEventListener('storage', loadUsers);
+    };
   }, []);
 
+  const handleViewProfile = (user: User) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  }
+
+  const handleSaveUser = (updatedUser: User) => {
+    // We need to update the global user list in localStorage
+    const allUsersStored = localStorage.getItem('mockUsers');
+    let allUsers = allUsersStored ? JSON.parse(allUsersStored) : mockUsers;
+    allUsers = allUsers.map((u: User) => u.uid === updatedUser.uid ? updatedUser : u);
+    localStorage.setItem('mockUsers', JSON.stringify(allUsers));
+    
+    loadUsers(); // Reload the filtered & sorted list for this page
+    setIsModalOpen(false);
+    toast({
+      title: "User Updated",
+      description: `${updatedUser.firstName}'s profile has been saved.`
+    })
+  }
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -63,10 +96,10 @@ export default function AdminAdminsPage() {
                         <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar>
-                                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                                    <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                                    <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
                                 </Avatar>
-                                <span className="font-medium">{user.displayName}</span>
+                                <span className="font-medium">{user.firstName} {user.lastName}</span>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -83,6 +116,10 @@ export default function AdminAdminsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                 <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                    <UserIcon className="mr-2 h-4 w-4" />
+                                    View Profile
+                                  </DropdownMenuItem>
                                 <DropdownMenuItem disabled>
                                     <ShieldAlert className="mr-2 h-4 w-4"/>
                                     Manage Permissions
@@ -96,5 +133,14 @@ export default function AdminAdminsPage() {
         </Table>
       </CardContent>
     </Card>
+      {selectedUser && (
+        <UserProfileModal 
+            user={selectedUser}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSave={handleSaveUser}
+        />
+      )}
+    </>
   );
 }

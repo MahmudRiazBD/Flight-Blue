@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -41,4 +42,19 @@ export function getEmbedUrl(url: string): string | null {
   }
 
   return null; // Return null if no matching service is found
+}
+
+export function getInitials(firstName?: string | null, lastName?: string | null): string {
+    const firstInitial = firstName ? firstName.charAt(0) : '';
+    const lastInitial = lastName ? lastName.charAt(0) : '';
+    if (firstInitial && lastInitial) {
+        return `${firstInitial}${lastInitial}`.toUpperCase();
+    }
+    if (firstName) {
+        return firstName.slice(0, 2).toUpperCase();
+    }
+    if (lastName) {
+        return lastName.slice(0, 2).toUpperCase();
+    }
+    return "U";
 }
