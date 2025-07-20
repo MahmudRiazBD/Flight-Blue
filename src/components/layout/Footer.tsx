@@ -90,7 +90,7 @@ export default function Footer() {
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
             {googleMapCode ? (
-                <div className="aspect-video w-full overflow-hidden rounded-md">
+                <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md">
                     <iframe
                         srcDoc={getMapHtml(googleMapCode)}
                         style={{ border: 0 }}
