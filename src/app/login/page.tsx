@@ -32,9 +32,13 @@ import type { UserRole } from "@/hooks/use-auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string().min(1, { message: "Password cannot be empty." }),
   rememberMe: z.boolean().default(false).optional(),
 });
+
+// In a real app, these would come from environment variables.
+const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@admin.com";
+const ADMIN_EMAIL = "admin@example.com";
 
 export default function LoginPage() {
   const { toast } = useToast();
@@ -53,8 +57,16 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     console.log("Login Submitted", values);
 
-    // This is a simulation. In a real app, you'd get the role from your backend.
-    const role: UserRole = values.email === "admin@example.com" ? "admin" : "customer";
+    let role: UserRole = "customer";
+    // This is a simulation. In a real app, you'd verify credentials against a backend.
+    if (values.email === SUPER_ADMIN_EMAIL) {
+       // In a real app, you'd also check the password securely.
+       // For this demo, we are simplifying.
+       role = "superadmin";
+    } else if (values.email === ADMIN_EMAIL) {
+       role = "admin";
+    }
+
     login(role);
 
     toast({
@@ -62,11 +74,11 @@ export default function LoginPage() {
       description: "Welcome back! Redirecting you...",
     });
 
-    const redirectPath = role === "admin" ? "/admin" : "/dashboard";
+    const redirectPath = (role === "admin" || role === "superadmin") ? "/admin" : "/dashboard";
 
     setTimeout(() => {
       router.push(redirectPath);
-      router.refresh(); // Force a refresh to update header state
+      router.refresh(); 
     }, 1500);
   }
 
