@@ -17,7 +17,8 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { isLoggedIn, isAdmin, logout } = useAuth();
+  const { isLoggedIn, role, logout } = useAuth();
+  const isAdmin = role === 'admin' || role === 'superadmin';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

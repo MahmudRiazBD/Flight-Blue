@@ -28,6 +28,7 @@ import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import type { UserRole } from "@/hooks/use-auth";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -52,15 +53,16 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     console.log("Login Submitted", values);
 
-    const isAdmin = values.email === "admin@example.com";
-    login(isAdmin);
+    // This is a simulation. In a real app, you'd get the role from your backend.
+    const role: UserRole = values.email === "admin@example.com" ? "admin" : "customer";
+    login(role);
 
     toast({
       title: "Login Successful!",
       description: "Welcome back! Redirecting you...",
     });
 
-    const redirectPath = isAdmin ? "/admin" : "/dashboard";
+    const redirectPath = role === "admin" ? "/admin" : "/dashboard";
 
     setTimeout(() => {
       router.push(redirectPath);

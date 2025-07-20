@@ -6,13 +6,15 @@ import { useRouter } from 'next/navigation';
 
 const AUTH_KEY = 'flight-blu-auth';
 
+export type UserRole = "customer" | "admin" | "superadmin" | null;
+
 type AuthState = {
   isLoggedIn: boolean;
-  isAdmin: boolean;
+  role: UserRole;
 };
 
 export function useAuth() {
-  const [auth, setAuth] = useState<AuthState>({ isLoggedIn: false, isAdmin: false });
+  const [auth, setAuth] = useState<AuthState>({ isLoggedIn: false, role: null });
   const router = useRouter();
 
   useEffect(() => {
@@ -26,8 +28,8 @@ export function useAuth() {
     }
   }, []);
 
-  const login = (isAdmin: boolean) => {
-    const authState = { isLoggedIn: true, isAdmin };
+  const login = (role: UserRole) => {
+    const authState = { isLoggedIn: true, role };
     try {
         localStorage.setItem(AUTH_KEY, JSON.stringify(authState));
         setAuth(authState);
@@ -37,7 +39,7 @@ export function useAuth() {
   };
 
   const logout = useCallback(() => {
-    const authState = { isLoggedIn: false, isAdmin: false };
+    const authState = { isLoggedIn: false, role: null };
     try {
         localStorage.removeItem(AUTH_KEY);
         setAuth(authState);
