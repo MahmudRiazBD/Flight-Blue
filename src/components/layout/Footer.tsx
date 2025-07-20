@@ -63,24 +63,6 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     }
 };
 
-function processEmbedCode(code: string): string {
-  if (!code || !code.includes('iframe')) return '';
-  const srcMatch = code.match(/src="([^"]*)"/);
-  if (!srcMatch || !srcMatch[1]) return '';
-  
-  // This is a client component, so we can use document
-  const iframe = document.createElement('iframe');
-  iframe.src = srcMatch[1];
-  iframe.width = '100%';
-  iframe.height = '100%';
-  iframe.style.border = '0';
-  iframe.setAttribute('allowfullscreen', '');
-  iframe.setAttribute('loading', 'lazy');
-  iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-  
-  return iframe.outerHTML;
-}
-
 
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -103,7 +85,6 @@ export default function Footer() {
     }
   }, []);
 
-  const cleanMapHtml = processEmbedCode(googleMapEmbedCode);
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -153,9 +134,9 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
-            {cleanMapHtml ? (
+            {googleMapEmbedCode ? (
                  <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md"
-                    dangerouslySetInnerHTML={{ __html: cleanMapHtml }}
+                    dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }}
                  />
             ) : (
                 <p className="text-sm text-muted-foreground">Location map will be shown here.</p>
@@ -169,5 +150,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-    
