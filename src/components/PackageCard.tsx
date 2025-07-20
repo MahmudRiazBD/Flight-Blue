@@ -41,7 +41,7 @@ export default function PackageCard({ pkg }: PackageCardProps) {
       </CardContent>
       <CardFooter className="flex justify-between items-center p-6 bg-secondary/50">
         <div className="flex flex-col">
-           <span className="text-2xl font-bold text-primary">${pkg.price}</span>
+           <span className="text-2xl font-bold text-primary">৳{pkg.price.toLocaleString()}</span>
            <span className="text-xs text-muted-foreground">per person</span>
         </div>
         <Button asChild>

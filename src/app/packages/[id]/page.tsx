@@ -73,7 +73,7 @@ export default function PackageDetailPage({ params }: Props) {
                 <div className="border rounded-lg p-6 shadow-lg bg-card">
                     <div className="text-center mb-6">
                         <span className="text-sm text-muted-foreground">Starting from</span>
-                        <p className="text-4xl font-bold text-primary">${pkg.price}</p>
+                        <p className="text-4xl font-bold text-primary">৳{pkg.price.toLocaleString()}</p>
                         <span className="text-sm text-muted-foreground">per person</span>
                     </div>
 

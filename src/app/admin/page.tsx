@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Package, Users, BookCopy } from "lucide-react";
+import { Banknote, Package, Users, BookCopy } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 const kpiData = [
-    { title: "Total Revenue", value: "$125,430", icon: DollarSign, change: "+20.1% from last month" },
+    { title: "Total Revenue", value: "৳12,543,000", icon: Banknote, change: "+20.1% from last month" },
     { title: "Total Bookings", value: "2350", icon: BookCopy, change: "+180.1% from last month" },
     { title: "Active Packages", value: "6", icon: Package, change: "+2 since last month" },
     { title: "New Customers", value: "124", icon: Users, change: "+15% from last month" },

@@ -12,7 +12,7 @@ import { Search } from 'lucide-react';
 export default function PackagesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
-    const [priceRange, setPriceRange] = useState([0, 10000]);
+    const [priceRange, setPriceRange] = useState([0, 1000000]);
     
     const filteredPackages = packages.filter(pkg => {
         const matchesSearch = pkg.title.toLowerCase().includes(searchTerm.toLowerCase()) || pkg.destination.toLowerCase().includes(searchTerm.toLowerCase());
@@ -59,12 +59,12 @@ export default function PackagesPage() {
                         </Select>
                     </div>
                      <div>
-                        <label htmlFor="price" className="block text-sm font-medium mb-2">Max Price: <span className="font-bold text-primary">${priceRange[1]}</span></label>
+                        <label htmlFor="price" className="block text-sm font-medium mb-2">Max Price: <span className="font-bold text-primary">৳{priceRange[1].toLocaleString()}</span></label>
                         <Slider
                             id="price"
                             min={0}
-                            max={10000}
-                            step={100}
+                            max={1000000}
+                            step={10000}
                             value={[priceRange[1]]}
                             onValueChange={(value) => setPriceRange([0, value[0]])}
                         />

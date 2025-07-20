@@ -42,7 +42,7 @@ export default function AdminPackagesPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>{pkg.destination}</TableCell>
-                <TableCell>${pkg.price}</TableCell>
+                <TableCell>৳{pkg.price.toLocaleString()}</TableCell>
                  <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
