@@ -66,11 +66,6 @@ export default function AdminSettingsPage() {
     const [logoUrl, setLogoUrl] = useState("/logo.svg");
     const [faviconUrl, setFaviconUrl] = useState("/favicon.ico");
     
-    // Theme settings states
-    const [primaryColor, setPrimaryColor] = useState("211 100% 50%");
-    const [backgroundColor, setBackgroundColor] = useState("0 0% 100%");
-    const [accentColor, setAccentColor] = useState("195 100% 50%");
-
     // Permalink settings states
     const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
     const [mediaPermalink, setMediaPermalink] = useState("/uploads/%filename%");
@@ -208,13 +203,6 @@ export default function AdminSettingsPage() {
         localStorage.setItem('googleMapUrl', googleMapUrl);
         localStorage.setItem('footerSettings', JSON.stringify(footerSettings));
 
-        // This is a simulation. In a real app, you'd apply these styles globally.
-        // For example, by updating a CSS file or injecting a <style> tag.
-        document.documentElement.style.setProperty('--primary', primaryColor);
-        document.documentElement.style.setProperty('--background', backgroundColor);
-        document.documentElement.style.setProperty('--accent', accentColor);
-
-
         toast({
             title: "Settings Saved!",
             description: "Your changes have been saved successfully.",
@@ -281,46 +269,6 @@ export default function AdminSettingsPage() {
                              <p className="text-sm text-muted-foreground mt-2">
                                 Enter the full URL for your site's favicon (the little icon in the browser tab).
                             </p>
-                        </div>
-                    </div>
-
-                    <Separator />
-                    
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Theme Customization</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Customize the look and feel of your site. Colors are defined using HSL values (Hue Saturation Lightness), e.g., <code className="bg-muted px-1 py-0.5 rounded">211 100% 50%</code>.
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="primaryColor">Primary Color</Label>
-                                <Input 
-                                    id="primaryColor" 
-                                    value={primaryColor} 
-                                    onChange={(e) => setPrimaryColor(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="backgroundColor">Background Color</Label>
-                                <Input 
-                                    id="backgroundColor" 
-                                    value={backgroundColor} 
-                                    onChange={(e) => setBackgroundColor(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="accentColor">Accent Color</Label>
-                                <Input 
-                                    id="accentColor" 
-                                    value={accentColor} 
-                                    onChange={(e) => setAccentColor(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                         <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${primaryColor})`}}></div>
-                            <div className="w-12 h-12 rounded-lg border" style={{ backgroundColor: `hsl(${backgroundColor})`}}></div>
-                            <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
                         </div>
                     </div>
                 </div>
@@ -480,13 +428,12 @@ export default function AdminSettingsPage() {
                            <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
                         </Button>
                          <div className="pt-4">
-                            <Label htmlFor="googleMapUrl">Google Maps Embed Code</Label>
-                            <Textarea 
+                            <Label htmlFor="googleMapUrl">Google Maps Share Link</Label>
+                            <Input 
                                 id="googleMapUrl" 
                                 value={googleMapUrl} 
                                 onChange={(e) => setGoogleMapUrl(e.target.value)}
-                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the entire <iframe> code here.'
-                                rows={4}
+                                placeholder='Go to Google Maps, find your location, click "Share", and copy the link here.'
                             />
                              <p className="text-sm text-muted-foreground mt-2">
                                 This will display a map in your site's footer.

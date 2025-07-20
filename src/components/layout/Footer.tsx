@@ -65,7 +65,7 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [googleMapCode, setGoogleMapCode] = useState('');
+  const [googleMapUrl, setGoogleMapUrl] = useState('');
   const [footerSettings, setFooterSettings] = useState<FooterSettings>(defaultFooterSettings);
 
 
@@ -74,9 +74,9 @@ export default function Footer() {
     if (savedSocialLinks) {
         setSocialLinks(JSON.parse(savedSocialLinks));
     }
-    const savedMapCode = localStorage.getItem('googleMapUrl');
-    if(savedMapCode) {
-        setGoogleMapCode(savedMapCode);
+    const savedMapUrl = localStorage.getItem('googleMapUrl');
+    if(savedMapUrl) {
+        setGoogleMapUrl(savedMapUrl);
     }
     const savedFooterSettings = localStorage.getItem('footerSettings');
     if(savedFooterSettings) {
@@ -84,15 +84,18 @@ export default function Footer() {
     }
   }, []);
 
-  const getMapHtml = (embedCode: string) => {
-    if (!embedCode.startsWith('<iframe')) return embedCode;
+  const getMapEmbedUrl = (url: string): string => {
+    if (!url) return "";
+    // If it's already an embed code, extract the src
+    if (url.trim().startsWith('<iframe')) {
+        const srcMatch = url.match(/src="([^"]*)"/);
+        return srcMatch ? srcMatch[1] : "";
+    }
+    // Otherwise, construct the embed URL from a share link
+    return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+  }
 
-    const modifiedCode = embedCode
-        .replace(/width="[^"]*"/, 'width="100%"')
-        .replace(/height="[^"]*"/, 'height="100%"');
-
-    return modifiedCode;
-  };
+  const mapEmbedUrl = getMapEmbedUrl(googleMapUrl);
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -142,10 +145,12 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
-            {googleMapCode ? (
+            {mapEmbedUrl ? (
                 <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md">
                     <iframe
-                        srcDoc={getMapHtml(googleMapCode)}
+                        src={mapEmbedUrl}
+                        width="100%"
+                        height="100%"
                         style={{ border: 0 }}
                         allowFullScreen={false}
                         loading="lazy"
