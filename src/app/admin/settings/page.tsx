@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Youtube, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Youtube, Facebook, Twitter, Instagram, Linkedin, Pilcrow } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,9 +24,28 @@ type HomePageSettings = {
 };
 
 type SocialLink = {
+    id: string;
     platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
     url: string;
 };
+
+type FooterLink = {
+    id: string;
+    label: string;
+    url: string;
+}
+
+type FooterSettings = {
+    description: string;
+    column1: {
+        title: string;
+        links: FooterLink[];
+    };
+    column2: {
+        title: string;
+        links: FooterLink[];
+    }
+}
 
 const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     switch (platform) {
@@ -68,6 +87,28 @@ export default function AdminSettingsPage() {
         heroButtonLabel: "Explore Packages",
         heroButtonLink: "/packages",
     });
+    
+    // Footer settings states
+    const [footerSettings, setFooterSettings] = useState<FooterSettings>({
+        description: "Your adventure starts here. Discover breathtaking destinations with us.",
+        column1: {
+            title: "Quick Links",
+            links: [
+                { id: "fl1-1", label: "About Us", url: "/about" },
+                { id: "fl1-2", label: "Packages", url: "/packages" },
+                { id: "fl1-3", label: "Blog", url: "/blog" },
+                { id: "fl1-4", label: "Contact", url: "/contact" },
+            ]
+        },
+        column2: {
+            title: "Support",
+            links: [
+                { id: "fl2-1", label: "FAQ", url: "/faq" },
+                { id: "fl2-2", label: "Terms of Service", url: "/terms" },
+                { id: "fl2-3", label: "Privacy Policy", url: "/privacy" },
+            ]
+        }
+    });
 
     // Load all settings from localStorage on component mount
     useEffect(() => {
@@ -79,25 +120,82 @@ export default function AdminSettingsPage() {
 
         const savedMapUrl = localStorage.getItem('googleMapUrl');
         if (savedMapUrl) setGoogleMapUrl(savedMapUrl);
+
+        const savedFooterSettings = localStorage.getItem('footerSettings');
+        if(savedFooterSettings) setFooterSettings(JSON.parse(savedFooterSettings));
     }, []);
 
     const handleHomePageSettingsChange = (field: keyof HomePageSettings, value: string) => {
         setHomePageSettings(prev => ({...prev, [field]: value}));
     }
 
-    const handleSocialLinkChange = (index: number, field: keyof SocialLink, value: string) => {
+    const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
         const newLinks = [...socialLinks];
-        newLinks[index] = { ...newLinks[index], [field]: value };
+        newLinks[index] = { ...newLinks[index], [field]: value as any };
         setSocialLinks(newLinks);
     };
 
     const addSocialLink = () => {
-        setSocialLinks([...socialLinks, { platform: 'twitter', url: '' }]);
+        setSocialLinks([...socialLinks, { id: `soc-${Date.now()}`, platform: 'twitter', url: '' }]);
     };
 
     const removeSocialLink = (index: number) => {
         setSocialLinks(socialLinks.filter((_, i) => i !== index));
     };
+
+    const handleFooterChange = (field: keyof FooterSettings, value: string) => {
+        setFooterSettings(prev => ({ ...prev, [field]: value }));
+    }
+    
+    const handleFooterColumnChange = (columnIndex: 'column1' | 'column2', field: 'title', value: string) => {
+        setFooterSettings(prev => ({
+            ...prev,
+            [columnIndex]: {
+                ...prev[columnIndex],
+                [field]: value
+            }
+        }));
+    }
+    
+    const handleFooterLinkChange = (columnIndex: 'column1' | 'column2', linkIndex: number, field: 'label' | 'url', value: string) => {
+        setFooterSettings(prev => {
+            const newLinks = [...prev[columnIndex].links];
+            newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
+            return {
+                ...prev,
+                [columnIndex]: {
+                    ...prev[columnIndex],
+                    links: newLinks
+                }
+            }
+        });
+    }
+
+    const addFooterLink = (columnIndex: 'column1' | 'column2') => {
+        setFooterSettings(prev => {
+            const newLinks = [...prev[columnIndex].links, { id: `fl-${Date.now()}`, label: 'New Link', url: '/' }];
+            return {
+                ...prev,
+                [columnIndex]: {
+                    ...prev[columnIndex],
+                    links: newLinks
+                }
+            }
+        });
+    }
+
+    const removeFooterLink = (columnIndex: 'column1' | 'column2', linkIndex: number) => {
+        setFooterSettings(prev => {
+            const newLinks = prev[columnIndex].links.filter((_, i) => i !== linkIndex);
+             return {
+                ...prev,
+                [columnIndex]: {
+                    ...prev[columnIndex],
+                    links: newLinks
+                }
+            }
+        });
+    }
 
 
     const handleSaveChanges = () => {
@@ -108,6 +206,7 @@ export default function AdminSettingsPage() {
         localStorage.setItem('homePageSettings', JSON.stringify(homePageSettings));
         localStorage.setItem('socialLinks', JSON.stringify(socialLinks));
         localStorage.setItem('googleMapUrl', googleMapUrl);
+        localStorage.setItem('footerSettings', JSON.stringify(footerSettings));
 
         // This is a simulation. In a real app, you'd apply these styles globally.
         // For example, by updating a CSS file or injecting a <style> tag.
@@ -130,10 +229,11 @@ export default function AdminSettingsPage() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
-                <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
                 <TabsTrigger value="homepage"><Home className="mr-2"/>Home Page</TabsTrigger>
+                <TabsTrigger value="footer"><Pilcrow className="mr-2"/>Footer</TabsTrigger>
+                <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
             </TabsList>
             
             <TabsContent value="general" className="pt-6">
@@ -223,15 +323,133 @@ export default function AdminSettingsPage() {
                             <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
                         </div>
                     </div>
+                </div>
+            </TabsContent>
+
+             <TabsContent value="homepage" className="pt-6">
+                <div className="space-y-6">
+                    <h3 className="text-lg font-medium">Hero Section</h3>
+                    <div className="space-y-2">
+                        <Label>Hero Image</Label>
+                        <MediaPicker 
+                            imageUrl={homePageSettings.heroImageUrl} 
+                            onImageUrlChange={(url) => handleHomePageSettingsChange('heroImageUrl', url)}
+                        />
+                        <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="heroTitle">Hero Title</Label>
+                        <Input 
+                            id="heroTitle" 
+                            value={homePageSettings.heroTitle}
+                            onChange={(e) => handleHomePageSettingsChange('heroTitle', e.target.value)}
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+                        <Textarea 
+                            id="heroSubtitle" 
+                            value={homePageSettings.heroSubtitle}
+                            onChange={(e) => handleHomePageSettingsChange('heroSubtitle', e.target.value)}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="heroButtonLabel">Button Label</Label>
+                            <Input 
+                                id="heroButtonLabel" 
+                                value={homePageSettings.heroButtonLabel}
+                                onChange={(e) => handleHomePageSettingsChange('heroButtonLabel', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="heroButtonLink">Button Link</Label>
+                            <Input 
+                                id="heroButtonLink" 
+                                value={homePageSettings.heroButtonLink}
+                                onChange={(e) => handleHomePageSettingsChange('heroButtonLink', e.target.value)}
+                                placeholder="/packages"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </TabsContent>
+
+             <TabsContent value="footer" className="pt-6">
+                <div className="space-y-8">
+                     <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Footer Description</h3>
+                        <div>
+                            <Label htmlFor="footerDescription">Text under logo</Label>
+                            <Textarea 
+                                id="footerDescription" 
+                                value={footerSettings.description} 
+                                onChange={(e) => handleFooterChange('description', e.target.value)}
+                                placeholder="Your adventure starts here..."
+                            />
+                        </div>
+                    </div>
 
                     <Separator />
 
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Social Media Links</h3>
+                         <h3 className="text-lg font-medium">Footer Column 1 (e.g., Quick Links)</h3>
+                         <div>
+                            <Label>Column Title</Label>
+                            <Input 
+                                value={footerSettings.column1.title} 
+                                onChange={(e) => handleFooterColumnChange('column1', 'title', e.target.value)}
+                            />
+                         </div>
+                         <Label>Links</Label>
+                         <div className="space-y-2">
+                            {footerSettings.column1.links.map((link, index) => (
+                                <div key={link.id} className="flex items-center gap-2">
+                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('column1', index, 'label', e.target.value)} />
+                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('column1', index, 'url', e.target.value)} />
+                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('column1', index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                         </div>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column1')}><PlusCircle className="mr-2"/> Add Link</Button>
+                    </div>
+                    
+                    <Separator />
+
+                     <div className="space-y-4">
+                         <h3 className="text-lg font-medium">Footer Column 2 (e.g., Support)</h3>
+                          <div>
+                            <Label>Column Title</Label>
+                            <Input 
+                                value={footerSettings.column2.title} 
+                                onChange={(e) => handleFooterColumnChange('column2', 'title', e.target.value)}
+                            />
+                         </div>
+                         <Label>Links</Label>
+                         <div className="space-y-2">
+                            {footerSettings.column2.links.map((link, index) => (
+                                <div key={link.id} className="flex items-center gap-2">
+                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('column2', index, 'label', e.target.value)} />
+                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('column2', index, 'url', e.target.value)} />
+                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('column2', index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                         </div>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column2')}><PlusCircle className="mr-2"/> Add Link</Button>
+                    </div>
+
+                    <Separator/>
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Social Media & Location</h3>
                         <p className="text-sm text-muted-foreground">Add links to your social media profiles. The first four will be shown in the footer.</p>
                         <div className="space-y-3">
                             {socialLinks.map((link, index) => (
-                                <div key={index} className="flex items-end gap-2">
+                                <div key={link.id} className="flex items-end gap-2">
                                     <div className="flex-grow grid grid-cols-3 gap-2">
                                          <select
                                             value={link.platform}
@@ -259,15 +477,9 @@ export default function AdminSettingsPage() {
                             ))}
                         </div>
                         <Button variant="outline" size="sm" onClick={addSocialLink}>
-                           <PlusCircle className="mr-2 h-4 w-4" /> Add Link
+                           <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
                         </Button>
-                    </div>
-
-                    <Separator />
-                    
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Company Location</h3>
-                        <div>
+                         <div className="pt-4">
                             <Label htmlFor="googleMapUrl">Google Maps Embed Code</Label>
                             <Textarea 
                                 id="googleMapUrl" 
@@ -277,13 +489,12 @@ export default function AdminSettingsPage() {
                                 rows={4}
                             />
                              <p className="text-sm text-muted-foreground mt-2">
-                                This will display a map in your site's footer. Copy the full embed code.
+                                This will display a map in your site's footer.
                             </p>
                         </div>
                     </div>
-
                 </div>
-            </TabsContent>
+             </TabsContent>
 
             <TabsContent value="permalinks" className="pt-6">
                 <div className="space-y-6">
@@ -339,55 +550,6 @@ export default function AdminSettingsPage() {
                 </div>
             </TabsContent>
 
-            <TabsContent value="homepage" className="pt-6">
-                <div className="space-y-6">
-                    <h3 className="text-lg font-medium">Hero Section</h3>
-                    <div className="space-y-2">
-                        <Label>Hero Image</Label>
-                        <MediaPicker 
-                            imageUrl={homePageSettings.heroImageUrl} 
-                            onImageUrlChange={(url) => handleHomePageSettingsChange('heroImageUrl', url)}
-                        />
-                        <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="heroTitle">Hero Title</Label>
-                        <Input 
-                            id="heroTitle" 
-                            value={homePageSettings.heroTitle}
-                            onChange={(e) => handleHomePageSettingsChange('heroTitle', e.target.value)}
-                        />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-                        <Textarea 
-                            id="heroSubtitle" 
-                            value={homePageSettings.heroSubtitle}
-                            onChange={(e) => handleHomePageSettingsChange('heroSubtitle', e.target.value)}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="heroButtonLabel">Button Label</Label>
-                            <Input 
-                                id="heroButtonLabel" 
-                                value={homePageSettings.heroButtonLabel}
-                                onChange={(e) => handleHomePageSettingsChange('heroButtonLabel', e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="heroButtonLink">Button Link</Label>
-                            <Input 
-                                id="heroButtonLink" 
-                                value={homePageSettings.heroButtonLink}
-                                onChange={(e) => handleHomePageSettingsChange('heroButtonLink', e.target.value)}
-                                placeholder="/packages"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </TabsContent>
-
         </Tabs>
         
         <div className="mt-8 pt-6 border-t flex justify-end">
@@ -397,5 +559,3 @@ export default function AdminSettingsPage() {
     </Card>
   );
 }
-
-    

@@ -12,6 +12,46 @@ type SocialLink = {
     url: string;
 };
 
+type FooterLink = {
+    id: string;
+    label: string;
+    url: string;
+}
+
+type FooterSettings = {
+    description: string;
+    column1: {
+        title: string;
+        links: FooterLink[];
+    };
+    column2: {
+        title: string;
+        links: FooterLink[];
+    }
+}
+
+const defaultFooterSettings: FooterSettings = {
+    description: "Your adventure starts here. Discover breathtaking destinations with us.",
+    column1: {
+        title: "Quick Links",
+        links: [
+            { id: "fl1-1", label: "About Us", url: "/about" },
+            { id: "fl1-2", label: "Packages", url: "/packages" },
+            { id: "fl1-3", label: "Blog", url: "/blog" },
+            { id: "fl1-4", label: "Contact", url: "/contact" },
+        ]
+    },
+    column2: {
+        title: "Support",
+        links: [
+            { id: "fl2-1", label: "FAQ", url: "/faq" },
+            { id: "fl2-2", label: "Terms of Service", url: "/terms" },
+            { id: "fl2-3", label: "Privacy Policy", url: "/privacy" },
+        ]
+    }
+};
+
+
 const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     switch (platform) {
         case 'twitter': return <Twitter className="h-5 w-5" />;
@@ -26,15 +66,21 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [googleMapCode, setGoogleMapCode] = useState('');
+  const [footerSettings, setFooterSettings] = useState<FooterSettings>(defaultFooterSettings);
+
 
   useEffect(() => {
     const savedSocialLinks = localStorage.getItem('socialLinks');
     if (savedSocialLinks) {
         setSocialLinks(JSON.parse(savedSocialLinks));
     }
-    const savedMapCode = localStorage.getItem('googleMapUrl'); // The key is still 'googleMapUrl' from settings
+    const savedMapCode = localStorage.getItem('googleMapUrl');
     if(savedMapCode) {
         setGoogleMapCode(savedMapCode);
+    }
+    const savedFooterSettings = localStorage.getItem('footerSettings');
+    if(savedFooterSettings) {
+        setFooterSettings(JSON.parse(savedFooterSettings));
     }
   }, []);
 
@@ -57,7 +103,7 @@ export default function Footer() {
               <Logo className="h-8 w-8 text-primary" />
               <span className="font-bold font-headline text-xl">Flight Blu</span>
             </Link>
-            <p className="text-sm text-muted-foreground">Your adventure starts here. Discover breathtaking destinations with us.</p>
+            <p className="text-sm text-muted-foreground">{footerSettings.description}</p>
              {socialLinks.length > 0 && (
                 <div className="flex space-x-2">
                     {socialLinks.slice(0, 4).map((link, index) => (
@@ -71,20 +117,27 @@ export default function Footer() {
             )}
           </div>
           <div>
-            <h3 className="font-headline font-semibold mb-4">Quick Links</h3>
+            <h3 className="font-headline font-semibold mb-4">{footerSettings.column1.title}</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/about" className="text-muted-foreground hover:text-primary">About Us</Link></li>
-              <li><Link href="/packages" className="text-muted-foreground hover:text-primary">Packages</Link></li>
-              <li><Link href="/blog" className="text-muted-foreground hover:text-primary">Blog</Link></li>
-              <li><Link href="/contact" className="text-muted-foreground hover:text-primary">Contact</Link></li>
+               {footerSettings.column1.links.map(link => (
+                 <li key={link.id}>
+                    <Link href={link.url} className="text-muted-foreground hover:text-primary">
+                        {link.label}
+                    </Link>
+                 </li>
+               ))}
             </ul>
           </div>
           <div>
-            <h3 className="font-headline font-semibold mb-4">Support</h3>
+            <h3 className="font-headline font-semibold mb-4">{footerSettings.column2.title}</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/faq" className="text-muted-foreground hover:text-primary">FAQ</Link></li>
-              <li><Link href="/terms" className="text-muted-foreground hover:text-primary">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="text-muted-foreground hover:text-primary">Privacy Policy</Link></li>
+               {footerSettings.column2.links.map(link => (
+                 <li key={link.id}>
+                    <Link href={link.url} className="text-muted-foreground hover:text-primary">
+                        {link.label}
+                    </Link>
+                 </li>
+               ))}
             </ul>
           </div>
           <div>
