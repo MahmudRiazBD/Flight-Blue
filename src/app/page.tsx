@@ -1,12 +1,27 @@
+
+"use client"
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, Star, Users } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
-import { packages } from "@/lib/data";
+import { packages as initialPackages, Package } from "@/lib/data";
 
 export default function Home() {
+  const [packages, setPackages] = useState<Package[]>(initialPackages);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedPackages = localStorage.getItem('packages');
+      if (storedPackages) {
+        setPackages(JSON.parse(storedPackages));
+      }
+    }
+  }, []);
+
   const featuredPackages = packages.slice(0, 3);
 
   return (

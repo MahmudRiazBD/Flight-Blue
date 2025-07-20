@@ -1,8 +1,9 @@
+
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PackageCard from "@/components/PackageCard";
-import { packages, Package } from "@/lib/data";
+import { packages as initialPackages, Package } from "@/lib/data";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
@@ -10,10 +11,20 @@ import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 
 export default function PackagesPage() {
+    const [packages, setPackages] = useState<Package[]>(initialPackages);
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
     const [priceRange, setPriceRange] = useState([0, 1000000]);
     
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedPackages = localStorage.getItem('packages');
+            if (storedPackages) {
+                setPackages(JSON.parse(storedPackages));
+            }
+        }
+    }, []);
+
     const filteredPackages = packages.filter(pkg => {
         const matchesSearch = pkg.title.toLowerCase().includes(searchTerm.toLowerCase()) || pkg.destination.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = packageType === 'all' || pkg.type === packageType;
