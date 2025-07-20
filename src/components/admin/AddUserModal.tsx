@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, UserRole } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 const addUserSchema = z.object({
     firstName: z.string().min(1, "First name is required."),
@@ -40,8 +41,8 @@ export default function AddUserModal({ isOpen, onClose, onSave, defaultRole }: A
   });
 
   // Reset form when modal opens with a new default role
-  useState(() => {
-    form.reset({ role: defaultRole });
+  useEffect(() => {
+    form.reset({ role: defaultRole, firstName: "", lastName: "", email: "", password: "" });
   }, [isOpen, defaultRole, form]);
 
   if (!isOpen) {
