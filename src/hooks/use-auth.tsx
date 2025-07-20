@@ -1,9 +1,6 @@
 
 'use client';
 
-import { config } from "dotenv";
-config();
-
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -101,7 +98,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!userDoc.exists()) {
-        throw new Error("User document not found.");
+        // This can happen if a user was created in Firebase Auth but the Firestore doc creation failed.
+        // Let's create it now.
+        const defaultUserData = {
+            uid: firebaseUser.uid,
+            email,
+            displayName: firebaseUser.displayName || email,
+            role: firebaseUser.email === superAdminEmail ? 'superadmin' : 'customer',
+            createdAt: serverTimestamp(),
+        }
+        await setDoc(userRef, defaultUserData);
+        const appUser: User = {
+            uid: firebaseUser.uid,
+            email: defaultUserData.email,
+            displayName: defaultUserData.displayName,
+            role: defaultUserData.role
+        };
+        setUser(appUser);
+        return appUser;
     }
 
     const appUser: User = {
