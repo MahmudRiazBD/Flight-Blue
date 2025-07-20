@@ -11,20 +11,35 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Post } from "@/lib/data";
+import { Post, Category, posts as initialPosts, categories as initialCategories } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
-import { posts as initialPosts } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const postSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
   imageUrl: z.string().url("A valid image URL is required."),
   imageHint: z.string().optional(),
+  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
+  categoryId: z.string().optional(),
 });
 
 export default function NewPostPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const storedCategories = localStorage.getItem('categories');
+    if (storedCategories) {
+        setCategories(JSON.parse(storedCategories));
+    } else {
+        setCategories(initialCategories);
+    }
+  }, []);
+
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -32,6 +47,7 @@ export default function NewPostPage() {
       content: "",
       imageUrl: "https://placehold.co/1200x600.png",
       imageHint: "",
+      videoUrl: "",
     },
   });
 
@@ -57,7 +73,7 @@ export default function NewPostPage() {
       description: "Your new blog post has been saved.",
     });
 
-    router.push("/admin/blog");
+    router.push("/admin/blog/posts");
   };
 
   return (
@@ -72,6 +88,27 @@ export default function NewPostPage() {
             <Label htmlFor="title">Post Title</Label>
             <Input id="title" {...form.register("title")} placeholder="Your amazing blog post title" />
             {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
+          </div>
+          
+           <div className="space-y-2">
+            <Label htmlFor="categoryId">Category</Label>
+             <Controller
+                name="categoryId"
+                control={form.control}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                            {categories.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+             />
           </div>
 
           <div className="space-y-2">
@@ -100,8 +137,14 @@ export default function NewPostPage() {
             <Input id="imageHint" {...form.register("imageHint")} placeholder="e.g. tokyo street night" />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="videoUrl">Video URL (Optional)</Label>
+            <Input id="videoUrl" {...form.register("videoUrl")} placeholder="https://www.youtube.com/watch?v=..." />
+            {form.formState.errors.videoUrl && <p className="text-sm text-destructive">{form.formState.errors.videoUrl.message}</p>}
+          </div>
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/blog')}>
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/blog/posts')}>
               Cancel
             </Button>
             <Button type="submit">Save Post</Button>

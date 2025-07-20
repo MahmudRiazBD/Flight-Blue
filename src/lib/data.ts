@@ -6,9 +6,16 @@ export type Post = {
   slug: string;
   content: string;
   imageUrl: string;
-  imageHint: string;
+  imageHint?: string;
   author: string;
   publishedAt: string; // ISO date string
+  videoUrl?: string;
+  categoryId?: string;
+};
+
+export type Category = {
+  id: string;
+  name: string;
 };
 
 export type Package = {
@@ -212,6 +219,12 @@ export const packages: Package[] = [
   },
 ];
 
+export const categories: Category[] = [
+  { id: 'cat-1', name: 'Travel Tips' },
+  { id: 'cat-2', name: 'Spiritual Journeys' },
+  { id: 'cat-3', name: 'City Guides' },
+];
+
 export const posts: Post[] = [
   {
     id: 'post-1',
@@ -222,6 +235,7 @@ export const posts: Post[] = [
     imageHint: 'tokyo street',
     author: 'Admin User',
     publishedAt: '2024-05-15T10:00:00Z',
+    categoryId: 'cat-1'
   },
   {
     id: 'post-2',
@@ -232,6 +246,8 @@ export const posts: Post[] = [
     imageHint: 'kaaba mecca',
     author: 'Admin User',
     publishedAt: '2024-05-20T12:30:00Z',
+    categoryId: 'cat-2',
+    videoUrl: 'https://www.youtube.com/watch?v=sB4hRA_t_ao',
   },
    {
     id: 'post-3',
@@ -242,6 +258,7 @@ export const posts: Post[] = [
     imageHint: 'paris cafe',
     author: 'Staff Member',
     publishedAt: '2024-06-01T08:00:00Z',
+    categoryId: 'cat-3'
   },
 ];
 

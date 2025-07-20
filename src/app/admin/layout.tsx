@@ -62,7 +62,14 @@ const menuItems = [
       { href: "/admin/users/customers", label: "Customers" },
     ]
   },
-  { href: "/admin/blog", label: "Blog", icon: FileText },
+  { 
+    label: "Blog", 
+    icon: FileText,
+    subItems: [
+        { href: "/admin/blog/posts", label: "All Posts" },
+        { href: "/admin/blog/categories", label: "Categories" },
+    ]
+  },
   { href: "/admin/media", label: "Media", icon: Image },
 ]
 
@@ -73,8 +80,36 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const { logout } = useAuth();
-  const [openPackages, setOpenPackages] = useState(pathname.startsWith('/admin/packages'));
-  const [openUsers, setOpenUsers] = useState(pathname.startsWith('/admin/users'));
+  const [openState, setOpenState] = useState({
+    packages: pathname.startsWith('/admin/packages'),
+    users: pathname.startsWith('/admin/users'),
+    blog: pathname.startsWith('/admin/blog'),
+  });
+
+  const handleOpenChange = (key: keyof typeof openState) => (isOpen: boolean) => {
+    setOpenState(prev => ({...prev, [key]: isOpen }));
+  }
+
+  const getOpenStatus = (label: string): boolean => {
+      if(label === 'Packages') return openState.packages;
+      if(label === 'Users') return openState.users;
+      if(label === 'Blog') return openState.blog;
+      return false;
+  }
+  
+  const getOpenChangeHandler = (label: string) => {
+      if(label === 'Packages') return handleOpenChange('packages');
+      if(label === 'Users') return handleOpenChange('users');
+      if(label === 'Blog') return handleOpenChange('blog');
+      return () => {};
+  }
+  
+  const getIsActive = (label: string) => {
+      if(label === 'Packages') return pathname.startsWith('/admin/packages');
+      if(label === 'Users') return pathname.startsWith('/admin/users');
+      if(label === 'Blog') return pathname.startsWith('/admin/blog');
+      return false;
+  }
 
   return (
     <SidebarProvider>
@@ -93,21 +128,21 @@ export default function AdminLayout({
               item.subItems ? (
                  <Collapsible 
                     key={item.label} 
-                    open={item.label === 'Packages' ? openPackages : openUsers} 
-                    onOpenChange={item.label === 'Packages' ? setOpenPackages : setOpenUsers}
+                    open={getOpenStatus(item.label)} 
+                    onOpenChange={getOpenChangeHandler(item.label)}
                  >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                        <SidebarMenuButton
                         className="justify-between"
-                        isActive={pathname.startsWith(item.label === 'Packages' ? '/admin/packages' : '/admin/users')}
+                        isActive={getIsActive(item.label)}
                         tooltip={item.label}
                       >
                          <div className="flex items-center gap-2">
                             <item.icon />
                             <span>{item.label}</span>
                          </div>
-                         <ChevronDown className={cn("size-4 transition-transform", (item.label === 'Packages' ? openPackages : openUsers) && "rotate-180")} />
+                         <ChevronDown className={cn("size-4 transition-transform", getOpenStatus(item.label) && "rotate-180")} />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                   </SidebarMenuItem>

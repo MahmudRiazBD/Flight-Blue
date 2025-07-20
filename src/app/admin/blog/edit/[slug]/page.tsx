@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Post } from "@/lib/data";
+import { Post, Category, posts as initialPosts, categories as initialCategories } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
-import { posts as initialPosts } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const postSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
@@ -23,6 +24,8 @@ const postSchema = z.object({
   imageUrl: z.string().url("A valid image URL is required."),
   imageHint: z.string().optional(),
   slug: z.string().min(1, "Slug is required."),
+  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
+  categoryId: z.string().optional(),
 });
 
 export default function EditPostPage() {
@@ -31,10 +34,20 @@ export default function EditPostPage() {
   const slug = params.slug as string;
   const { toast } = useToast();
   const [post, setPost] = useState<Post | null | undefined>(undefined);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
   });
+  
+  useEffect(() => {
+    const storedCategories = localStorage.getItem('categories');
+    if (storedCategories) {
+        setCategories(JSON.parse(storedCategories));
+    } else {
+        setCategories(initialCategories);
+    }
+  }, []);
 
   useEffect(() => {
     const storedPosts = localStorage.getItem('posts');
@@ -68,7 +81,7 @@ export default function EditPostPage() {
       description: "Your blog post has been successfully updated.",
     });
 
-    router.push("/admin/blog");
+    router.push("/admin/blog/posts");
   };
   
   if (post === undefined) {
@@ -112,6 +125,27 @@ export default function EditPostPage() {
              <p className="text-sm text-muted-foreground">The unique URL-friendly identifier for the post.</p>
             {form.formState.errors.slug && <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>}
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="categoryId">Category</Label>
+             <Controller
+                name="categoryId"
+                control={form.control}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                             {categories.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+             />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="content">Content (Markdown Supported)</Label>
@@ -139,8 +173,14 @@ export default function EditPostPage() {
             <Input id="imageHint" {...form.register("imageHint")} />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="videoUrl">Video URL (Optional)</Label>
+            <Input id="videoUrl" {...form.register("videoUrl")} placeholder="https://www.youtube.com/watch?v=..." />
+            {form.formState.errors.videoUrl && <p className="text-sm text-destructive">{form.formState.errors.videoUrl.message}</p>}
+          </div>
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/blog')}>
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/blog/posts')}>
               Cancel
             </Button>
             <Button type="submit">Save Changes</Button>

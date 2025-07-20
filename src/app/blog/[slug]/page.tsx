@@ -8,11 +8,11 @@ import { Post, posts as initialPosts } from "@/lib/data";
 import { Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getEmbedUrl } from "@/lib/utils";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
-    // This is a very basic implementation for demonstration purposes.
-    // For a real app, use a robust library like 'react-markdown' or 'marked'.
     const htmlContent = content
         .split('\n\n') // Split by paragraphs
         .map(p => `<p class="mb-4 leading-relaxed">${p}</p>`)
@@ -29,6 +29,8 @@ export default function BlogPostPage() {
   const params = useParams();
   const slug = params.slug as string;
   const [post, setPost] = useState<Post | null | undefined>(undefined);
+  
+  const embedUrl = post?.videoUrl ? getEmbedUrl(post.videoUrl) : null;
 
   useEffect(() => {
     if (slug) {
@@ -77,15 +79,49 @@ export default function BlogPostPage() {
           </div>
         </div>
       </header>
-
-      <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden mb-12 shadow-lg">
-        <Image
-          src={post.imageUrl}
-          alt={post.title}
-          layout="fill"
-          objectFit="cover"
-          data-ai-hint={post.imageHint}
-        />
+      
+      <div className="mb-12 shadow-lg">
+         {embedUrl ? (
+          <Carousel className="w-full rounded-lg overflow-hidden">
+            <CarouselContent>
+              <CarouselItem>
+                <div className="relative h-64 md:h-96 w-full">
+                  <Image
+                    src={post.imageUrl}
+                    alt={post.title}
+                    layout="fill"
+                    objectFit="cover"
+                    data-ai-hint={post.imageHint}
+                  />
+                </div>
+              </CarouselItem>
+              <CarouselItem>
+                <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
+                  <iframe
+                    className="w-full h-full"
+                    src={embedUrl}
+                    title="Post Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
+        ) : (
+          <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden">
+            <Image
+              src={post.imageUrl}
+              alt={post.title}
+              layout="fill"
+              objectFit="cover"
+              data-ai-hint={post.imageHint}
+            />
+          </div>
+        )}
       </div>
 
       <div className="prose prose-lg max-w-none mx-auto text-foreground/80">
