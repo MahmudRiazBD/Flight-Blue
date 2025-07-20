@@ -4,7 +4,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  getAuth,
   onAuthStateChanged,
   signOut,
   createUserWithEmailAndPassword,
@@ -16,8 +15,8 @@ import {
   type Auth,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import { doc, setDoc, getDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
 
 export type UserRole = 'customer' | 'admin' | 'superadmin';
@@ -45,21 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Instances will be set in useEffect to ensure client-side only
-  const [auth, setAuth] = useState<Auth | null>(null);
-  const [db, setDb] = useState<Firestore | null>(null);
-
   useEffect(() => {
-    const app = getFirebaseApp();
-    const authInstance = getAuth(app);
-    const dbInstance = getFirestore(app);
-    
-    setAuth(authInstance);
-    setDb(dbInstance);
-
-    const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        const userRef = doc(dbInstance, 'users', firebaseUser.uid);
+        const userRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userRef);
 
         if (userDoc.exists()) {
@@ -77,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             displayName: firebaseUser.displayName || 'New User',
             role: userRole,
           };
-          await setDoc(doc(dbInstance, 'users', firebaseUser.uid), {
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
              ...newUser,
              createdAt: serverTimestamp(),
           });
@@ -93,8 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
-    if (!auth || !db) throw new Error("Firebase is not initialized. Please try again.");
-
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -119,8 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string, displayName: string) => {
-    if (!auth || !db) throw new Error("Firebase is not initialized. Please try again.");
-
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
@@ -140,7 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (!auth) throw new Error("Firebase is not initialized. Please try again.");
     await signOut(auth);
     setUser(null);
     router.push('/');
