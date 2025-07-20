@@ -32,6 +32,7 @@ import {
   Settings,
   Image,
   ChevronDown,
+  Mail,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth.tsx"
@@ -50,6 +51,7 @@ const menuItems = [
     ]
   },
   { href: "/admin/bookings", label: "Bookings", icon: BookCopy },
+  { href: "/admin/messages", label: "Messages", icon: Mail },
   {
     label: "Users",
     icon: Users,

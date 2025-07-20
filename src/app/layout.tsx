@@ -11,6 +11,8 @@ import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import ContactForm from "@/components/ContactForm";
 
 // Metadata cannot be exported from a "use client" file, 
 // so we define it here and then use it in the component.
@@ -26,6 +28,8 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
+  const [isContactFormOpen, setContactFormOpen] = useState(false);
+
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -56,7 +60,7 @@ export default function RootLayout({
           ) : (
             <>
               <div className="relative flex min-h-screen flex-col">
-                <Header />
+                <Header onContactClick={() => setContactFormOpen(true)} />
                 <main className="flex-1">{children}</main>
                 <Footer />
               </div>
@@ -64,6 +68,10 @@ export default function RootLayout({
             </>
           )}
           <Toaster />
+           <ContactForm 
+              isOpen={isContactFormOpen} 
+              onClose={() => setContactFormOpen(false)} 
+            />
         </AuthProvider>
       </body>
     </html>

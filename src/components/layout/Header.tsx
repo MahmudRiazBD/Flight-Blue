@@ -27,7 +27,7 @@ const navLinks = [
   { href: "/blog", label: "Blog" },
 ];
 
-export default function Header() {
+export default function Header({ onContactClick }: { onContactClick: () => void }) {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -55,6 +55,12 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+            <button
+              onClick={onContactClick}
+              className="transition-colors hover:text-primary text-muted-foreground"
+            >
+              Contact
+            </button>
         </nav>
 
         <div className="hidden md:flex items-center justify-end space-x-4">
@@ -136,6 +142,12 @@ export default function Header() {
                       {link.label}
                     </Link>
                   ))}
+                   <button
+                    onClick={onContactClick}
+                    className="text-lg text-muted-foreground text-left"
+                   >
+                    Contact
+                  </button>
                 </nav>
                 <div className="mt-8 pt-4 border-t border-border flex flex-col space-y-2">
                     {loading ? <div className="h-10 w-full bg-muted rounded-md animate-pulse" /> : user ? (

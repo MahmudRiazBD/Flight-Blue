@@ -53,6 +53,16 @@ export type Booking = {
     status: 'Pending' | 'Confirmed' | 'Cancelled';
 };
 
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  submittedAt: string; // ISO date string
+  isRead: boolean;
+};
+
 
 export const destinations: Destination[] = [
     { id: "dest-1", name: "Paris, France", imageUrl: "https://placehold.co/600x400.png" },
@@ -259,5 +269,26 @@ export const bookings: Booking[] = [
         departureDate: "2024-07-20T00:00:00.000Z",
         bookingDate: "2024-06-12T10:00:00.000Z",
         status: "Pending"
+    }
+];
+
+export const contactMessages: ContactMessage[] = [
+    {
+        id: "msg-1",
+        name: "Charlie Brown",
+        email: "charlie@example.com",
+        subject: "Inquiry about Tokyo tour",
+        message: "Hi, I'd like to know if there are any discounts available for the Tokyo: Tech & Tradition tour for a group of 4. Thanks!",
+        submittedAt: "2024-06-15T09:00:00.000Z",
+        isRead: false
+    },
+    {
+        id: "msg-2",
+        name: "Diana Prince",
+        email: "diana@example.com",
+        subject: "Feedback on Parisian Dream Tour",
+        message: "Just got back from the Paris tour, it was absolutely wonderful! Our guide was fantastic. Thank you for an unforgettable experience.",
+        submittedAt: "2024-06-14T18:30:00.000Z",
+        isRead: true
     }
 ]
