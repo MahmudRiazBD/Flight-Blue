@@ -14,20 +14,26 @@ export default function PackageCard({ pkg }: PackageCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="p-0 relative">
-        <Badge className="absolute top-4 right-4 z-10" variant={pkg.type === "Hajj" || pkg.type === "Umrah" ? "default" : "secondary"}>
-          {pkg.type}
-        </Badge>
-        <Image
-          src={pkg.imageUrl}
-          alt={pkg.title}
-          width={600}
-          height={400}
-          className="aspect-[3/2] w-full object-cover"
-          data-ai-hint={pkg.imageHint}
-        />
+        <Link href={`/packages/${pkg.id}`} className="block">
+          <Badge className="absolute top-4 right-4 z-10" variant={pkg.type === "Hajj" || pkg.type === "Umrah" ? "default" : "secondary"}>
+            {pkg.type}
+          </Badge>
+          <Image
+            src={pkg.imageUrl}
+            alt={pkg.title}
+            width={600}
+            height={400}
+            className="aspect-[3/2] w-full object-cover"
+            data-ai-hint={pkg.imageHint}
+          />
+        </Link>
       </CardHeader>
       <CardContent className="flex-grow p-6">
-        <CardTitle className="font-headline text-2xl mb-2">{pkg.title}</CardTitle>
+        <CardTitle className="font-headline text-2xl mb-2">
+            <Link href={`/packages/${pkg.id}`} className="hover:text-primary transition-colors">
+                {pkg.title}
+            </Link>
+        </CardTitle>
         <CardDescription className="flex items-center gap-2 text-muted-foreground mb-4">
           <MapPin className="h-4 w-4" /> {pkg.destination}
         </CardDescription>
