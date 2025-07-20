@@ -5,9 +5,11 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle, Star, Users, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle, Star, Users, Loader2, Calendar, User as UserIcon } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
-import { packages as initialPackages, Package } from "@/lib/data";
+import { packages as initialPackages, Package, posts as initialPosts, Post } from "@/lib/data";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { format } from 'date-fns';
 
 type HomePageSettings = {
     heroImageUrl: string;
@@ -25,8 +27,49 @@ const defaultHomePageSettings: HomePageSettings = {
     heroButtonLink: "/packages",
 };
 
+function BlogCard({ post }: { post: Post }) {
+  return (
+    <Card className="overflow-hidden group flex flex-col">
+      <CardHeader className="p-0">
+        <Link href={`/blog/${post.slug}`} className="block relative h-52 w-full">
+          <Image
+            src={post.imageUrl}
+            alt={post.title}
+            layout="fill"
+            objectFit="cover"
+            className="transition-transform duration-300 group-hover:scale-105"
+            data-ai-hint={post.imageHint}
+          />
+        </Link>
+      </CardHeader>
+      <CardContent className="p-6 flex flex-col flex-grow">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+            <div className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                <span>{post.author}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>{format(new Date(post.publishedAt), 'PPP')}</span>
+            </div>
+        </div>
+        <h3 className="text-xl font-headline font-bold mb-3 flex-grow">
+          <Link href={`/blog/${post.slug}`} className="hover:text-primary transition-colors">
+            {post.title}
+          </Link>
+        </h3>
+        <Link href={`/blog/${post.slug}`} className="font-semibold text-primary inline-flex items-center gap-1 mt-auto">
+          Read More <ArrowRight className="h-4 w-4" />
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export default function Home() {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
   const [loadingSettings, setLoadingSettings] = useState(true);
 
@@ -37,6 +80,16 @@ export default function Home() {
         setPackages(JSON.parse(storedPackages));
       }
       
+      const storedPosts = localStorage.getItem('posts');
+      if(storedPosts) {
+        const allPosts = JSON.parse(storedPosts);
+        allPosts.sort((a:Post, b:Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        setPosts(allPosts);
+      } else {
+        initialPosts.sort((a:Post, b:Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        setPosts(initialPosts);
+      }
+
       const storedSettings = localStorage.getItem('homePageSettings');
       if (storedSettings) {
         setHomeSettings(JSON.parse(storedSettings));
@@ -46,6 +99,7 @@ export default function Home() {
   }, []);
 
   const featuredPackages = packages.slice(0, 3);
+  const featuredPosts = posts.slice(0, 3);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -135,14 +189,32 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <section id="featured-blog" className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
+              From Our Blog
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredPosts.map((post) => (
+                <BlogCard key={post.id} post={post} />
+              ))}
+            </div>
+            <div className="text-center mt-12">
+              <Button asChild variant="outline">
+                <Link href="/blog">View All Posts</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
         
-        <section className="py-16 md:py-24 bg-background">
+        <section className="py-16 md:py-24 bg-secondary">
            <div className="container mx-auto px-4 text-center">
               <h2 className="text-3xl md:text-4xl font-headline font-bold">Ready to Start Your Journey?</h2>
               <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
                 Let us help you plan the trip of a lifetime. Our travel experts are here to assist you every step of the way.
               </p>
-              <Button asChild size="lg" className="mt-8 bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
                  <Link href="/packages">
                     Contact Us Today
                  </Link>
@@ -154,5 +226,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
