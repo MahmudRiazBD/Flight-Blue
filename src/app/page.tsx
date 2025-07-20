@@ -67,7 +67,7 @@ function BlogCard({ post }: { post: Post }) {
 }
 
 
-export default function Home() {
+export default function Home({ onContactClick }: { onContactClick?: () => void }) {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
@@ -214,10 +214,8 @@ export default function Home() {
               <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
                 Let us help you plan the trip of a lifetime. Our travel experts are here to assist you every step of the way.
               </p>
-              <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
-                 <Link href="/packages">
+              <Button size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onContactClick}>
                     Contact Us Today
-                 </Link>
               </Button>
            </div>
         </section>

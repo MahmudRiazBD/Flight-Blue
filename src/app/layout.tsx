@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { cloneElement, useState } from "react";
 import ContactForm from "@/components/ContactForm";
 
 // Metadata cannot be exported from a "use client" file, 
@@ -29,6 +29,11 @@ export default function RootLayout({
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
   const [isContactFormOpen, setContactFormOpen] = useState(false);
+
+  // Pass contact form toggle function to child components
+  const childrenWithProps = cloneElement(children as React.ReactElement, {
+    onContactClick: () => setContactFormOpen(true),
+  });
 
 
   return (
@@ -61,7 +66,7 @@ export default function RootLayout({
             <>
               <div className="relative flex min-h-screen flex-col">
                 <Header onContactClick={() => setContactFormOpen(true)} />
-                <main className="flex-1">{children}</main>
+                <main className="flex-1">{childrenWithProps}</main>
                 <Footer />
               </div>
               <Chatbot />
