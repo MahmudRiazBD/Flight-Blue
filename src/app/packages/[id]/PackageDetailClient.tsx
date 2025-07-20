@@ -10,6 +10,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Star, Clock, MapPin, Check, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import BookingForm from "@/components/BookingForm";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { getEmbedUrl } from "@/lib/utils";
 
 type Props = {
   pkg: Package;
@@ -17,18 +19,52 @@ type Props = {
 
 export default function PackageDetailClient({ pkg }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const embedUrl = pkg.videoUrl ? getEmbedUrl(pkg.videoUrl) : null;
 
   return (
     <div className="bg-background">
-      <section className="relative h-64 md:h-96">
-        <Image
-          src={pkg.imageUrl}
-          alt={pkg.title}
-          layout="fill"
-          objectFit="cover"
-          className="brightness-75"
-          data-ai-hint={pkg.imageHint}
-        />
+      <section className="relative h-64 md:h-96 bg-black">
+        {embedUrl ? (
+          <Carousel className="w-full h-full">
+            <CarouselContent>
+              <CarouselItem>
+                <div className="relative w-full h-64 md:h-96">
+                  <Image
+                    src={pkg.imageUrl}
+                    alt={pkg.title}
+                    layout="fill"
+                    objectFit="cover"
+                    className="brightness-75"
+                    data-ai-hint={pkg.imageHint}
+                  />
+                </div>
+              </CarouselItem>
+              <CarouselItem>
+                <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
+                  <iframe
+                    className="w-full h-full"
+                    src={embedUrl}
+                    title="Package Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
+        ) : (
+          <Image
+            src={pkg.imageUrl}
+            alt={pkg.title}
+            layout="fill"
+            objectFit="cover"
+            className="brightness-75"
+            data-ai-hint={pkg.imageHint}
+          />
+        )}
         <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent">
           <div className="container mx-auto px-4 py-8 text-white">
             <Badge variant="secondary" className="mb-2">{pkg.type}</Badge>

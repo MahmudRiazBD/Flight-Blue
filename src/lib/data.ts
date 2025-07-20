@@ -9,6 +9,7 @@ export type Package = {
   rating: number;
   imageUrl: string;
   imageHint: string;
+  videoUrl?: string; // Optional video URL
   description: string;
   itinerary: { day: string; title: string; details: string }[];
   inclusions: string[];

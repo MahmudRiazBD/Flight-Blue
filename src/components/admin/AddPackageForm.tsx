@@ -31,6 +31,7 @@ const formSchema = z.object({
   rating: z.coerce.number().min(0).max(5).default(4.5),
   imageUrl: z.string().url("Must be a valid URL.").default("https://placehold.co/600x400.png"),
   imageHint: z.string().optional(),
+  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   description: z.string().min(20, "Description must be at least 20 characters."),
 });
 
@@ -68,6 +69,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
       rating: 4.5,
       imageUrl: "https://placehold.co/600x400.png",
       imageHint: "",
+      videoUrl: "",
       description: "",
     },
   });
@@ -235,6 +237,20 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
                 <FormLabel>Image Hint (for AI)</FormLabel>
                 <FormControl>
                     <Input placeholder="e.g. paris eiffel tower" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+
+        <FormField
+            control={form.control}
+            name="videoUrl"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Video URL (Optional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g., https://www.youtube.com/watch?v=..." {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
