@@ -25,18 +25,28 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [googleMapUrl, setGoogleMapUrl] = useState('');
+  const [googleMapCode, setGoogleMapCode] = useState('');
 
   useEffect(() => {
     const savedSocialLinks = localStorage.getItem('socialLinks');
     if (savedSocialLinks) {
         setSocialLinks(JSON.parse(savedSocialLinks));
     }
-    const savedMapUrl = localStorage.getItem('googleMapUrl');
-    if(savedMapUrl) {
-        setGoogleMapUrl(savedMapUrl);
+    const savedMapCode = localStorage.getItem('googleMapUrl'); // The key is still 'googleMapUrl' from settings
+    if(savedMapCode) {
+        setGoogleMapCode(savedMapCode);
     }
   }, []);
+
+  const getMapHtml = (embedCode: string) => {
+    if (!embedCode.startsWith('<iframe')) return embedCode;
+
+    const modifiedCode = embedCode
+        .replace(/width="[^"]*"/, 'width="100%"')
+        .replace(/height="[^"]*"/, 'height="100%"');
+
+    return modifiedCode;
+  };
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -79,16 +89,15 @@ export default function Footer() {
           </div>
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
-            {googleMapUrl ? (
+            {googleMapCode ? (
                 <div className="aspect-video w-full overflow-hidden rounded-md">
                     <iframe
-                        src={googleMapUrl}
-                        width="100%"
-                        height="100%"
+                        srcDoc={getMapHtml(googleMapCode)}
                         style={{ border: 0 }}
                         allowFullScreen={false}
                         loading="lazy"
                         referrerPolicy="no-referrer-when-downgrade"
+                        title="Google Map Location"
                     ></iframe>
                 </div>
             ) : (

@@ -268,16 +268,16 @@ export default function AdminSettingsPage() {
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium">Company Location</h3>
                         <div>
-                            <Label htmlFor="googleMapUrl">Google Maps Embed URL</Label>
+                            <Label htmlFor="googleMapUrl">Google Maps Embed Code</Label>
                             <Textarea 
                                 id="googleMapUrl" 
                                 value={googleMapUrl} 
                                 onChange={(e) => setGoogleMapUrl(e.target.value)}
-                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the src="..." URL here.'
-                                rows={3}
+                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the entire <iframe> code here.'
+                                rows={4}
                             />
                              <p className="text-sm text-muted-foreground mt-2">
-                                This will display a map in your site's footer.
+                                This will display a map in your site's footer. Copy the full embed code.
                             </p>
                         </div>
                     </div>
