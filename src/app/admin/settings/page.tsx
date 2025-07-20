@@ -366,7 +366,7 @@ export default function AdminSettingsPage() {
                                 </div>
                             ))}
                          </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column1')}><PlusCircle className="mr-2"/> Add Link</Button>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column1')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                     </div>
                     
                     <Separator />
@@ -392,7 +392,7 @@ export default function AdminSettingsPage() {
                                 </div>
                             ))}
                          </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column2')}><PlusCircle className="mr-2"/> Add Link</Button>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column2')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                     </div>
 
                     <Separator/>
@@ -525,3 +525,5 @@ export default function AdminSettingsPage() {
     </Card>
   );
 }
+
+    
