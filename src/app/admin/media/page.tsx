@@ -154,7 +154,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
     )
 }
 
-const MediaGrid = ({ files, selectedFiles, onSelect, onAction, onCardClick }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void, emptyState: React.ReactNode }) => {
+const MediaGrid = ({ files, selectedFiles, onSelect, onAction, onCardClick, emptyState }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void, emptyState: React.ReactNode }) => {
     if (files.length === 0) {
         return <>{emptyState}</>;
     }
@@ -286,19 +286,40 @@ export default function AdminMediaPage() {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  const createSlug = (fileName: string) => {
+    const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+    return nameWithoutExtension
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .trim()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles: MediaFile[] = Array.from(files).map(file => ({
-        id: `${file.name}-${Math.random().toString(36).substring(2, 9)}`,
-        name: file.name,
-        type: getFileType(file.name),
-        url: URL.createObjectURL(file),
-        size: formatFileSize(file.size),
-        uploadedAt: new Date(),
-    }));
+    // This is a placeholder for where you'd get the permalink setting
+    // In a real app, this would come from a context or a fetch call
+    const permalinkStructure = "/media/%postname%"; // example setting
+
+    const newFiles: MediaFile[] = Array.from(files).map(file => {
+        const slug = createSlug(file.name);
+        // Using a placeholder base URL. In a real app, this would be your domain.
+        const fileUrl = permalinkStructure === "/media/%postname%" 
+            ? `/media/${slug}` 
+            : `/uploads/${file.name}`;
+
+        return {
+            id: `${file.name}-${Math.random().toString(36).substring(2, 9)}`,
+            name: file.name,
+            type: getFileType(file.name),
+            url: file.type.startsWith('image/') ? URL.createObjectURL(file) : fileUrl,
+            size: formatFileSize(file.size),
+            uploadedAt: new Date(),
+        }
+    });
 
     setMediaFiles(prev => [...newFiles, ...prev]);
     toast({

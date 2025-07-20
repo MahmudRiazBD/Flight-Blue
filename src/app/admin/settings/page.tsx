@@ -26,6 +26,7 @@ export default function AdminSettingsPage() {
 
     // Permalink settings
     const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
+    const [mediaPermalink, setMediaPermalink] = useState("/uploads/%filename%");
 
 
     const handleSaveChanges = () => {
@@ -41,6 +42,7 @@ export default function AdminSettingsPage() {
             },
             permalinks: {
                 package: packagePermalink,
+                media: mediaPermalink,
             }
         });
 
@@ -160,7 +162,7 @@ export default function AdminSettingsPage() {
             <TabsContent value="permalinks" className="pt-6">
                 <div className="space-y-6">
                     <p className="text-sm text-muted-foreground">
-                        Customize the URL structure for your content. Changes can affect your SEO, so be careful. Available tags: <code className="bg-muted px-1 py-0.5 rounded">%postname%</code>, <code className="bg-muted px-1 py-0.5 rounded">%post_id%</code>, <code className="bg-muted px-1 py-0.5 rounded">%category%</code>.
+                        Customize the URL structure for your content. Changes can affect your SEO, so be careful. Available tags: <code className="bg-muted px-1 py-0.5 rounded">%postname%</code>, <code className="bg-muted px-1 py-0.5 rounded">%post_id%</code>, <code className="bg-muted px-1 py-0.5 rounded">%category%</code>, <code className="bg-muted px-1 py-0.5 rounded">%filename%</code>.
                     </p>
                     <div className="space-y-4">
                         <h4 className="font-semibold">Packages Permalink Base</h4>
@@ -186,6 +188,19 @@ export default function AdminSettingsPage() {
                                         setPackagePermalink(e.target.value);
                                     }}
                                 />
+                            </div>
+                        </RadioGroup>
+                    </div>
+                     <div className="space-y-4 pt-4 border-t">
+                        <h4 className="font-semibold">Media Permalink Base</h4>
+                         <RadioGroup defaultValue={mediaPermalink} onValueChange={setMediaPermalink} className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="/uploads/%filename%" id="m-default" />
+                                <Label htmlFor="m-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/uploads/%filename%</code></Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="/media/%postname%" id="m-postname" />
+                                <Label htmlFor="m-postname" className="font-normal">Post name: <code className="bg-muted px-1 py-0.5 rounded">/media/%postname%</code> (Uses a slug from the filename)</Label>
                             </div>
                         </RadioGroup>
                     </div>
