@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL,
-    SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD,
+    NEXT_PUBLIC_SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL,
+    NEXT_PUBLIC_SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD,
   }
 };
 
