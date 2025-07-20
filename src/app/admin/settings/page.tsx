@@ -72,7 +72,8 @@ export default function AdminSettingsPage() {
 
     // Social and map settings
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-    const [googleMapUrl, setGoogleMapUrl] = useState('');
+    const [googleMapCompanyName, setGoogleMapCompanyName] = useState('');
+    const [googleMapCoordinates, setGoogleMapCoordinates] = useState('');
     
     // Home Page settings states
     const [homePageSettings, setHomePageSettings] = useState<HomePageSettings>({
@@ -113,8 +114,11 @@ export default function AdminSettingsPage() {
         const savedSocialLinks = localStorage.getItem('socialLinks');
         if (savedSocialLinks) setSocialLinks(JSON.parse(savedSocialLinks));
 
-        const savedMapUrl = localStorage.getItem('googleMapUrl');
-        if (savedMapUrl) setGoogleMapUrl(savedMapUrl);
+        const savedMapName = localStorage.getItem('googleMapCompanyName');
+        if (savedMapName) setGoogleMapCompanyName(savedMapName);
+        
+        const savedMapCoords = localStorage.getItem('googleMapCoordinates');
+        if (savedMapCoords) setGoogleMapCoordinates(savedMapCoords);
 
         const savedFooterSettings = localStorage.getItem('footerSettings');
         if(savedFooterSettings) setFooterSettings(JSON.parse(savedFooterSettings));
@@ -200,7 +204,8 @@ export default function AdminSettingsPage() {
         // Save Home Page Settings
         localStorage.setItem('homePageSettings', JSON.stringify(homePageSettings));
         localStorage.setItem('socialLinks', JSON.stringify(socialLinks));
-        localStorage.setItem('googleMapUrl', googleMapUrl);
+        localStorage.setItem('googleMapCompanyName', googleMapCompanyName);
+        localStorage.setItem('googleMapCoordinates', googleMapCoordinates);
         localStorage.setItem('footerSettings', JSON.stringify(footerSettings));
 
         toast({
@@ -427,17 +432,31 @@ export default function AdminSettingsPage() {
                         <Button variant="outline" size="sm" onClick={addSocialLink}>
                            <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
                         </Button>
-                         <div className="pt-4">
-                            <Label htmlFor="googleMapUrl">Google Maps Share Link</Label>
-                            <Input 
-                                id="googleMapUrl" 
-                                value={googleMapUrl} 
-                                onChange={(e) => setGoogleMapUrl(e.target.value)}
-                                placeholder='Go to Google Maps, find your location, click "Share", and copy the link here.'
-                            />
-                             <p className="text-sm text-muted-foreground mt-2">
-                                This will display a map in your site's footer.
-                            </p>
+                         <div className="pt-4 space-y-4">
+                            <div>
+                                <Label htmlFor="googleMapCompanyName">Company Name (for Map)</Label>
+                                <Input 
+                                    id="googleMapCompanyName" 
+                                    value={googleMapCompanyName} 
+                                    onChange={(e) => setGoogleMapCompanyName(e.target.value)}
+                                    placeholder='Your Company Name'
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    This name will appear on the map marker.
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="googleMapCoordinates">Location Coordinates (Lat, Long, Zoom)</Label>
+                                <Input 
+                                    id="googleMapCoordinates" 
+                                    value={googleMapCoordinates} 
+                                    onChange={(e) => setGoogleMapCoordinates(e.target.value)}
+                                    placeholder='e.g., 23.838129,90.4678913,17z'
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Find on Google Maps, get coordinates from the URL.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

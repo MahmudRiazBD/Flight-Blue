@@ -65,7 +65,8 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 
 export default function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [googleMapUrl, setGoogleMapUrl] = useState('');
+  const [googleMapCompanyName, setGoogleMapCompanyName] = useState('');
+  const [googleMapCoordinates, setGoogleMapCoordinates] = useState('');
   const [footerSettings, setFooterSettings] = useState<FooterSettings>(defaultFooterSettings);
 
 
@@ -74,9 +75,13 @@ export default function Footer() {
     if (savedSocialLinks) {
         setSocialLinks(JSON.parse(savedSocialLinks));
     }
-    const savedMapUrl = localStorage.getItem('googleMapUrl');
-    if(savedMapUrl) {
-        setGoogleMapUrl(savedMapUrl);
+    const savedMapName = localStorage.getItem('googleMapCompanyName');
+    if(savedMapName) {
+        setGoogleMapCompanyName(savedMapName);
+    }
+     const savedMapCoords = localStorage.getItem('googleMapCoordinates');
+    if(savedMapCoords) {
+        setGoogleMapCoordinates(savedMapCoords);
     }
     const savedFooterSettings = localStorage.getItem('footerSettings');
     if(savedFooterSettings) {
@@ -84,18 +89,22 @@ export default function Footer() {
     }
   }, []);
 
-  const getMapEmbedUrl = (url: string): string => {
-    if (!url) return "";
-    // If it's already an embed code, extract the src
-    if (url.trim().startsWith('<iframe')) {
-        const srcMatch = url.match(/src="([^"]*)"/);
-        return srcMatch ? srcMatch[1] : "";
-    }
-    // Otherwise, construct the embed URL from a share link
-    return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+  const getMapEmbedUrl = (): string => {
+    if (!googleMapCoordinates) return "";
+
+    const parts = googleMapCoordinates.split(',');
+    if (parts.length < 2) return "";
+    
+    const lat = parts[0];
+    const lng = parts[1];
+    const zoom = parts[2] ? parts[2].replace('z', '') : '15'; // Default zoom if not provided
+    const companyName = googleMapCompanyName || 'Our Location';
+    
+    // Construct the URL for embedding
+    return `https://maps.google.com/maps?q=${encodeURIComponent(companyName)}&t=&z=${zoom}&ie=UTF8&iwloc=&output=embed&ll=${lat},${lng}`;
   }
 
-  const mapEmbedUrl = getMapEmbedUrl(googleMapUrl);
+  const mapEmbedUrl = getMapEmbedUrl();
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
