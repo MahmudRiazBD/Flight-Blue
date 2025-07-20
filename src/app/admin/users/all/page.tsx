@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "@/lib/users"; // Using mock data for now
 import UserProfileModal from "@/components/admin/UserProfileModal";
+import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
 
 const roleColors: Record<UserRole, "default" | "secondary" | "destructive"> = {
@@ -25,32 +26,31 @@ export default function AdminAllUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  useEffect(() => {
-    // In a real app, you would fetch users from your database
-    // For now, we use mock data and store/retrieve from localStorage to see changes across pages
-    const storedUsers = localStorage.getItem('mockUsers');
+  const loadUsers = () => {
+     const storedUsers = localStorage.getItem('mockUsers');
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
     } else {
       setUsers(mockUsers);
       localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
     }
-  }, []);
+  }
 
   useEffect(() => {
-    // Update localStorage whenever users state changes
-    if (users.length > 0) {
-        localStorage.setItem('mockUsers', JSON.stringify(users));
-    }
-  }, [users]);
-
+    loadUsers();
+    window.addEventListener('storage', loadUsers);
+    return () => {
+      window.removeEventListener('storage', loadUsers);
+    };
+  }, []);
 
   const handleRoleChange = (userId: string, newRole: UserRole) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user => (user.uid === userId ? { ...user, role: newRole } : user))
-    );
+    const updatedUsers = users.map(user => (user.uid === userId ? { ...user, role: newRole } : user));
+    setUsers(updatedUsers);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
     const user = users.find(u => u.uid === userId);
     toast({
         title: "Role Updated",
@@ -60,22 +60,41 @@ export default function AdminAllUsersPage() {
 
   const handleDeleteUser = (userId: string) => {
     const user = users.find(u => u.uid === userId);
-    setUsers(prevUsers => prevUsers.filter(user => user.uid !== userId));
+    const updatedUsers = users.filter(user => user.uid !== userId);
+    setUsers(updatedUsers);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
      toast({
         title: "User Deleted",
         description: `User ${user?.firstName} has been removed.`,
         variant: "destructive"
     })
   }
+  
+  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
+    const userToAdd: User = {
+      ...newUser,
+      uid: `user-${new Date().getTime()}`, // simple unique id
+    };
+    const updatedUsers = [...users, userToAdd];
+    setUsers(updatedUsers);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+    setIsAddModalOpen(false);
+    toast({
+      title: "User Added",
+      description: `User ${newUser.firstName} has been created.`
+    });
+  };
 
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
-    setIsModalOpen(true);
+    setIsProfileModalOpen(true);
   }
 
   const handleSaveUser = (updatedUser: User) => {
-    setUsers(prevUsers => prevUsers.map(user => user.uid === updatedUser.uid ? updatedUser : user));
-    setIsModalOpen(false);
+    const updatedUsers = users.map(user => user.uid === updatedUser.uid ? updatedUser : user);
+    setUsers(updatedUsers);
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+    setIsProfileModalOpen(false);
     toast({
       title: "User Updated",
       description: `${updatedUser.firstName}'s profile has been saved.`
@@ -90,7 +109,7 @@ export default function AdminAllUsersPage() {
               <CardTitle>All Users</CardTitle>
               <CardDescription>View and manage all registered users.</CardDescription>
           </div>
-          <Button size="sm" className="gap-1" disabled>
+          <Button size="sm" className="gap-1" onClick={() => setIsAddModalOpen(true)}>
               <PlusCircle className="h-3.5 w-3.5" />
               Add User
           </Button>
@@ -161,11 +180,17 @@ export default function AdminAllUsersPage() {
       {selectedUser && (
         <UserProfileModal 
             user={selectedUser}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
             onSave={handleSaveUser}
         />
       )}
+       <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleAddUser}
+        defaultRole="customer"
+      />
     </>
   );
 }

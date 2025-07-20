@@ -11,13 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "@/lib/users"; 
 import UserProfileModal from "@/components/admin/UserProfileModal";
+import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
 
 export default function AdminStaffPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
 
   const loadUsers = () => {
@@ -47,17 +49,32 @@ export default function AdminStaffPage() {
         variant: "destructive"
     })
   }
+
+  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
+    const userToAdd: User = {
+      ...newUser,
+      uid: `user-${new Date().getTime()}`, // simple unique id
+    };
+    const updatedUsers = [...allUsers, userToAdd];
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+    loadUsers();
+    setIsAddModalOpen(false);
+    toast({
+      title: "Staff Member Added",
+      description: `User ${newUser.firstName} has been created.`
+    });
+  };
   
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
-    setIsModalOpen(true);
+    setIsProfileModalOpen(true);
   }
 
   const handleSaveUser = (updatedUser: User) => {
     const updatedAllUsers = allUsers.map(u => u.uid === updatedUser.uid ? updatedUser : u);
     localStorage.setItem('mockUsers', JSON.stringify(updatedAllUsers));
     loadUsers();
-    setIsModalOpen(false);
+    setIsProfileModalOpen(false);
     toast({
       title: "User Updated",
       description: `${updatedUser.firstName}'s profile has been saved.`
@@ -72,7 +89,7 @@ export default function AdminStaffPage() {
             <CardTitle>Staff Members</CardTitle>
             <CardDescription>View and manage staff accounts.</CardDescription>
         </div>
-         <Button size="sm" className="gap-1" disabled>
+         <Button size="sm" className="gap-1" onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="h-3.5 w-3.5" />
             Add Staff
         </Button>
@@ -129,11 +146,17 @@ export default function AdminStaffPage() {
     {selectedUser && (
         <UserProfileModal 
             user={selectedUser}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
             onSave={handleSaveUser}
         />
       )}
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleAddUser}
+        defaultRole="staff"
+      />
     </>
   );
 }

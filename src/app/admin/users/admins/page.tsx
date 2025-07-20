@@ -11,6 +11,7 @@ import { User, UserRole } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { mockUsers } from "@/lib/users";
 import UserProfileModal from "@/components/admin/UserProfileModal";
+import AddUserModal from "@/components/admin/AddUserModal";
 import { useToast } from "@/hooks/use-toast";
 import { getInitials } from "@/lib/utils";
 
@@ -18,7 +19,8 @@ import { getInitials } from "@/lib/utils";
 export default function AdminAdminsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
 
   const loadUsers = () => {
@@ -49,8 +51,25 @@ export default function AdminAdminsPage() {
 
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
-    setIsModalOpen(true);
+    setIsProfileModalOpen(true);
   }
+  
+  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
+    const allUsersStored = localStorage.getItem('mockUsers');
+    let allUsers = allUsersStored ? JSON.parse(allUsersStored) : mockUsers;
+    const userToAdd: User = {
+      ...newUser,
+      uid: `user-${new Date().getTime()}`, // simple unique id
+    };
+    const updatedUsers = [...allUsers, userToAdd];
+    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+    loadUsers();
+    setIsAddModalOpen(false);
+    toast({
+      title: "Admin Added",
+      description: `User ${newUser.firstName} has been created.`
+    });
+  };
 
   const handleSaveUser = (updatedUser: User) => {
     // We need to update the global user list in localStorage
@@ -60,7 +79,7 @@ export default function AdminAdminsPage() {
     localStorage.setItem('mockUsers', JSON.stringify(allUsers));
     
     loadUsers(); // Reload the filtered & sorted list for this page
-    setIsModalOpen(false);
+    setIsProfileModalOpen(false);
     toast({
       title: "User Updated",
       description: `${updatedUser.firstName}'s profile has been saved.`
@@ -75,7 +94,7 @@ export default function AdminAdminsPage() {
             <CardTitle>Administrators</CardTitle>
             <CardDescription>View and manage site administrators.</CardDescription>
         </div>
-        <Button size="sm" className="gap-1" disabled>
+        <Button size="sm" className="gap-1" onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="h-3.5 w-3.5" />
             Add Admin
         </Button>
@@ -136,11 +155,17 @@ export default function AdminAdminsPage() {
       {selectedUser && (
         <UserProfileModal 
             user={selectedUser}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
             onSave={handleSaveUser}
         />
       )}
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleAddUser}
+        defaultRole="admin"
+      />
     </>
   );
 }
