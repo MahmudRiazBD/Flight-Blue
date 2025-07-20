@@ -24,7 +24,7 @@ import {
   Settings,
 } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/hooks/use-auth.tsx"
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },

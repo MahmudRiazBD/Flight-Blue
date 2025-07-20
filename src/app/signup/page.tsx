@@ -26,7 +26,7 @@ import Link from "next/link";
 import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth.tsx";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 

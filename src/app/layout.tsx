@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider } from "@/hooks/use-auth.tsx";
 
 export const metadata: Metadata = {
   title: "Flight Blu",

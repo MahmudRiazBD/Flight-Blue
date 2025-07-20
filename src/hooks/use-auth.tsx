@@ -19,10 +19,10 @@ export type UserRole = 'customer' | 'admin' | 'superadmin';
 
 export interface User {
   uid: string;
-  email: string;
-  displayName: string;
+  email: string | null;
+  displayName: string | null;
   role: UserRole;
-  photoURL?: string;
+  photoURL?: string | null;
 }
 
 interface AuthContextType {
@@ -79,18 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const db = getFirestore(app);
     const userRef = doc(db, 'users', firebaseUser.uid);
     let userDoc = await getDoc(userRef);
-    let userRole = userDoc.exists() ? userDoc.data().role : 'customer';
-
+    
     // Check if the user is the designated superadmin and update role if needed
     const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-    if (firebaseUser.email === superAdminEmail && userRole !== 'superadmin') {
-        userRole = 'superadmin';
+    if (firebaseUser.email === superAdminEmail) {
+      const userDocData = userDoc.exists() ? userDoc.data() : {};
+      if (userDocData.role !== 'superadmin') {
         await setDoc(userRef, { role: 'superadmin' }, { merge: true });
-    }
-
-    // Re-fetch doc if role was updated
-    if (firebaseUser.email === superAdminEmail){
-        userDoc = await getDoc(userRef);
+        userDoc = await getDoc(userRef); // Re-fetch doc after update
+      }
     }
 
     if (!userDoc.exists()) {
@@ -130,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
     setUser(null);
     router.push('/');
+    router.refresh();
   };
 
   return (

@@ -8,7 +8,7 @@ import { Menu, User, LogOut, LayoutDashboard } from "lucide-react";
 import Logo from "../icons/Logo";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +25,8 @@ const navLinks = [
   { href: "/packages", label: "Packages" },
 ];
 
-function getInitials(name: string = ""): string {
+function getInitials(name: string | null = ""): string {
+    if (!name) return "";
     return name
       .split(' ')
       .map(n => n[0])
