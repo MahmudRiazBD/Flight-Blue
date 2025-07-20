@@ -286,8 +286,7 @@ export default function AdminMediaPage() {
         id: crypto.randomUUID(),
         name: file.name,
         type: getFileType(file.name),
-        // In a real app, this URL would come from a cloud storage service after upload
-        url: 'https://placehold.co/600x400.png', 
+        url: URL.createObjectURL(file),
         size: formatFileSize(file.size),
     }));
 
