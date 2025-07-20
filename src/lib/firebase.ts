@@ -1,6 +1,6 @@
 
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -13,10 +13,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Add a check for the API key to provide a clearer error message
+if (!firebaseConfig.apiKey && typeof window !== 'undefined') {
+  throw new Error("Firebase API key is missing. Please check your .env file and ensure NEXT_PUBLIC_FIREBASE_API_KEY is set.");
+}
+
+// Initialize Firebase on-demand
+function getFirebaseApp(): FirebaseApp {
+    if (!getApps().length) {
+        return initializeApp(firebaseConfig);
+    }
+    return getApp();
+}
+
+const app = getFirebaseApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-
-export { app, auth, db };
+export { app, auth, db, getFirebaseApp };

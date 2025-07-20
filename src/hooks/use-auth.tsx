@@ -13,10 +13,12 @@ import {
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
+  type Auth,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, type Firestore } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
+import type { FirebaseApp } from 'firebase/app';
 
 export type UserRole = 'customer' | 'admin' | 'superadmin';
 
@@ -41,72 +43,74 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firebaseInstances, setFirebaseInstances] = useState<{ app: FirebaseApp; auth: Auth; db: Firestore } | null>(null);
   const router = useRouter();
 
-  const handleUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
-    if (firebaseUser) {
-      const db = getFirestore(app);
-      const userRef = doc(db, 'users', firebaseUser.uid);
-      const userDoc = await getDoc(userRef);
+  useEffect(() => {
+    // Initialize Firebase on the client side
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    setFirebaseInstances({ app, auth, db });
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as Omit<User, 'uid'>;
-        setUser({ uid: firebaseUser.uid, ...userData });
-      } else {
-        // This case handles user creation where the doc might not be created yet.
-        // We set a temporary user object and expect a redirect or refresh.
-        setUser({
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as Omit<User, 'uid'>;
+          setUser({ uid: firebaseUser.uid, ...userData });
+        } else {
+          setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email!,
             displayName: firebaseUser.displayName || 'New User',
-            role: 'customer' // default role
-        });
+            role: 'customer'
+          });
+        }
+      } else {
+        setUser(null);
       }
-    } else {
-      setUser(null);
-    }
-    setLoading(false);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, handleUser);
-    return () => unsubscribe();
-  }, [handleUser]);
-
   const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
-    const auth = getAuth(app);
-    
+    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    const { auth, db } = firebaseInstances;
+
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
-    const db = getFirestore(app);
     const userRef = doc(db, 'users', firebaseUser.uid);
     let userDoc = await getDoc(userRef);
     
-    // Check if the user is the designated superadmin and update role if needed
-    const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+    let userRole: UserRole = 'customer';
 
-    if (firebaseUser.email === superAdminEmail) {
-      const userDocData = userDoc.exists() ? userDoc.data() : {};
-      if (userDocData.role !== 'superadmin') {
-        await setDoc(userRef, { role: 'superadmin' }, { merge: true });
-        userDoc = await getDoc(userRef); // Re-fetch doc after update
-      }
+    if (userDoc.exists()) {
+      userRole = userDoc.data().role || 'customer';
     }
 
+    if (firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && userRole !== 'superadmin') {
+      await setDoc(userRef, { role: 'superadmin' }, { merge: true });
+      userDoc = await getDoc(userRef);
+    }
+    
     if (!userDoc.exists()) {
-        // This can happen if a user was created in Firebase Auth but the Firestore doc creation failed.
-        // Let's create it now.
+        const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+        const newUserRole = isSuperAdmin ? 'superadmin' : 'customer';
         const defaultUserData = {
             uid: firebaseUser.uid,
             email,
-            displayName: firebaseUser.displayName || email,
-            role: firebaseUser.email === superAdminEmail ? 'superadmin' : 'customer',
+            displayName: firebaseUser.displayName || email.split('@')[0],
+            role: newUserRole,
             createdAt: serverTimestamp(),
-        }
+        };
         await setDoc(userRef, defaultUserData);
         const appUser: User = {
             uid: firebaseUser.uid,
@@ -128,8 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string, displayName: string) => {
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    const { auth, db } = firebaseInstances;
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
@@ -147,7 +151,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    const auth = getAuth(app);
+    if (!firebaseInstances) throw new Error("Firebase not initialized");
+    const { auth } = firebaseInstances;
     await signOut(auth);
     setUser(null);
     router.push('/');
