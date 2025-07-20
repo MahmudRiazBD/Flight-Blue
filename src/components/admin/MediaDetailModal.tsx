@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { MediaFile } from "@/app/admin/media/page";
 import { Copy, Crop, FileText, Video, ImageIcon, File as FileIcon } from "lucide-react";
 import { format } from 'date-fns';
+import ImageCropper from "./ImageCropper";
 
 type MediaDetailModalProps = {
   isOpen: boolean;
@@ -32,6 +33,7 @@ const getIconForType = (type: MediaFile['type']) => {
 
 export default function MediaDetailModal({ isOpen, onClose, file, onSave }: MediaDetailModalProps) {
   const [editedFile, setEditedFile] = useState<MediaFile | null>(file);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,8 +59,17 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
     navigator.clipboard.writeText(editedFile.url);
     toast({ title: "URL Copied!", description: "The file URL has been copied to your clipboard." });
   };
+  
+  const handleCroppedImage = (newUrl: string) => {
+    if(editedFile){
+      setEditedFile({ ...editedFile, url: newUrl });
+      toast({ title: "Image Cropped", description: "Save changes to apply the new image."});
+    }
+    setIsCropperOpen(false);
+  }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
@@ -74,6 +85,7 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
                   alt={editedFile.altText || editedFile.name}
                   layout="fill"
                   objectFit="contain"
+                  key={editedFile.url} // Add key to force re-render on url change
                 />
               </div>
             ) : (
@@ -120,7 +132,7 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
             </div>
 
             {editedFile.type === 'image' && (
-                 <Button variant="outline" className="w-full" onClick={() => toast({ title: "Coming Soon!", description: "Image cropping functionality will be available in a future update." })}>
+                 <Button variant="outline" className="w-full" onClick={() => setIsCropperOpen(true)}>
                     <Crop className="mr-2 h-4 w-4"/>
                     Crop Image
                 </Button>
@@ -141,5 +153,13 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {isCropperOpen && (
+      <ImageCropper 
+        src={file?.url || ""} // Pass the original URL to the cropper
+        onClose={() => setIsCropperOpen(false)}
+        onCrop={handleCroppedImage}
+      />
+    )}
+    </>
   );
 }
