@@ -283,7 +283,7 @@ export default function AdminMediaPage() {
     if (!files) return;
 
     const newFiles: MediaFile[] = Array.from(files).map(file => ({
-        id: crypto.randomUUID(),
+        id: `${file.name}-${Math.random().toString(36).substring(2, 9)}`,
         name: file.name,
         type: getFileType(file.name),
         url: URL.createObjectURL(file),
