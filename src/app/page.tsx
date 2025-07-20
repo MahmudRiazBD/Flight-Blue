@@ -118,7 +118,7 @@ export default function Home() {
                 objectFit="cover"
                 className="absolute z-0 brightness-50"
                 data-ai-hint="exotic travel destination"
-                key={homeSettings.heroImageUrl} // Force re-render on image change
+                key={homeSettings.heroImageUrl} 
               />
               <div className="relative z-10 p-4">
                 <h1 className="text-4xl md:text-6xl font-headline font-bold drop-shadow-lg">
