@@ -1,4 +1,6 @@
 
+"use client";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -8,8 +10,11 @@ import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
+import { usePathname } from "next/navigation";
 
-export const metadata: Metadata = {
+// Metadata cannot be exported from a "use client" file, 
+// so we define it here and then use it in the component.
+export const metadataConfig: Metadata = {
   title: "Flight Blu",
   description: "Your adventure starts here.",
 };
@@ -19,9 +24,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>{String(metadataConfig.title)}</title>
+        <meta name="description" content={String(metadataConfig.description)} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -39,13 +49,21 @@ export default function RootLayout({
         )}
       >
         <AuthProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          {isAdminRoute ? (
+             <div className="relative flex min-h-screen flex-col">
+              {children}
+            </div>
+          ) : (
+            <>
+              <div className="relative flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+              <Chatbot />
+            </>
+          )}
           <Toaster />
-          <Chatbot />
         </AuthProvider>
       </body>
     </html>
