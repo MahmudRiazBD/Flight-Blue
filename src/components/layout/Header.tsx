@@ -76,7 +76,7 @@ export default function Header() {
                   <span className="font-bold font-headline text-xl">Flight Blu</span>
                 </Link>
                 <nav className="flex flex-col space-y-4">
-                  {[...navLinks, ...(isLoggedIn ? [{href: isAdmin ? "/admin" : "/dashboard", label: "Dashboard"}] : [])].map((link) => (
+                  {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
@@ -90,7 +90,9 @@ export default function Header() {
                   ))}
                 </nav>
                 <div className="mt-8 pt-4 border-t border-border flex flex-col space-y-2">
-                    {!isLoggedIn && (
+                    {isLoggedIn ? (
+                        <Button asChild><Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link></Button>
+                    ) : (
                         <>
                             <Button variant="outline" asChild><Link href="/login">Login</Link></Button>
                             <Button asChild><Link href="/signup">Sign Up</Link></Button>
