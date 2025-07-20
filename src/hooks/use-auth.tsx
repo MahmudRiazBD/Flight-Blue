@@ -62,12 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
           setUser({ uid: firebaseUser.uid, ...userData });
         } else {
-          setUser({
+          // This case might happen if a user is created in Auth but not in Firestore.
+          // We can create a default user profile here.
+           const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email!,
             displayName: firebaseUser.displayName || 'New User',
             role: 'customer'
+          };
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+             ...newUser,
+             createdAt: serverTimestamp(),
           });
+          setUser(newUser);
         }
       } else {
         setUser(null);
@@ -90,20 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userRef = doc(db, 'users', firebaseUser.uid);
     let userDoc = await getDoc(userRef);
     
-    let userRole: UserRole = 'customer';
-
-    if (userDoc.exists()) {
-      userRole = userDoc.data().role || 'customer';
-    }
-
-    if (firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && userRole !== 'superadmin') {
-      await setDoc(userRef, { role: 'superadmin' }, { merge: true });
-      userDoc = await getDoc(userRef);
-    }
-    
+    // Handle case where user exists in Auth but not Firestore
     if (!userDoc.exists()) {
         const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-        const newUserRole = isSuperAdmin ? 'superadmin' : 'customer';
+        const newUserRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
         const defaultUserData = {
             uid: firebaseUser.uid,
             email,
@@ -121,10 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(appUser);
         return appUser;
     }
+    
+    const userData = userDoc.data() as Omit<User, 'uid'>;
+    
+    // Check if the user is the super admin and update role if necessary
+    if (firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && userData.role !== 'superadmin') {
+      userData.role = 'superadmin';
+      await setDoc(userRef, { role: 'superadmin' }, { merge: true });
+    }
 
     const appUser: User = {
         uid: firebaseUser.uid,
-        ...userDoc.data() as Omit<User, 'uid'>
+        ...userData
     };
     
     setUser(appUser);
