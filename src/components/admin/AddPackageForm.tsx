@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { Package } from "@/lib/data";
+import type { Package, Destination } from "@/lib/data";
 import { destinations as initialDestinations, packageTypes as initialPackageTypes } from "@/lib/data";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters."),
@@ -40,9 +40,18 @@ type AddPackageFormProps = {
 
 export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageFormProps) {
   const { toast } = useToast();
-  // In a real app, these would be fetched, but for now we use data.ts and localStorage
-  const [destinations, setDestinations] = useState(initialDestinations);
+  const [destinations, setDestinations] = useState<Destination[]>(initialDestinations);
   const [packageTypes, setPackageTypes] = useState(initialPackageTypes);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedDestinations = localStorage.getItem('destinations');
+      if (storedDestinations) {
+        setDestinations(JSON.parse(storedDestinations));
+      }
+      // Similarly for package types if they become dynamic
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
