@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Paintbrush, Image as ImageIcon, TextCursorInput, Link as LinkIcon, Home } from "lucide-react";
+import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Youtube, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,22 @@ type HomePageSettings = {
     heroSubtitle: string;
     heroButtonLabel: string;
     heroButtonLink: string;
+};
+
+type SocialLink = {
+    platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
+    url: string;
+};
+
+const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
+    switch (platform) {
+        case 'twitter': return <Twitter className="h-5 w-5" />;
+        case 'facebook': return <Facebook className="h-5 w-5" />;
+        case 'instagram': return <Instagram className="h-5 w-5" />;
+        case 'linkedin': return <Linkedin className="h-5 w-5" />;
+        case 'youtube': return <Youtube className="h-5 w-5" />;
+        default: return null;
+    }
 };
 
 export default function AdminSettingsPage() {
@@ -39,6 +55,10 @@ export default function AdminSettingsPage() {
     // Permalink settings states
     const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
     const [mediaPermalink, setMediaPermalink] = useState("/uploads/%filename%");
+
+    // Social and map settings
+    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+    const [googleMapUrl, setGoogleMapUrl] = useState('');
     
     // Home Page settings states
     const [homePageSettings, setHomePageSettings] = useState<HomePageSettings>({
@@ -52,15 +72,33 @@ export default function AdminSettingsPage() {
     // Load all settings from localStorage on component mount
     useEffect(() => {
         const savedHomePageSettings = localStorage.getItem('homePageSettings');
-        if (savedHomePageSettings) {
-            setHomePageSettings(JSON.parse(savedHomePageSettings));
-        }
-        // ... any other settings loading logic would go here
+        if (savedHomePageSettings) setHomePageSettings(JSON.parse(savedHomePageSettings));
+
+        const savedSocialLinks = localStorage.getItem('socialLinks');
+        if (savedSocialLinks) setSocialLinks(JSON.parse(savedSocialLinks));
+
+        const savedMapUrl = localStorage.getItem('googleMapUrl');
+        if (savedMapUrl) setGoogleMapUrl(savedMapUrl);
     }, []);
 
     const handleHomePageSettingsChange = (field: keyof HomePageSettings, value: string) => {
         setHomePageSettings(prev => ({...prev, [field]: value}));
     }
+
+    const handleSocialLinkChange = (index: number, field: keyof SocialLink, value: string) => {
+        const newLinks = [...socialLinks];
+        newLinks[index] = { ...newLinks[index], [field]: value };
+        setSocialLinks(newLinks);
+    };
+
+    const addSocialLink = () => {
+        setSocialLinks([...socialLinks, { platform: 'twitter', url: '' }]);
+    };
+
+    const removeSocialLink = (index: number) => {
+        setSocialLinks(socialLinks.filter((_, i) => i !== index));
+    };
+
 
     const handleSaveChanges = () => {
         // Here you would typically send the data to your backend to save in a database
@@ -68,6 +106,8 @@ export default function AdminSettingsPage() {
         
         // Save Home Page Settings
         localStorage.setItem('homePageSettings', JSON.stringify(homePageSettings));
+        localStorage.setItem('socialLinks', JSON.stringify(socialLinks));
+        localStorage.setItem('googleMapUrl', googleMapUrl);
 
         // This is a simulation. In a real app, you'd apply these styles globally.
         // For example, by updating a CSS file or injecting a <style> tag.
@@ -183,6 +223,65 @@ export default function AdminSettingsPage() {
                             <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
                         </div>
                     </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Social Media Links</h3>
+                        <p className="text-sm text-muted-foreground">Add links to your social media profiles. The first four will be shown in the footer.</p>
+                        <div className="space-y-3">
+                            {socialLinks.map((link, index) => (
+                                <div key={index} className="flex items-end gap-2">
+                                    <div className="flex-grow grid grid-cols-3 gap-2">
+                                         <select
+                                            value={link.platform}
+                                            onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="twitter">Twitter</option>
+                                            <option value="facebook">Facebook</option>
+                                            <option value="instagram">Instagram</option>
+                                            <option value="linkedin">LinkedIn</option>
+                                            <option value="youtube">YouTube</option>
+                                        </select>
+                                        <Input
+                                            type="url"
+                                            placeholder="https://..."
+                                            value={link.url}
+                                            onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                                            className="col-span-2"
+                                        />
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => removeSocialLink(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addSocialLink}>
+                           <PlusCircle className="mr-2 h-4 w-4" /> Add Link
+                        </Button>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Company Location</h3>
+                        <div>
+                            <Label htmlFor="googleMapUrl">Google Maps Embed URL</Label>
+                            <Textarea 
+                                id="googleMapUrl" 
+                                value={googleMapUrl} 
+                                onChange={(e) => setGoogleMapUrl(e.target.value)}
+                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the src="..." URL here.'
+                                rows={3}
+                            />
+                             <p className="text-sm text-muted-foreground mt-2">
+                                This will display a map in your site's footer.
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
             </TabsContent>
 
