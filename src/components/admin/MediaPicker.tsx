@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link, Library } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
+import { Label } from "@/components/ui/label";
 
 type MediaPickerProps = {
   imageUrl: string;
