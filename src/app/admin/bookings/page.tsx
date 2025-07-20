@@ -1,7 +1,74 @@
+
+"use client"
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BookCopy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { MoreHorizontal, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Booking, bookings as initialBookings } from "@/lib/data";
+import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+const statusColors: Record<Booking['status'], "default" | "secondary" | "destructive"> = {
+  Pending: "secondary",
+  Confirmed: "default",
+  Cancelled: "destructive",
+};
 
 export default function AdminBookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const { toast } = useToast();
+
+  const loadBookings = () => {
+    const storedBookings = localStorage.getItem('bookings');
+    const allBookings: Booking[] = storedBookings ? JSON.parse(storedBookings) : initialBookings;
+    allBookings.sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
+    setBookings(allBookings);
+  }
+
+  useEffect(() => {
+    loadBookings();
+    window.addEventListener('storage', loadBookings);
+    return () => {
+      window.removeEventListener('storage', loadBookings);
+    };
+  }, []);
+
+  const updateBookingStatus = (bookingId: string, status: Booking['status']) => {
+    const updatedBookings = bookings.map(b => b.id === bookingId ? { ...b, status } : b);
+    setBookings(updatedBookings);
+    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+    toast({
+      title: "Booking Status Updated",
+      description: `Booking has been marked as ${status}.`
+    });
+  }
+
+  const deleteBooking = (bookingId: string) => {
+     const updatedBookings = bookings.filter(b => b.id !== bookingId);
+     setBookings(updatedBookings);
+     localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+     toast({
+        title: "Booking Deleted",
+        description: "The booking has been successfully removed.",
+        variant: "destructive"
+     });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -9,11 +76,87 @@ export default function AdminBookingsPage() {
         <CardDescription>View and manage all customer bookings.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center text-center py-16 text-muted-foreground">
-          <BookCopy className="h-16 w-16 mb-4" />
-          <h3 className="text-2xl font-headline font-semibold">Booking Management Coming Soon</h3>
-          <p>This section will display a list of all bookings.</p>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead>Package</TableHead>
+              <TableHead>Departure</TableHead>
+              <TableHead>Booked On</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {bookings.length > 0 ? bookings.map((booking) => (
+              <TableRow key={booking.id}>
+                <TableCell>
+                  <div className="font-medium">{booking.customerName}</div>
+                  <div className="text-sm text-muted-foreground">{booking.customerEmail}</div>
+                </TableCell>
+                <TableCell>{booking.packageName}</TableCell>
+                <TableCell>{format(new Date(booking.departureDate), "PPP")}</TableCell>
+                <TableCell>{format(new Date(booking.bookingDate), "PPP")}</TableCell>
+                <TableCell>
+                  <Badge variant={statusColors[booking.status]}>{booking.status}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                              <DropdownMenuRadioGroup value={booking.status} onValueChange={(status) => updateBookingStatus(booking.id, status as Booking['status'])}>
+                                  <DropdownMenuRadioItem value="Pending">Pending</DropdownMenuRadioItem>
+                                  <DropdownMenuRadioItem value="Confirmed">Confirmed</DropdownMenuRadioItem>
+                                  <DropdownMenuRadioItem value="Cancelled">Cancelled</DropdownMenuRadioItem>
+                              </DropdownMenuRadioGroup>
+                          </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                      <DropdownMenuItem className="text-destructive" asChild>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Delete Booking
+                                </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this booking. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteBooking(booking.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Delete
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            )) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No bookings found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

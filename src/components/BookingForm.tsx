@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Booking, bookings as initialBookings } from "@/lib/data";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
@@ -51,7 +52,27 @@ export default function BookingForm({ packageId, packageName, setDialogOpen }: B
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Booking Submitted", { packageId, packageName, ...values });
+    
+    const storedBookings = localStorage.getItem('bookings');
+    const bookings: Booking[] = storedBookings ? JSON.parse(storedBookings) : initialBookings;
+
+    const newBooking: Booking = {
+        id: `booking-${new Date().getTime()}`,
+        packageId,
+        packageName,
+        customerName: values.fullName,
+        customerEmail: values.email,
+        customerPhone: values.phone,
+        travelers: values.travelers,
+        departureDate: values.departureDate.toISOString(),
+        bookingDate: new Date().toISOString(),
+        status: "Pending"
+    };
+
+    const updatedBookings = [...bookings, newBooking];
+    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+
+    console.log("Booking Submitted", newBooking);
     toast({
       title: "Booking Submitted!",
       description: "Thank you for your booking. We will contact you shortly to confirm the details.",

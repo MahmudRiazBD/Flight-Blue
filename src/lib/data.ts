@@ -1,4 +1,5 @@
 
+
 export type Post = {
   id: string;
   title: string;
@@ -39,6 +40,20 @@ export type PackageType = {
   imageUrl: string;
 }
 
+export type Booking = {
+    id: string;
+    packageId: string;
+    packageName: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    travelers: number;
+    departureDate: string; // ISO date string
+    bookingDate: string; // ISO date string
+    status: 'Pending' | 'Confirmed' | 'Cancelled';
+};
+
+
 export const destinations: Destination[] = [
     { id: "dest-1", name: "Paris, France", imageUrl: "https://placehold.co/600x400.png" },
     { id: "dest-2", name: "Makkah & Madinah, Saudi Arabia", imageUrl: "https://placehold.co/600x400.png" },
@@ -65,6 +80,7 @@ export const packages: Package[] = [
     rating: 4.8,
     imageUrl: "https://placehold.co/600x400.png",
     imageHint: "paris eiffel tower",
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     description: "Experience the magic of Paris, from the Eiffel Tower to the charming streets of Montmartre. A perfect blend of art, culture, and romance.",
     itinerary: [
       { day: "1", title: "Arrival in Paris", details: "Check into your hotel and enjoy a welcome dinner cruise on the Seine River." },
@@ -218,3 +234,30 @@ export const posts: Post[] = [
     publishedAt: '2024-06-01T08:00:00Z',
   },
 ];
+
+export const bookings: Booking[] = [
+    {
+        id: "booking-1",
+        packageId: "paris-dream-tour",
+        packageName: "Parisian Dream Tour",
+        customerName: "Alice Johnson",
+        customerEmail: "customer1@example.com",
+        customerPhone: "444-555-6666",
+        travelers: 2,
+        departureDate: "2024-08-15T00:00:00.000Z",
+        bookingDate: "2024-06-10T14:30:00.000Z",
+        status: "Confirmed"
+    },
+    {
+        id: "booking-2",
+        packageId: "economy-umrah-package",
+        packageName: "Economy Umrah Package",
+        customerName: "Bob Williams",
+        customerEmail: "customer2@example.com",
+        customerPhone: "555-666-7777",
+        travelers: 1,
+        departureDate: "2024-07-20T00:00:00.000Z",
+        bookingDate: "2024-06-12T10:00:00.000Z",
+        status: "Pending"
+    }
+]
