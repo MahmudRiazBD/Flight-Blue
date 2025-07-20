@@ -74,9 +74,11 @@ export default function AdminLayout({
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Settings">
-                <Settings />
-                <span>Settings</span>
+              <SidebarMenuButton asChild isActive={pathname === "/admin/settings"} tooltip="Settings">
+                <Link href="/admin/settings">
+                  <Settings />
+                  <span>Settings</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
