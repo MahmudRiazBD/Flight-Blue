@@ -50,7 +50,16 @@ const menuItems = [
     ]
   },
   { href: "/admin/bookings", label: "Bookings", icon: BookCopy },
-  { href: "/admin/customers", label: "Customers", icon: Users },
+  {
+    label: "Users",
+    icon: Users,
+    subItems: [
+      { href: "/admin/users/all", label: "All Users" },
+      { href: "/admin/users/admins", label: "Admins" },
+      { href: "/admin/users/staff", label: "Staff" },
+      { href: "/admin/users/customers", label: "Customers" },
+    ]
+  },
   { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/media", label: "Media", icon: Image },
 ]
@@ -63,6 +72,7 @@ export default function AdminLayout({
   const pathname = usePathname()
   const { logout } = useAuth();
   const [openPackages, setOpenPackages] = useState(pathname.startsWith('/admin/packages'));
+  const [openUsers, setOpenUsers] = useState(pathname.startsWith('/admin/users'));
 
   return (
     <SidebarProvider>
@@ -79,19 +89,23 @@ export default function AdminLayout({
           <SidebarMenu>
             {menuItems.map((item) => (
               item.subItems ? (
-                 <Collapsible open={openPackages} onOpenChange={setOpenPackages} key={item.label}>
+                 <Collapsible 
+                    key={item.label} 
+                    open={item.label === 'Packages' ? openPackages : openUsers} 
+                    onOpenChange={item.label === 'Packages' ? setOpenPackages : setOpenUsers}
+                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                        <SidebarMenuButton
                         className="justify-between"
-                        isActive={pathname.startsWith('/admin/packages')}
+                        isActive={pathname.startsWith(item.label === 'Packages' ? '/admin/packages' : '/admin/users')}
                         tooltip={item.label}
                       >
                          <div className="flex items-center gap-2">
                             <item.icon />
                             <span>{item.label}</span>
                          </div>
-                         <ChevronDown className={cn("size-4 transition-transform", openPackages && "rotate-180")} />
+                         <ChevronDown className={cn("size-4 transition-transform", (item.label === 'Packages' ? openPackages : openUsers) && "rotate-180")} />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                   </SidebarMenuItem>

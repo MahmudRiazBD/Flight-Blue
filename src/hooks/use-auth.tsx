@@ -20,7 +20,7 @@ import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore } fr
 import { getFirebaseApp } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
 
-export type UserRole = 'customer' | 'admin' | 'superadmin';
+export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 
 export interface User {
   uid: string;
