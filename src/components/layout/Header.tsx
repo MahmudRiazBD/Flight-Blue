@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, User, LogOut, LayoutDashboard } from "lucide-react";
 import Logo from "../icons/Logo";
 import { usePathname } from "next/navigation";
@@ -121,13 +121,17 @@ export default function Header() {
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
+            <SheetContent side="left" className="p-0">
+                <SheetHeader className="p-6 pb-0">
+                   <SheetTitle>
+                     <Link href="/" className="flex items-center gap-2">
+                        <Logo className="h-8 w-8 text-primary" />
+                        <span className="font-bold font-headline text-xl">Flight Blu</span>
+                    </Link>
+                   </SheetTitle>
+                </SheetHeader>
               <div className="flex flex-col p-6">
-                <Link href="/" className="flex items-center gap-2 mb-8">
-                  <Logo className="h-8 w-8 text-primary" />
-                  <span className="font-bold font-headline text-xl">Flight Blu</span>
-                </Link>
-                <nav className="flex flex-col space-y-4">
+                <nav className="flex flex-col space-y-4 mt-8">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
