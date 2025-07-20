@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Paintbrush, Image as ImageIcon, TextCursorInput } from "lucide-react";
+import { Paintbrush, Image as ImageIcon, TextCursorInput, Link as LinkIcon } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
@@ -23,6 +24,9 @@ export default function AdminSettingsPage() {
     const [backgroundColor, setBackgroundColor] = useState("0 0% 100%");
     const [accentColor, setAccentColor] = useState("195 100% 50%");
 
+    // Permalink settings
+    const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
+
 
     const handleSaveChanges = () => {
         // Here you would typically send the data to your backend to save in a database
@@ -34,6 +38,9 @@ export default function AdminSettingsPage() {
                 primary: primaryColor,
                 background: backgroundColor,
                 accent: accentColor,
+            },
+            permalinks: {
+                package: packagePermalink,
             }
         });
 
@@ -57,11 +64,12 @@ export default function AdminSettingsPage() {
         <CardDescription>Manage your global site settings from here.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="general">
-            <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="general" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
                 <TabsTrigger value="branding"><ImageIcon className="mr-2"/>Branding</TabsTrigger>
                 <TabsTrigger value="theme"><Paintbrush className="mr-2"/>Theme</TabsTrigger>
+                <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
             </TabsList>
             
             <TabsContent value="general" className="pt-6">
@@ -147,6 +155,47 @@ export default function AdminSettingsPage() {
                         <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: `hsl(${accentColor})`}}></div>
                     </div>
                  </div>
+            </TabsContent>
+
+            <TabsContent value="permalinks" className="pt-6">
+                <div className="space-y-6">
+                    <p className="text-sm text-muted-foreground">
+                        Customize the URL structure for your content. Changes can affect your SEO, so be careful. Available tags: <code className="bg-muted px-1 py-0.5 rounded">%postname%</code>, <code className="bg-muted px-1 py-0.5 rounded">%post_id%</code>, <code className="bg-muted px-1 py-0.5 rounded">%category%</code>.
+                    </p>
+                    <div className="space-y-4">
+                        <h4 className="font-semibold">Packages Permalink Base</h4>
+                        <RadioGroup defaultValue={packagePermalink} onValueChange={setPackagePermalink} className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="/packages/%postname%" id="p-default" />
+                                <Label htmlFor="p-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/packages/%postname%</code></Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="/tours/%postname%" id="p-tours" />
+                                <Label htmlFor="p-tours" className="font-normal">Tour base: <code className="bg-muted px-1 py-0.5 rounded">/tours/%postname%</code></Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="custom" id="p-custom" />
+                                <Label htmlFor="p-custom" className="font-normal">Custom Structure:</Label>
+                                <Input
+                                    className="max-w-xs"
+                                    placeholder="/your-base/%postname%"
+                                    disabled={packagePermalink !== "custom"}
+                                    onChange={(e) => {
+                                        // This is a bit of a hack to make the input work with the radio group.
+                                        // In a real app, state management would be more robust.
+                                        setPackagePermalink(e.target.value);
+                                    }}
+                                />
+                            </div>
+                        </RadioGroup>
+                    </div>
+                     <div className="space-y-4 pt-4 border-t">
+                        <h4 className="font-semibold">Blog Permalink Base</h4>
+                         <p className="text-sm text-muted-foreground">
+                            Blog permalink settings will be available when the blog module is active.
+                        </p>
+                    </div>
+                </div>
             </TabsContent>
         </Tabs>
         
