@@ -22,6 +22,7 @@ import {
   FileText,
   LogOut,
   Settings,
+  Image,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth.tsx"
@@ -32,6 +33,7 @@ const menuItems = [
   { href: "/admin/bookings", label: "Bookings", icon: BookCopy },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/blog", label: "Blog", icon: FileText },
+  { href: "/admin/media", label: "Media", icon: Image },
 ]
 
 export default function AdminLayout({
