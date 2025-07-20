@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
@@ -40,7 +40,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [firebaseInstances, setFirebaseInstances] = useState<{ app: FirebaseApp; auth: Auth; db: Firestore } | null>(null);
@@ -62,11 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
           setUser({ uid: firebaseUser.uid, ...userData });
         } else {
+           const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+           const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
            const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email!,
             displayName: firebaseUser.displayName || 'New User',
-            role: 'customer'
+            role: userRole,
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), {
              ...newUser,
@@ -147,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading: loading || !firebaseInstances, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
