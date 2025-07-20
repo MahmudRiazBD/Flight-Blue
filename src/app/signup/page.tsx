@@ -45,8 +45,8 @@ const signupSchema = z
 export default function SignupPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { signup } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { signup, loading: authLoading } = useAuth();
+  const [formLoading, setFormLoading] = useState(false);
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -59,7 +59,7 @@ export default function SignupPage() {
   });
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
-    setIsLoading(true);
+    setFormLoading(true);
     try {
       await signup(values.email, values.password, values.name);
       
@@ -84,9 +84,11 @@ export default function SignupPage() {
         variant: "destructive",
       });
     } finally {
-        setIsLoading(false);
+        setFormLoading(false);
     }
   }
+
+  const isLoading = formLoading || authLoading;
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] bg-secondary">

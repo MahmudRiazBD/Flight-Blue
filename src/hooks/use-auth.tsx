@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
@@ -62,8 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
           setUser({ uid: firebaseUser.uid, ...userData });
         } else {
-          // This case might happen if a user is created in Auth but not in Firestore.
-          // We can create a default user profile here.
            const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email!,
@@ -95,33 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const firebaseUser = userCredential.user;
 
     const userRef = doc(db, 'users', firebaseUser.uid);
-    let userDoc = await getDoc(userRef);
+    const userDoc = await getDoc(userRef);
     
-    // Handle case where user exists in Auth but not Firestore
     if (!userDoc.exists()) {
-        const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-        const newUserRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
-        const defaultUserData = {
-            uid: firebaseUser.uid,
-            email,
-            displayName: firebaseUser.displayName || email.split('@')[0],
-            role: newUserRole,
-            createdAt: serverTimestamp(),
-        };
-        await setDoc(userRef, defaultUserData);
-        const appUser: User = {
-            uid: firebaseUser.uid,
-            email: defaultUserData.email,
-            displayName: defaultUserData.displayName,
-            role: defaultUserData.role
-        };
-        setUser(appUser);
-        return appUser;
+       throw new Error("User document not found in Firestore.");
     }
     
     const userData = userDoc.data() as Omit<User, 'uid'>;
     
-    // Check if the user is the super admin and update role if necessary
     if (firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && userData.role !== 'superadmin') {
       userData.role = 'superadmin';
       await setDoc(userRef, { role: 'superadmin' }, { merge: true });
@@ -145,12 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await updateProfile(firebaseUser, { displayName });
 
+    const isSuperAdmin = email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+    const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
+
     const userRef = doc(db, 'users', firebaseUser.uid);
     await setDoc(userRef, {
       uid: firebaseUser.uid,
       email,
       displayName,
-      role: 'customer',
+      role: userRole,
       createdAt: serverTimestamp(),
     });
   };

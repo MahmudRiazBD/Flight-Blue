@@ -18,7 +18,8 @@ function getFirebaseApp(): FirebaseApp {
     };
 
     // Add a check for the API key to provide a clearer error message
-    if (!firebaseConfig.apiKey) {
+    // This check will only run on the client-side
+    if (!firebaseConfig.apiKey && typeof window !== 'undefined') {
       throw new Error("Firebase API key is missing. Please check your .env file and ensure NEXT_PUBLIC_FIREBASE_API_KEY is set.");
     }
     
