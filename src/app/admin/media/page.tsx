@@ -31,6 +31,7 @@ export type MediaFile = {
   url: string;
   size: string;
   uploadedAt: Date;
+  modifiedAt?: Date;
   altText?: string;
   deletedAt?: Date;
   dataAiHint?: string;
@@ -339,17 +340,15 @@ export default function AdminMediaPage() {
   };
 
   const handleSaveFileDetails = (updatedFile: MediaFile) => {
-    const allFiles = [...mediaFiles, ...trashedFiles];
-    const fileIndexInAll = allFiles.findIndex(f => f.id === updatedFile.id);
+    const fileToSave = { ...updatedFile, modifiedAt: new Date() };
 
-    if (fileIndexInAll !== -1) {
-        const isTrashed = !!updatedFile.deletedAt;
-        if (isTrashed) {
-            setTrashedFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
-        } else {
-            setMediaFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
-        }
+    const isTrashed = !!fileToSave.deletedAt;
+    if (isTrashed) {
+        setTrashedFiles(prev => prev.map(f => f.id === fileToSave.id ? fileToSave : f));
+    } else {
+        setMediaFiles(prev => prev.map(f => f.id === fileToSave.id ? fileToSave : f));
     }
+    
     setDetailModalOpen(false);
     toast({ title: "File details saved!" });
   };

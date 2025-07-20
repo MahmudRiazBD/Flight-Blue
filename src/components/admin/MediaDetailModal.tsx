@@ -142,6 +142,9 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
                <p><strong>File Type:</strong> {editedFile.type}</p>
                <p><strong>File Size:</strong> {editedFile.size}</p>
                <p><strong>Uploaded:</strong> {format(editedFile.uploadedAt, "PPpp")}</p>
+               {editedFile.modifiedAt && (
+                <p><strong>Last Modified:</strong> {format(editedFile.modifiedAt, "PPpp")}</p>
+               )}
             </div>
           </div>
         </div>
@@ -153,9 +156,9 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    {isCropperOpen && (
+    {isCropperOpen && file?.url && (
       <ImageCropper 
-        src={file?.url || ""} // Pass the original URL to the cropper
+        src={file.url} // Pass the original URL to the cropper
         onClose={() => setIsCropperOpen(false)}
         onCrop={handleCroppedImage}
       />
