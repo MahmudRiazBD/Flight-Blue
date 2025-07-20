@@ -17,7 +17,7 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { isLoggedIn, isAdmin } = useAuth();
+  const { isLoggedIn, isAdmin, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -46,9 +46,12 @@ export default function Header() {
 
         <div className="hidden md:flex items-center justify-end space-x-2">
           {isLoggedIn ? (
-            <Button asChild>
-              <Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link>
-            </Button>
+            <>
+              <Button variant="ghost" asChild>
+                <Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link>
+              </Button>
+              <Button onClick={logout}>Logout</Button>
+            </>
           ) : (
             <>
               <Button variant="ghost" asChild>
@@ -91,7 +94,10 @@ export default function Header() {
                 </nav>
                 <div className="mt-8 pt-4 border-t border-border flex flex-col space-y-2">
                     {isLoggedIn ? (
-                        <Button asChild><Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link></Button>
+                       <>
+                          <Button asChild><Link href={isAdmin ? "/admin" : "/dashboard"}>Dashboard</Link></Button>
+                          <Button variant="outline" onClick={logout}>Logout</Button>
+                       </>
                     ) : (
                         <>
                             <Button variant="outline" asChild><Link href="/login">Login</Link></Button>

@@ -1,3 +1,4 @@
+
 "use client"
 import {
   SidebarProvider,
@@ -23,6 +24,7 @@ import {
   Settings,
 } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/hooks/use-auth"
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +40,7 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { logout } = useAuth();
 
   return (
     <SidebarProvider>
@@ -77,7 +80,7 @@ export default function AdminLayout({
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Logout">
+              <SidebarMenuButton tooltip="Logout" onClick={logout}>
                 <LogOut />
                 <span>Logout</span>
               </SidebarMenuButton>
