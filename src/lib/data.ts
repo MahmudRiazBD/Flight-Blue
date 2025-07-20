@@ -1,7 +1,8 @@
+
 export type Package = {
   id: string;
   title: string;
-  type: "Tour" | "Hajj" | "Umrah";
+  type: string;
   destination: string;
   duration: number; // in days
   price: number;
@@ -13,6 +14,31 @@ export type Package = {
   inclusions: string[];
   exclusions: string[];
 };
+
+export type Destination = {
+  id: string;
+  name: string;
+}
+
+export type PackageType = {
+  id: string;
+  name: string;
+}
+
+export const destinations: Destination[] = [
+    { id: "dest-1", name: "Paris, France" },
+    { id: "dest-2", name: "Makkah & Madinah, Saudi Arabia" },
+    { id: "dest-3", name: "Tokyo, Japan" },
+    { id: "dest-4", name: "Rome, Italy" },
+    { id: "dest-5", name: "Istanbul, Turkey" },
+]
+
+export const packageTypes: PackageType[] = [
+    { id: "type-1", name: "Tour" },
+    { id: "type-2", name: "Hajj" },
+    { id: "type-3", name: "Umrah" },
+]
+
 
 export const packages: Package[] = [
   {

@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import AddPackageForm from "@/components/admin/AddPackageForm";
 
-export default function AdminPackagesPage() {
+export default function AdminAllPackagesPage() {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -41,7 +41,7 @@ export default function AdminPackagesPage() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-            <CardTitle>Packages</CardTitle>
+            <CardTitle>All Packages</CardTitle>
             <CardDescription>Manage your tour, Hajj, and Umrah packages.</CardDescription>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

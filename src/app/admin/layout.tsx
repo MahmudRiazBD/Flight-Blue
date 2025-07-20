@@ -11,6 +11,12 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
 } from "@/components/ui/sidebar"
 import Logo from "@/components/icons/Logo"
 import { usePathname } from "next/navigation"
@@ -23,13 +29,24 @@ import {
   LogOut,
   Settings,
   Image,
+  ChevronDown,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth.tsx"
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/packages", label: "Packages", icon: Package },
+  { 
+    label: "Packages", 
+    icon: Package,
+    subItems: [
+        { href: "/admin/packages/all", label: "All Packages" },
+        { href: "/admin/packages/destinations", label: "Destinations" },
+        { href: "/admin/packages/types", label: "Types" },
+    ]
+  },
   { href: "/admin/bookings", label: "Bookings", icon: BookCopy },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/blog", label: "Blog", icon: FileText },
@@ -43,6 +60,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const { logout } = useAuth();
+  const [openPackages, setOpenPackages] = useState(pathname.startsWith('/admin/packages'));
 
   return (
     <SidebarProvider>
@@ -58,18 +76,51 @@ export default function AdminLayout({
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              item.subItems ? (
+                 <Collapsible open={openPackages} onOpenChange={setOpenPackages} key={item.label}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                       <SidebarMenuButton
+                        className="justify-between"
+                        isActive={pathname.startsWith('/admin/packages')}
+                        tooltip={item.label}
+                      >
+                         <div className="flex items-center gap-2">
+                            <item.icon />
+                            <span>{item.label}</span>
+                         </div>
+                         <ChevronDown className={cn("size-4 transition-transform", openPackages && "rotate-180")} />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                  </SidebarMenuItem>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                        {item.subItems.map(subItem => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                    <Link href={subItem.href}>
+                                        <span>{subItem.label}</span>
+                                    </Link>
+                                </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                        ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                 </Collapsible>
+              ) : (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href!}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
             ))}
           </SidebarMenu>
         </SidebarContent>

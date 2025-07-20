@@ -18,11 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Package } from "@/lib/data";
+import { destinations as initialDestinations, packageTypes as initialPackageTypes } from "@/lib/data";
+import { useState } from "react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters."),
-  type: z.enum(["Tour", "Hajj", "Umrah"]),
-  destination: z.string().min(2, "Destination is required."),
+  type: z.string().min(1, "Package type is required."),
+  destination: z.string().min(1, "Destination is required."),
   duration: z.coerce.number().min(1, "Duration must be at least 1 day."),
   price: z.coerce.number().min(1, "Price is required."),
   rating: z.coerce.number().min(0).max(5).default(4.5),
@@ -38,6 +40,9 @@ type AddPackageFormProps = {
 
 export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageFormProps) {
   const { toast } = useToast();
+  // In a real app, these would be fetched, but for now we use data.ts and localStorage
+  const [destinations, setDestinations] = useState(initialDestinations);
+  const [packageTypes, setPackageTypes] = useState(initialPackageTypes);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -120,9 +125,9 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="Tour">Tour</SelectItem>
-                            <SelectItem value="Hajj">Hajj</SelectItem>
-                            <SelectItem value="Umrah">Umrah</SelectItem>
+                            {packageTypes.map(type => (
+                                <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -135,9 +140,18 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Destination</FormLabel>
-                <FormControl>
-                    <Input placeholder="e.g., Paris, France" {...field} />
-                </FormControl>
+                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a destination" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                       {destinations.map(dest => (
+                         <SelectItem key={dest.id} value={dest.name}>{dest.name}</SelectItem>
+                       ))}
+                    </SelectContent>
+                </Select>
                 <FormMessage />
                 </FormItem>
             )}
