@@ -69,38 +69,18 @@ export default function Header() {
           {loading ? (
              <div className="h-8 w-20 bg-muted rounded-md animate-pulse" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar>
-                    <AvatarImage src={user.photoURL || ''} alt={`${user.firstName} ${user.lastName}`} />
-                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+            <div className="flex items-center gap-2">
+                 <Button variant="ghost" size="icon" asChild>
                    <Link href={isAdmin ? "/admin" : "/dashboard"}>
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
+                        <User className="h-5 w-5" />
+                        <span className="sr-only">Dashboard</span>
                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
+                </Button>
+                <Button variant="outline" size="sm" onClick={logout}>
                    <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                   Logout
+                </Button>
+            </div>
           ) : (
             <div className="space-x-2">
               <Button variant="ghost" asChild>
