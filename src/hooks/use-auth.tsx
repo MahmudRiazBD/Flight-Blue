@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   onAuthStateChanged,
@@ -46,17 +46,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [firebaseInstances, setFirebaseInstances] = useState<{ auth: Auth; db: Firestore } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const app = getFirebaseApp();
     const auth = getAuth(app);
     const db = getFirestore(app);
-    setFirebaseInstances({ auth, db });
     
     const seedSuperAdmin = async () => {
-        // Use sessionStorage to ensure this runs only once per session
         const hasRunKey = 'superAdminSeeded';
         if (sessionStorage.getItem(hasRunKey)) {
             return;
@@ -64,11 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const superAdminEmail = "hello@riaz.com.bd";
         const superAdminPassword = "2002##flightblue.MHR";
-
-        if (!superAdminEmail || !superAdminPassword) {
-            console.log("Super admin credentials not found, skipping seed.");
-            return;
-        }
 
         try {
             await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
@@ -80,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                  console.error("Error creating super admin in auth:", error);
             }
         } finally {
-            // Mark as run even if it fails to prevent loops
             sessionStorage.setItem(hasRunKey, 'true');
         }
     };
@@ -131,11 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
-    if (!firebaseInstances) {
-      throw new Error("Firebase is not initialized. Please try again.");
-    }
-    const { auth, db } = firebaseInstances;
+  const login = useCallback(async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
     
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
@@ -158,13 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setUser(appUser);
     return appUser;
-  };
+  }, []);
 
-  const signup = async (email: string, password: string, displayName: string, role: UserRole = 'customer') => {
-    if (!firebaseInstances) {
-      throw new Error("Firebase is not initialized. Please try again.");
-    }
-    const { auth, db } = firebaseInstances;
+  const signup = useCallback(async (email: string, password: string, displayName: string, role: UserRole = 'customer') => {
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
     const superAdminEmail = "hello@riaz.com.bd";
     if (email === superAdminEmail) {
@@ -190,18 +179,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       photoURL: '',
       phone: ''
     });
-  };
+  }, []);
 
-  const logout = async () => {
-    if (!firebaseInstances) {
-      return;
-    }
-    const { auth } = firebaseInstances;
+  const logout = useCallback(async () => {
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
     await signOut(auth);
     setUser(null);
     router.push('/');
     router.refresh();
-  };
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
