@@ -19,7 +19,6 @@ import { getAuth } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
-import { seedSuperAdmin } from '@/lib/actions';
 
 export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 
@@ -55,8 +54,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = getAuth(app);
     const db = getFirestore(app);
     setFirebaseInstances({ auth, db });
+    
+    const seedSuperAdmin = async () => {
+        // Use sessionStorage to ensure this runs only once per session
+        const hasRunKey = 'superAdminSeeded';
+        if (sessionStorage.getItem(hasRunKey)) {
+            return;
+        }
 
-    // Seed the super admin on initial load if not exists
+        const superAdminEmail = "hello@riaz.com.bd";
+        const superAdminPassword = "2002##flightblue.MHR";
+
+        if (!superAdminEmail || !superAdminPassword) {
+            console.log("Super admin credentials not found, skipping seed.");
+            return;
+        }
+
+        try {
+            await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            console.log("Super admin user created in Auth successfully.");
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-in-use') {
+                console.log("Super admin email already exists in Firebase Auth. Seeding not needed.");
+            } else {
+                 console.error("Error creating super admin in auth:", error);
+            }
+        } finally {
+            // Mark as run even if it fails to prevent loops
+            sessionStorage.setItem(hasRunKey, 'true');
+        }
+    };
+    
     seedSuperAdmin();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
@@ -64,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userRef);
         
-        const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+        const superAdminEmail = "hello@riaz.com.bd";
 
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
@@ -76,15 +104,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
            const isSuperAdmin = firebaseUser.email === superAdminEmail;
            const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
-           const nameParts = (firebaseUser.displayName || "New User").split(" ");
-           const firstName = nameParts[0] || "New";
-           const lastName = nameParts.slice(1).join(" ") || "User";
+           const nameParts = (firebaseUser.displayName || (isSuperAdmin ? "Super Admin" : "New User")).split(" ");
+           const firstName = nameParts[0] || (isSuperAdmin ? "Super" : "New");
+           const lastName = nameParts.slice(1).join(" ") || (isSuperAdmin ? "Admin" : "User");
 
            const newUser: Omit<User, 'uid'> = {
             email: firebaseUser.email!,
             firstName: firstName,
             lastName: lastName,
             role: userRole,
+            phone: '',
+            photoURL: ''
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), {
              ...newUser,
@@ -136,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { auth, db } = firebaseInstances;
 
-    const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+    const superAdminEmail = "hello@riaz.com.bd";
     if (email === superAdminEmail) {
         throw new Error("Cannot register with super admin email.");
     }
