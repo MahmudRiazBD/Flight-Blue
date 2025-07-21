@@ -26,10 +26,8 @@ export default function DashboardPage() {
         setIsProfileModalOpen(false);
         toast({
           title: "Profile Updated",
-          description: "Your profile has been successfully updated."
+          description: "Your profile has been successfully updated. Please refresh to see changes."
         });
-        // Note: The useAuth hook will eventually update the user state on its own,
-        // but a manual refresh might be needed for immediate UI changes in some cases.
     } catch (error) {
         console.error("Error saving profile:", error);
         toast({ title: "Error", description: "Failed to save your profile.", variant: "destructive" });

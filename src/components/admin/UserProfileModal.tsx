@@ -32,7 +32,7 @@ type UserProfileModalProps = {
   onClose: () => void;
   user: User | null;
   onSave: (updatedUser: User) => void;
-  isEditingSelf?: boolean; // New prop
+  isEditingSelf?: boolean;
 };
 
 export default function UserProfileModal({ isOpen, onClose, user, onSave, isEditingSelf = false }: UserProfileModalProps) {
@@ -70,8 +70,6 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   }
   
   const handlePasswordReset = () => {
-    // In a real app, this would trigger a Firebase password reset email.
-    // auth.sendPasswordResetEmail(user.email);
     toast({
         title: "Password Reset Email Sent (Simulated)",
         description: `An email has been sent to ${user.email} with instructions to reset the password.`,
@@ -83,8 +81,6 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
         ...user,
         ...data,
     };
-    // In a real app, you would also handle the password update here if data.newPassword is set.
-    // updateUserPassword(user.uid, data.newPassword);
     if(data.newPassword) {
         toast({
             title: "Password Updated (Simulated)",
@@ -177,7 +173,6 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                 <Input id="newPassword" type="password" {...form.register("newPassword")} placeholder="Leave blank to keep current password" />
                  {form.formState.errors.newPassword && <p className="text-destructive text-sm mt-1">{form.formState.errors.newPassword.message}</p>}
             </div>
-
 
             <DialogFooter className="mt-auto pt-4 border-t sticky bottom-0 bg-background pb-0">
                 <DialogClose asChild>

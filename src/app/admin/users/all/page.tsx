@@ -132,7 +132,6 @@ export default function AdminAllUsersPage() {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
         
-        // Exclude uid from the data to be written to Firestore
         const { uid, ...dataToSave } = updatedUser;
         
         await updateDoc(userRef, dataToSave);
@@ -252,4 +251,3 @@ export default function AdminAllUsersPage() {
     </>
   );
 }
-
