@@ -1,37 +1,45 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Helper function to check for admin roles
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 
-    // PUBLIC READABLE COLLECTIONS
-    // Anyone can read, but only admins can write.
-    match /{collection}/{docId} where collection in ['packages', 'posts', 'categories', 'destinations', 'packageTypes', 'settings'] {
-      allow read: if true;
-      allow write: if request.auth != null && isAdmin();
-    }
-
-    // USERS COLLECTION
-    // Users can create their own account.
-    // They can only read/update their own document.
-    // Admins can read/update any user document.
+    // Users can only manage their own documents. Admins can manage any user document.
     match /users/{userId} {
-      allow create: if request.auth != null;
-      allow read, update: if (request.auth != null && request.auth.uid == userId) || (request.auth != null && isAdmin());
-      // Deletion should be handled by a backend function for safety, but for now allow admins.
-      allow delete: if request.auth != null && isAdmin();
+      allow read, update, delete: if request.auth.uid == userId || isAdmin();
+      allow create: if request.auth.uid != null;
+    }
+    
+    // Bookings can be created by any authenticated user.
+    // Admins can read, update, or delete any booking.
+    match /bookings/{bookingId} {
+        allow create: if request.auth.uid != null;
+        allow read, update, delete: if isAdmin();
     }
 
-    // BOOKINGS & MESSAGES
-    // Anyone can create (submit a form).
-    // Only admins can read, update, or delete them.
-    match /{collection}/{docId} where collection in ['bookings', 'contactMessages'] {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null && isAdmin();
+    // Contact Messages can be created by anyone (even unauthenticated users).
+    // Admins can manage all messages.
+    match /contactMessages/{messageId} {
+        allow create: if true;
+        allow read, update, delete: if isAdmin();
+    }
+
+    // Publicly readable collections that only admins can write to.
+    // This is essential for the "seedDatabase" function to work.
+    match /{collection}/{docId} 
+    where collection in ['packages', 'posts', 'categories', 'destinations', 'packageTypes', 'settings'] {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+
+    // Default deny for any other path
+    match /{path=**} {
+      allow read, write: if false;
     }
   }
 }
