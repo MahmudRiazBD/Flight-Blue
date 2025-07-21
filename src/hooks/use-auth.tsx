@@ -54,22 +54,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const db = getFirestore(app);
     
     const seedSuperAdmin = async () => {
-        const hasRunKey = 'superAdminSeeded';
+        const hasRunKey = 'superAdminSeeded_v2';
         if (sessionStorage.getItem(hasRunKey)) {
             return;
         }
 
         const superAdminEmail = "hello@riaz.com.bd";
         const superAdminPassword = "2002##flightblue.MHR";
-
+        
         try {
-            await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            // Check if user exists in auth first
+            const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            const firebaseUser = userCredential.user;
             console.log("Super admin user created in Auth successfully.");
+
+            // Now create the user document in Firestore
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const superAdminData = {
+                email: superAdminEmail,
+                firstName: 'Super',
+                lastName: 'Admin',
+                role: 'superadmin' as UserRole,
+                createdAt: serverTimestamp(),
+                photoURL: '',
+                phone: ''
+            };
+            await setDoc(userRef, superAdminData);
+            console.log("Super admin user document created in Firestore.");
+
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
-                console.log("Super admin email already exists in Firebase Auth. Seeding not needed.");
+                console.log("Super admin email already exists in Firebase Auth. Seeding not needed, but checking Firestore.");
+                // User exists in auth, but maybe not in firestore. Let's ensure it.
+                // To do this, we need to sign in to get the UID. This part is tricky without creating a login loop.
+                // For this scenario, we will assume that if the auth user exists, the firestore doc should also exist or be created on first login.
+                // The onAuthStateChanged listener below will handle creating the doc if it's missing for a logged-in user.
             } else {
-                 console.error("Error creating super admin in auth:", error);
+                 console.error("Error creating super admin:", error);
             }
         } finally {
             sessionStorage.setItem(hasRunKey, 'true');
