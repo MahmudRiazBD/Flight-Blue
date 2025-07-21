@@ -21,7 +21,7 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import Logo from "@/components/icons/Logo"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Package,
@@ -34,10 +34,12 @@ import {
   ChevronDown,
   Mail,
   User as UserIcon,
+  ShieldAlert,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth, User } from "@/hooks/use-auth.tsx"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -47,6 +49,7 @@ import UserProfileModal from "@/components/admin/UserProfileModal";
 import { useToast } from "@/hooks/use-toast";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -82,13 +85,48 @@ const menuItems = [
   { href: "/admin/media", label: "Media", icon: Image },
 ]
 
+function AdminAccessDenied() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+        <Card className="w-full max-w-md text-center">
+            <CardHeader>
+                <div className="mx-auto bg-destructive text-destructive-foreground rounded-full p-3 w-fit">
+                    <ShieldAlert className="h-8 w-8" />
+                </div>
+                <CardTitle className="mt-4">Access Denied</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">
+                   You do not have the necessary permissions to view this page. This area is restricted to administrators.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                    If you believe this is an error, please contact a site super administrator to grant you access.
+                </p>
+                <Button asChild className="mt-6">
+                    <Link href="/">Return to Homepage</Link>
+                </Button>
+            </CardContent>
+        </Card>
+    </div>
+  )
+}
+
+function AdminLoadingScreen() {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    )
+}
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
     packages: pathname.startsWith('/admin/packages'),
@@ -96,6 +134,28 @@ export default function AdminLayout({
     blog: pathname.startsWith('/admin/blog'),
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const isAuthorized = user?.role === "admin" || user?.role === "superadmin";
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+
+  if (loading) {
+    return <AdminLoadingScreen />;
+  }
+  
+  if (!user) {
+    // This state is brief as the useEffect above will redirect.
+    // Showing a loading screen is better than a flash of content.
+    return <AdminLoadingScreen />;
+  }
+
+  if (!isAuthorized) {
+    return <AdminAccessDenied />;
+  }
 
   const handleOpenChange = (key: keyof typeof openState) => (isOpen: boolean) => {
     setOpenState(prev => ({...prev, [key]: isOpen }));
