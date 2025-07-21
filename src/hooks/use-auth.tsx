@@ -16,7 +16,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
 
@@ -37,7 +37,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
+  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
   signup: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
   logout: () => void;
 }
@@ -174,14 +174,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (email: string, password: string, rememberMe: boolean = true): Promise<User> => {
+  const login = useCallback(async (identifier: string, password: string, rememberMe: boolean = true): Promise<User> => {
     const app = getFirebaseApp();
     const auth = getAuth(app);
     const db = getFirestore(app);
     
+    let loginEmail = identifier;
+
+    // If identifier doesn't look like an email, assume it's a username
+    if (!identifier.includes('@')) {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("username", "==", identifier));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            throw new Error("No user found with that username.");
+        }
+        
+        // Assuming usernames are unique
+        const userDoc = querySnapshot.docs[0].data();
+        loginEmail = userDoc.email;
+    }
+
     await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
     const firebaseUser = userCredential.user;
 
     const userRef = doc(db, 'users', firebaseUser.uid);

@@ -32,7 +32,7 @@ import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
+  identifier: z.string().min(1, { message: "Email or username cannot be empty." }),
   password: z.string().min(1, { message: "Password cannot be empty." }),
   rememberMe: z.boolean().default(false).optional(),
 });
@@ -46,7 +46,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
       rememberMe: true,
     },
@@ -55,7 +55,7 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setFormLoading(true);
     try {
-      const user = await login(values.email, values.password, values.rememberMe);
+      const user = await login(values.identifier, values.password, values.rememberMe);
 
       toast({
         title: "Login Successful!",
@@ -71,9 +71,11 @@ export default function LoginPage() {
       console.error("Login Failed", error);
       let errorMessage = "An unexpected error occurred. Please try again.";
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Invalid email or password. Please try again.";
+        errorMessage = "Invalid credentials. Please try again.";
       } else if (error.code === 'auth/configuration-not-found' || error.message.includes("Firebase is not initialized")) {
         errorMessage = "Authentication service is not ready. Please try again in a moment.";
+      } else {
+        errorMessage = error.message; // Use custom error message from the hook
       }
       toast({
         title: "Login Failed",
@@ -104,12 +106,12 @@ export default function LoginPage() {
             <CardContent className="grid gap-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email or Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="m@example.com" {...field} disabled={isLoading} />
+                      <Input placeholder="user@example.com or your_username" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
