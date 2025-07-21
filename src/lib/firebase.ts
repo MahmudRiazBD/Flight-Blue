@@ -1,25 +1,22 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCyMBjo9WoRCCHxhx9bLeGRGNl2OpcPMFM",
+  authDomain: "global-roam-elasz.firebaseapp.com",
+  projectId: "global-roam-elasz",
+  storageBucket: "global-roam-elasz.appspot.com",
+  messagingSenderId: "398365154934",
+  appId: "1:398365154934:web:a841c7570aa30ffe54c957"
+};
+
 // Initialize Firebase for client-side
 function getFirebaseApp(): FirebaseApp {
     if (getApps().length > 0) {
         return getApp();
     }
     
-    const firebaseConfig = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    };
-
-    if (!firebaseConfig.apiKey) {
-        throw new Error("Firebase API key is missing. Please check your .env file and ensure NEXT_PUBLIC_FIREBASE_API_KEY is set.");
-    }
-
     return initializeApp(firebaseConfig);
 }
 
