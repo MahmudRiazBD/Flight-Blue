@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const db = getFirestore(app);
     
     const seedSuperAdmin = async () => {
-        const hasRunKey = 'superAdminSeeded_v2';
+        const hasRunKey = 'superAdminSeeded_v3';
         if (sessionStorage.getItem(hasRunKey)) {
             return;
         }
@@ -63,40 +63,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const superAdminPassword = "2002##flightblue.MHR";
         
         try {
-            // This function will create the auth user and the firestore doc
             await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-            console.log("Super admin user created in Auth successfully.");
+            console.log("Super admin auth user created successfully.");
 
-            // Now that we know the user is created, let's get the user to create the Firestore document
-            const userCredential = await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-            const firebaseUser = userCredential.user;
-
-            const userRef = doc(db, 'users', firebaseUser.uid);
-            const superAdminData = {
-                email: superAdminEmail,
-                firstName: 'Super',
-                lastName: 'Admin',
-                role: 'superadmin' as UserRole,
-                createdAt: serverTimestamp(),
-                photoURL: '',
-                phone: ''
-            };
-            await setDoc(userRef, superAdminData);
-            console.log("Super admin user document created in Firestore.");
-            // Sign out the temporary user
-            await signOut(auth);
+            // Since user was just created, auth.currentUser will be the new user.
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser) {
+                const userRef = doc(db, 'users', firebaseUser.uid);
+                await setDoc(userRef, {
+                    email: superAdminEmail,
+                    firstName: 'Super',
+                    lastName: 'Admin',
+                    role: 'superadmin' as UserRole,
+                    createdAt: serverTimestamp(),
+                    photoURL: '',
+                    phone: ''
+                });
+                console.log("Super admin user document created in Firestore.");
+                await signOut(auth); // Sign out the temporary session
+                console.log("Super admin seeding session signed out.");
+            }
+             sessionStorage.setItem(hasRunKey, 'true');
 
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
-                console.log("Super admin email already exists in Firebase Auth. Seeding not needed, but checking Firestore.");
-                // User exists in auth, but maybe not in firestore. Let's ensure it.
-                // To do this, we need to sign in to get the UID. This part is tricky without creating a login loop.
-                // The onAuthStateChanged listener below will handle creating the doc if it's missing for a logged-in user.
+                console.log("Super admin email already exists in Firebase Auth. Seeding process complete.");
             } else {
                  console.error("Error creating super admin:", error);
             }
-        } finally {
-            sessionStorage.setItem(hasRunKey, 'true');
         }
     };
     
@@ -107,17 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userRef);
         
-        const superAdminEmail = "hello@riaz.com.bd";
-
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
-           if (firebaseUser.email === superAdminEmail && userData.role !== 'superadmin') {
-              userData.role = 'superadmin';
-              await setDoc(userRef, { role: 'superadmin' }, { merge: true });
-           }
           setUser({ uid: firebaseUser.uid, ...userData });
         } else {
-           const isSuperAdmin = firebaseUser.email === superAdminEmail;
+           // This case handles users who signed up but their doc creation might have failed
+           // or for the super admin if their doc is missing for some reason.
+           const isSuperAdmin = firebaseUser.email === "hello@riaz.com.bd";
            const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
            const nameParts = (firebaseUser.displayName || (isSuperAdmin ? "Super Admin" : "New User")).split(" ");
            const firstName = nameParts[0] || (isSuperAdmin ? "Super" : "New");
@@ -129,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             lastName: lastName,
             role: userRole,
             phone: '',
-            photoURL: ''
+            photoURL: firebaseUser.photoURL || ''
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), {
              ...newUser,
