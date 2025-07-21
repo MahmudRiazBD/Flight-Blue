@@ -450,15 +450,15 @@ export default function AdminSettingsPage() {
                     <div className="space-y-4">
                         <h4 className="font-semibold">Packages Permalink Base</h4>
                         <RadioGroup defaultValue={packagePermalink} onValueChange={setPackagePermalink} className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                            <div key="p-default" className="flex items-center space-x-2">
                                 <RadioGroupItem value="/packages/%postname%" id="p-default" />
                                 <Label htmlFor="p-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/packages/%postname%</code></Label>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div key="p-tours" className="flex items-center space-x-2">
                                 <RadioGroupItem value="/tours/%postname%" id="p-tours" />
                                 <Label htmlFor="p-tours" className="font-normal">Tour base: <code className="bg-muted px-1 py-0.5 rounded">/tours/%postname%</code></Label>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div key="p-custom" className="flex items-center space-x-2">
                                 <RadioGroupItem value="custom" id="p-custom" />
                                 <Label htmlFor="p-custom" className="font-normal">Custom Structure:</Label>
                                 <Input
@@ -477,11 +477,11 @@ export default function AdminSettingsPage() {
                      <div className="space-y-4 pt-4 border-t">
                         <h4 className="font-semibold">Media Permalink Base</h4>
                          <RadioGroup defaultValue={mediaPermalink} onValueChange={setMediaPermalink} className="space-y-2">
-                            <div className="flex items-center space-x-2">
+                            <div key="m-default" className="flex items-center space-x-2">
                                 <RadioGroupItem value="/uploads/%filename%" id="m-default" />
                                 <Label htmlFor="m-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/uploads/%filename%</code></Label>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div key="m-postname" className="flex items-center space-x-2">
                                 <RadioGroupItem value="/media/%postname%" id="m-postname" />
                                 <Label htmlFor="m-postname" className="font-normal">Post name: <code className="bg-muted px-1 py-0.5 rounded">/media/%postname%</code> (Uses a slug from the filename)</Label>
                             </div>
