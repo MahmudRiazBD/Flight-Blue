@@ -63,7 +63,7 @@ export async function seedDatabase() {
         siteTitle: "Flight Blu",
         logoUrl: "/logo.svg",
         faviconUrl: "/favicon.ico",
-        heroImageUrl: "https://placehold.co/1920x1080.png",
+        heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
         heroTitle: "Your Adventure Awaits",
         heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
         heroButtonLabel: "Explore Packages",
@@ -72,22 +72,25 @@ export async function seedDatabase() {
         quickLinks: {
             title: "Quick Links",
             links: [
-                { id: "fl1-1", label: "About Us", url: "/about" },
+                { id: "fl1-1", label: "About Us", url: "#" },
                 { id: "fl1-2", label: "Packages", url: "/packages" },
                 { id: "fl1-3", label: "Blog", url: "/blog" },
-                { id: "fl1-4", label: "Contact", url: "/contact" },
             ]
         },
         supportLinks: {
             title: "Support",
             links: [
-                { id: "fl2-1", label: "FAQ", url: "/faq" },
-                { id: "fl2-2", label: "Terms of Service", url: "/terms" },
-                { id: "fl2-3", label: "Privacy Policy", url: "/privacy" },
+                { id: "fl2-1", label: "FAQ", url: "#" },
+                { id: "fl2-2", label: "Terms of Service", url: "#" },
+                { id: "fl2-3", label: "Privacy Policy", url: "#" },
             ]
         },
-        socialLinks: [],
-        googleMapEmbedCode: ''
+        socialLinks: [
+            { id: "soc-1", platform: 'facebook', url: 'https://facebook.com' },
+            { id: "soc-2", platform: 'twitter', url: 'https://twitter.com' },
+            { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' },
+        ],
+        googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
     });
 
 

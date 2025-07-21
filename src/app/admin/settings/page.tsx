@@ -51,6 +51,28 @@ type GlobalSettings = {
     googleMapEmbedCode: string;
 };
 
+const defaultSettings: GlobalSettings = {
+    siteTitle: "Flight Blu",
+    logoUrl: "/logo.svg",
+    faviconUrl: "/favicon.ico",
+    heroImageUrl: "https://placehold.co/1920x1080.png",
+    heroTitle: "Your Adventure Awaits",
+    heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+    heroButtonLabel: "Explore Packages",
+    heroButtonLink: "/packages",
+    footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
+    quickLinks: {
+        title: "Quick Links",
+        links: []
+    },
+    supportLinks: {
+        title: "Support",
+        links: []
+    },
+    socialLinks: [],
+    googleMapEmbedCode: ''
+};
+
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'twitter', label: 'Twitter' },
     { value: 'facebook', label: 'Facebook' },
@@ -77,11 +99,13 @@ export default function AdminSettingsPage() {
                     setSettings(docSnap.data() as GlobalSettings);
                 } else {
                     // Handle case where settings don't exist yet, maybe set defaults
-                    console.log("No settings document found. You may need to seed the database.");
+                    console.log("No settings document found. Initializing with default settings.");
+                    setSettings(defaultSettings);
                 }
             } catch (error) {
                 console.error("Error loading settings:", error);
                 toast({ title: "Error", description: "Failed to load site settings.", variant: "destructive" });
+                setSettings(defaultSettings); // Fallback to defaults on error
             } finally {
                 setLoading(false);
             }
@@ -315,7 +339,7 @@ export default function AdminSettingsPage() {
              <TabsContent value="footer" className="pt-6">
                 <div className="space-y-8">
                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Column 1: Description</h3>
+                        <h3 className="text-lg font-medium">Column 1: Description & Socials</h3>
                         <div>
                             <Label htmlFor="footerDescription">Text under logo</Label>
                             <Textarea 
@@ -325,6 +349,35 @@ export default function AdminSettingsPage() {
                                 placeholder="Your adventure starts here..."
                             />
                         </div>
+                        <div className="space-y-3 pt-4">
+                            <Label>Social Media Links</Label>
+                            {settings.socialLinks.map((link, index) => (
+                                <div key={link.id} className="flex items-end gap-2">
+                                    <div className="flex-grow grid grid-cols-3 gap-2">
+                                         <select
+                                            value={link.platform}
+                                            onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {socialPlatforms.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                        </select>
+                                        <Input
+                                            type="url"
+                                            placeholder="https://..."
+                                            value={link.url}
+                                            onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                                            className="col-span-2"
+                                        />
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => removeSocialLink(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={addSocialLink}>
+                           <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
+                        </Button>
                     </div>
 
                     <Separator />
@@ -382,50 +435,19 @@ export default function AdminSettingsPage() {
                     <Separator/>
 
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Column 1 & 4: Social Media & Location Map</h3>
-                        <p className="text-sm text-muted-foreground">Add links to your social media profiles. These will appear in the first column of the footer.</p>
-                        <div className="space-y-3">
-                            {settings.socialLinks.map((link, index) => (
-                                <div key={link.id} className="flex items-end gap-2">
-                                    <div className="flex-grow grid grid-cols-3 gap-2">
-                                         <select
-                                            value={link.platform}
-                                            onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
-                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {socialPlatforms.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                                        </select>
-                                        <Input
-                                            type="url"
-                                            placeholder="https://..."
-                                            value={link.url}
-                                            onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
-                                            className="col-span-2"
-                                        />
-                                    </div>
-                                    <Button variant="ghost" size="icon" onClick={() => removeSocialLink(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button variant="outline" size="sm" onClick={addSocialLink}>
-                           <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
-                        </Button>
-                         <div className="pt-4 space-y-4">
-                            <div>
-                                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code (Column 4)</Label>
-                                <Textarea 
-                                    id="googleMapEmbedCode" 
-                                    value={settings.googleMapEmbedCode} 
-                                    onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
-                                    placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
-                                    rows={4}
-                                />
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Paste the full `&lt;iframe...&gt;` code from Google Maps here.
-                                </p>
-                            </div>
+                        <h3 className="text-lg font-medium">Column 4: Location Map</h3>
+                         <div>
+                            <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code</Label>
+                            <Textarea 
+                                id="googleMapEmbedCode" 
+                                value={settings.googleMapEmbedCode} 
+                                onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
+                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
+                                rows={4}
+                            />
+                            <p className="text-sm text-muted-foreground mt-2">
+                                Paste the full `&lt;iframe...&gt;` code from Google Maps here.
+                            </p>
                         </div>
                     </div>
                 </div>
