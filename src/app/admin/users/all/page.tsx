@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { User, UserRole } from "@/hooks/use-auth";
+import { User, UserRole, useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "@/lib/users"; // Using mock data for now
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const roleColors: Record<UserRole, "default" | "secondary" | "destructive"> = {
   customer: "secondary",
@@ -24,65 +26,100 @@ const roleColors: Record<UserRole, "default" | "secondary" | "destructive"> = {
 
 export default function AdminAllUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const { signup } = useAuth();
 
-  const loadUsers = () => {
-     const storedUsers = localStorage.getItem('mockUsers');
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      setUsers(mockUsers);
-      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+        const db = getFirestore(getFirebaseApp());
+        const usersCollection = collection(db, "users");
+        const usersSnapshot = await getDocs(usersCollection);
+        const usersList = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+        setUsers(usersList);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+            title: "Error loading users",
+            description: "Could not fetch user data from the database.",
+            variant: "destructive"
+        });
+    } finally {
+        setLoading(false);
     }
   }
 
   useEffect(() => {
     loadUsers();
-    window.addEventListener('storage', loadUsers);
-    return () => {
-      window.removeEventListener('storage', loadUsers);
-    };
   }, []);
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
-    const updatedUsers = users.map(user => (user.uid === userId ? { ...user, role: newRole } : user));
-    setUsers(updatedUsers);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    const user = users.find(u => u.uid === userId);
-    toast({
-        title: "Role Updated",
-        description: `${user?.firstName}'s role has been changed to ${newRole}.`
-    })
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    const userToUpdate = users.find(u => u.uid === userId);
+    if (!userToUpdate || userToUpdate.role === 'superadmin') {
+      toast({ title: "Operation not allowed", variant: "destructive" });
+      return;
+    }
+    
+    try {
+      const db = getFirestore(getFirebaseApp());
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, { role: newRole });
+      
+      setUsers(prevUsers => prevUsers.map(user => (user.uid === userId ? { ...user, role: newRole } : user)));
+      
+      toast({
+          title: "Role Updated",
+          description: `${userToUpdate.firstName}'s role has been changed to ${newRole}.`
+      });
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast({ title: "Error", description: "Failed to update user role.", variant: "destructive" });
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     const user = users.find(u => u.uid === userId);
-    const updatedUsers = users.filter(user => user.uid !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-     toast({
-        title: "User Deleted",
-        description: `User ${user?.firstName} has been removed.`,
-        variant: "destructive"
-    })
+    if (!user || user.role === 'superadmin') {
+      toast({ title: "Operation not allowed", description: "Super admin cannot be deleted.", variant: "destructive"});
+      return;
+    }
+    
+    try {
+      const db = getFirestore(getFirebaseApp());
+      await deleteDoc(doc(db, "users", userId));
+      setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+      toast({
+          title: "User Deleted",
+          description: `User ${user.firstName} has been removed.`,
+          variant: "destructive"
+      });
+    } catch (error) {
+       console.error("Error deleting user:", error);
+       toast({ title: "Error", description: "Failed to delete user.", variant: "destructive" });
+    }
   }
   
-  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
-    const userToAdd: User = {
-      ...newUser,
-      uid: `user-${new Date().getTime()}`, // simple unique id
-    };
-    const updatedUsers = [...users, userToAdd];
-    setUsers(updatedUsers);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    setIsAddModalOpen(false);
-    toast({
-      title: "User Added",
-      description: `User ${newUser.firstName} has been created.`
-    });
+  const handleAddUser = async (newUser: Omit<User, 'uid' | 'photoURL'>) => {
+    try {
+      await signup(newUser.email!, newUser.password as string, `${newUser.firstName} ${newUser.lastName}`, newUser.role);
+      toast({
+        title: "User Added",
+        description: `User ${newUser.firstName} has been created.`
+      });
+      setIsAddModalOpen(false);
+      loadUsers(); // Refresh the user list
+    } catch (error: any) {
+        console.error("Failed to add user:", error);
+        toast({
+            title: "Error adding user",
+            description: error.message || "Could not create the new user.",
+            variant: "destructive"
+        });
+    }
   };
 
   const handleViewProfile = (user: User) => {
@@ -90,15 +127,25 @@ export default function AdminAllUsersPage() {
     setIsProfileModalOpen(true);
   }
 
-  const handleSaveUser = (updatedUser: User) => {
-    const updatedUsers = users.map(user => user.uid === updatedUser.uid ? updatedUser : user);
-    setUsers(updatedUsers);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    setIsProfileModalOpen(false);
-    toast({
-      title: "User Updated",
-      description: `${updatedUser.firstName}'s profile has been saved.`
-    })
+  const handleSaveUser = async (updatedUser: User) => {
+    try {
+        const db = getFirestore(getFirebaseApp());
+        const userRef = doc(db, "users", updatedUser.uid);
+        
+        // Exclude uid from the data to be written to Firestore
+        const { uid, ...dataToSave } = updatedUser;
+        
+        await updateDoc(userRef, dataToSave);
+        setUsers(prevUsers => prevUsers.map(user => user.uid === updatedUser.uid ? updatedUser : user));
+        setIsProfileModalOpen(false);
+        toast({
+        title: "User Updated",
+        description: `${updatedUser.firstName}'s profile has been saved.`
+        });
+    } catch (error) {
+        console.error("Error saving user:", error);
+        toast({ title: "Error", description: "Failed to save user details.", variant: "destructive" });
+    }
   }
 
   return (
@@ -125,54 +172,65 @@ export default function AdminAllUsersPage() {
                   </TableRow>
               </TableHeader>
               <TableBody>
-                  {users.map((user) => (
-                      <TableRow key={user.uid}>
-                          <TableCell>
-                              <div className="flex items-center gap-3">
-                                  <Avatar>
-                                      <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                      <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="font-medium">{user.firstName} {user.lastName}</span>
-                              </div>
-                          </TableCell>
-                          <TableCell>
-                              <Badge variant={roleColors[user.role]}>{user.role}</Badge>
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                      <span className="sr-only">Toggle menu</span>
-                                  </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleViewProfile(user)}>
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    View Profile
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSub>
-                                      <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent>
-                                          <DropdownMenuRadioGroup value={user.role} onValueChange={(role) => handleRoleChange(user.uid, role as UserRole)}>
-                                              <DropdownMenuRadioItem value="customer">Customer</DropdownMenuRadioItem>
-                                              <DropdownMenuRadioItem value="staff">Staff</DropdownMenuRadioItem>
-                                              <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
-                                          </DropdownMenuRadioGroup>
-                                      </DropdownMenuSubContent>
-                                  </DropdownMenuSub>
-                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)}>
-                                      <Trash2 className="mr-2 h-4 w-4"/>
-                                      Delete User
-                                  </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                              </DropdownMenu>
-                          </TableCell>
-                      </TableRow>
-                  ))}
+                  {loading ? (
+                     Array.from({ length: 5 }).map((_, index) => (
+                        <TableRow key={index}>
+                            <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                        </TableRow>
+                     ))
+                  ) : (
+                    users.map((user) => (
+                        <TableRow key={user.uid}>
+                            <TableCell>
+                                <div className="flex items-center gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium">{user.firstName} {user.lastName}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={roleColors[user.role]}>{user.role}</Badge>
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                      <UserIcon className="mr-2 h-4 w-4" />
+                                      View Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger disabled={user.role === 'superadmin'}>Change Role</DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuRadioGroup value={user.role} onValueChange={(role) => handleRoleChange(user.uid, role as UserRole)}>
+                                                <DropdownMenuRadioItem value="customer">Customer</DropdownMenuRadioItem>
+                                                <DropdownMenuRadioItem value="staff">Staff</DropdownMenuRadioItem>
+                                                <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
+                                            </DropdownMenuRadioGroup>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)} disabled={user.role === 'superadmin'}>
+                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        Delete User
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                  )}
               </TableBody>
           </Table>
         </CardContent>
@@ -194,3 +252,4 @@ export default function AdminAllUsersPage() {
     </>
   );
 }
+

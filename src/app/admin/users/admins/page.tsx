@@ -7,46 +7,58 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { User, UserRole } from "@/hooks/use-auth";
+import { User, UserRole, useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockUsers } from "@/lib/users";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { useToast } from "@/hooks/use-toast";
 import { getInitials } from "@/lib/utils";
-
+import { getFirestore, collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminAdminsPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
+  const { signup } = useAuth();
 
-  const loadUsers = () => {
-    const storedUsers = localStorage.getItem('mockUsers');
-    const allUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
-    
-    const adminUsers = allUsers.filter((u: User) => u.role === 'admin' || u.role === 'superadmin');
-    
-    adminUsers.sort((a: User, b: User) => {
-        if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
-        if (a.role !== 'superadmin' && b.role === 'superadmin') return 1;
-        if (a.firstName < b.firstName) return -1;
-        if (a.firstName > b.firstName) return 1;
-        return 0;
-    });
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+        const db = getFirestore(getFirebaseApp());
+        const usersCollection = collection(db, "users");
+        const adminQuery = query(usersCollection, where("role", "in", ["admin", "superadmin"]));
+        const usersSnapshot = await getDocs(adminQuery);
+        
+        const adminUsers = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
+        
+        adminUsers.sort((a: User, b: User) => {
+            if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
+            if (a.role !== 'superadmin' && b.role === 'superadmin') return 1;
+            if (a.firstName < b.firstName) return -1;
+            if (a.firstName > b.firstName) return 1;
+            return 0;
+        });
 
-    setUsers(adminUsers);
+        setUsers(adminUsers);
+    } catch (error) {
+        console.error("Error fetching admin users:", error);
+        toast({
+            title: "Error loading admins",
+            description: "Could not fetch user data from the database.",
+            variant: "destructive"
+        });
+    } finally {
+        setLoading(false);
+    }
   };
   
   useEffect(() => {
     loadUsers();
-    // Listen to storage changes to update if another tab changes the users
-    window.addEventListener('storage', loadUsers);
-    return () => {
-      window.removeEventListener('storage', loadUsers);
-    };
   }, []);
 
   const handleViewProfile = (user: User) => {
@@ -54,36 +66,42 @@ export default function AdminAdminsPage() {
     setIsProfileModalOpen(true);
   }
   
-  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
-    const allUsersStored = localStorage.getItem('mockUsers');
-    let allUsers = allUsersStored ? JSON.parse(allUsersStored) : mockUsers;
-    const userToAdd: User = {
-      ...newUser,
-      uid: `user-${new Date().getTime()}`, // simple unique id
-    };
-    const updatedUsers = [...allUsers, userToAdd];
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    loadUsers();
-    setIsAddModalOpen(false);
-    toast({
-      title: "Admin Added",
-      description: `User ${newUser.firstName} has been created.`
-    });
+  const handleAddUser = async (newUser: Omit<User, 'uid' | 'photoURL'>) => {
+     try {
+      await signup(newUser.email!, newUser.password as string, `${newUser.firstName} ${newUser.lastName}`, newUser.role);
+      toast({
+        title: "Admin Added",
+        description: `User ${newUser.firstName} has been created.`
+      });
+      setIsAddModalOpen(false);
+      loadUsers(); // Refresh the user list
+    } catch (error: any) {
+        console.error("Failed to add admin:", error);
+        toast({
+            title: "Error adding admin",
+            description: error.message || "Could not create the new user.",
+            variant: "destructive"
+        });
+    }
   };
 
-  const handleSaveUser = (updatedUser: User) => {
-    // We need to update the global user list in localStorage
-    const allUsersStored = localStorage.getItem('mockUsers');
-    let allUsers = allUsersStored ? JSON.parse(allUsersStored) : mockUsers;
-    allUsers = allUsers.map((u: User) => u.uid === updatedUser.uid ? updatedUser : u);
-    localStorage.setItem('mockUsers', JSON.stringify(allUsers));
-    
-    loadUsers(); // Reload the filtered & sorted list for this page
-    setIsProfileModalOpen(false);
-    toast({
-      title: "User Updated",
-      description: `${updatedUser.firstName}'s profile has been saved.`
-    })
+  const handleSaveUser = async (updatedUser: User) => {
+    try {
+        const db = getFirestore(getFirebaseApp());
+        const userRef = doc(db, "users", updatedUser.uid);
+        const { uid, ...dataToSave } = updatedUser;
+        await updateDoc(userRef, dataToSave);
+        
+        loadUsers(); // Reload the filtered & sorted list for this page
+        setIsProfileModalOpen(false);
+        toast({
+        title: "User Updated",
+        description: `${updatedUser.firstName}'s profile has been saved.`
+        });
+    } catch (error) {
+        console.error("Error saving user:", error);
+        toast({ title: "Error", description: "Failed to save user details.", variant: "destructive" });
+    }
   }
 
   return (
@@ -110,44 +128,55 @@ export default function AdminAdminsPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {users.map((user) => (
-                    <TableRow key={user.uid}>
-                        <TableCell>
-                            <div className="flex items-center gap-3">
-                                <Avatar>
-                                    <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                                </Avatar>
-                                <span className="font-medium">{user.firstName} {user.lastName}</span>
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <Badge variant={user.role === 'superadmin' ? "destructive" : "default"}>{user.role}</Badge>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell className="text-right">
-                           <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                 <DropdownMenuItem onClick={() => handleViewProfile(user)}>
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    View Profile
-                                  </DropdownMenuItem>
-                                <DropdownMenuItem disabled>
-                                    <ShieldAlert className="mr-2 h-4 w-4"/>
-                                    Manage Permissions
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                {loading ? (
+                    Array.from({ length: 2 }).map((_, index) => (
+                        <TableRow key={index}>
+                            <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    users.map((user) => (
+                        <TableRow key={user.uid}>
+                            <TableCell>
+                                <div className="flex items-center gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium">{user.firstName} {user.lastName}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={user.role === 'superadmin' ? "destructive" : "default"}>{user.role}</Badge>
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell className="text-right">
+                            <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                        <UserIcon className="mr-2 h-4 w-4" />
+                                        View Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem disabled>
+                                        <ShieldAlert className="mr-2 h-4 w-4"/>
+                                        Manage Permissions
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))
+                )}
             </TableBody>
         </Table>
       </CardContent>
@@ -169,3 +198,4 @@ export default function AdminAdminsPage() {
     </>
   );
 }
+

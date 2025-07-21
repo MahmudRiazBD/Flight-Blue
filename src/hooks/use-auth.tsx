@@ -30,13 +30,14 @@ export interface User {
   phone?: string;
   role: UserRole;
   photoURL?: string | null;
+  password?: string; // Only used for creation, not stored
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
   logout: () => void;
 }
 
@@ -69,11 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
            const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
            const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
-           const [firstName, lastName] = (firebaseUser.displayName || "New User").split(" ");
+           const nameParts = (firebaseUser.displayName || "New User").split(" ");
+           const firstName = nameParts[0] || "New";
+           const lastName = nameParts.slice(1).join(" ") || "User";
+
            const newUser: Omit<User, 'uid'> = {
             email: firebaseUser.email!,
-            firstName: firstName || "New",
-            lastName: lastName || "User",
+            firstName: firstName,
+            lastName: lastName,
             role: userRole,
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), {
@@ -120,11 +124,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   };
 
-  const signup = async (email: string, password: string, displayName: string) => {
+  const signup = async (email: string, password: string, displayName: string, role: UserRole = 'customer') => {
     if (!firebaseInstances) {
       throw new Error("Firebase is not initialized. Please try again.");
     }
     const { auth, db } = firebaseInstances;
+
+    // Check if user already exists in Auth. If so, throw error.
+    // Note: A more robust way is a Cloud Function, but this is a client-side check.
+    const existingUserDoc = await getDoc(doc(db, 'users', email)); // Not ideal to use email as ID, just for a quick check.
+    if(existingUserDoc.exists()){
+       // This check is flawed. A better check is needed.
+       // For now, let's rely on Firebase Auth's error.
+    }
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
@@ -132,18 +144,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateProfile(firebaseUser, { displayName });
 
     const isSuperAdmin = email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-    const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
+    const userRole: UserRole = isSuperAdmin ? 'superadmin' : role;
 
-    const [firstName, lastName] = displayName.split(' ');
+    const nameParts = displayName.split(' ');
+    const firstName = nameParts[0] || displayName;
+    const lastName = nameParts.slice(1).join(' ') || '';
 
     const userRef = doc(db, 'users', firebaseUser.uid);
     await setDoc(userRef, {
-      uid: firebaseUser.uid,
       email,
-      firstName: firstName || displayName,
-      lastName: lastName || '',
+      firstName: firstName,
+      lastName: lastName,
       role: userRole,
       createdAt: serverTimestamp(),
+      photoURL: '',
+      phone: ''
     });
   };
 
@@ -172,3 +187,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+

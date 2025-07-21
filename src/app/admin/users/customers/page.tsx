@@ -6,64 +6,84 @@ import { PlusCircle, MoreHorizontal, Trash2, User as UserIcon } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { User } from "@/hooks/use-auth";
+import { User, useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "@/lib/users"; 
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
+import { getFirestore, collection, getDocs, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminCustomersListPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
+  const { signup } = useAuth();
 
-  const loadUsers = () => {
-      const storedUsers = localStorage.getItem('mockUsers');
-      const currentUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
-      setAllUsers(currentUsers);
-      const customerUsers = currentUsers.filter((u:User) => u.role === 'customer');
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const db = getFirestore(getFirebaseApp());
+      const usersCollection = collection(db, "users");
+      const customerQuery = query(usersCollection, where("role", "==", "customer"));
+      const usersSnapshot = await getDocs(customerQuery);
+      const customerUsers = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
       setUsers(customerUsers);
+    } catch (error) {
+      console.error("Error fetching customer users:", error);
+      toast({
+        title: "Error loading customers",
+        description: "Could not fetch user data from the database.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   useEffect(() => {
     loadUsers();
-     // Listen to storage changes to update if another tab changes the users
-    window.addEventListener('storage', loadUsers);
-    return () => {
-      window.removeEventListener('storage', loadUsers);
-    };
   }, []);
 
-  const handleDeleteUser = (userId: string) => {
-    const user = allUsers.find(u => u.uid === userId);
-    const updatedAllUsers = allUsers.filter(u => u.uid !== userId);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedAllUsers));
-    loadUsers();
-     toast({
-        title: "User Deleted",
-        description: `User ${user?.firstName} has been removed.`,
-        variant: "destructive"
-    });
+  const handleDeleteUser = async (userId: string) => {
+    const user = users.find(u => u.uid === userId);
+    try {
+      const db = getFirestore(getFirebaseApp());
+      await deleteDoc(doc(db, "users", userId));
+      setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+      toast({
+          title: "User Deleted",
+          description: `User ${user?.firstName} has been removed.`,
+          variant: "destructive"
+      });
+    } catch (error) {
+       console.error("Error deleting user:", error);
+       toast({ title: "Error", description: "Failed to delete user.", variant: "destructive" });
+    }
   }
 
-  const handleAddUser = (newUser: Omit<User, 'uid'>) => {
-    const userToAdd: User = {
-      ...newUser,
-      uid: `user-${new Date().getTime()}`, // simple unique id
-    };
-    const updatedUsers = [...allUsers, userToAdd];
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    loadUsers();
-    setIsAddModalOpen(false);
-    toast({
-      title: "Customer Added",
-      description: `User ${newUser.firstName} has been created.`
-    });
+  const handleAddUser = async (newUser: Omit<User, 'uid' | 'photoURL'>) => {
+    try {
+      await signup(newUser.email!, newUser.password as string, `${newUser.firstName} ${newUser.lastName}`, newUser.role);
+      toast({
+        title: "Customer Added",
+        description: `User ${newUser.firstName} has been created.`
+      });
+      setIsAddModalOpen(false);
+      loadUsers(); // Refresh list
+    } catch (error: any) {
+      console.error("Failed to add customer:", error);
+      toast({
+          title: "Error adding customer",
+          description: error.message || "Could not create the new user.",
+          variant: "destructive"
+      });
+    }
   };
 
   const handleViewProfile = (user: User) => {
@@ -71,15 +91,22 @@ export default function AdminCustomersListPage() {
     setIsProfileModalOpen(true);
   }
 
-  const handleSaveUser = (updatedUser: User) => {
-    const updatedAllUsers = allUsers.map(u => u.uid === updatedUser.uid ? updatedUser : u);
-    localStorage.setItem('mockUsers', JSON.stringify(updatedAllUsers));
-    loadUsers(); // Reload the filtered list
-    setIsProfileModalOpen(false);
-    toast({
-      title: "User Updated",
-      description: `${updatedUser.firstName}'s profile has been saved.`
-    })
+  const handleSaveUser = async (updatedUser: User) => {
+    try {
+        const db = getFirestore(getFirebaseApp());
+        const userRef = doc(db, "users", updatedUser.uid);
+        const { uid, ...dataToSave } = updatedUser;
+        await updateDoc(userRef, dataToSave);
+        loadUsers(); // Reload the filtered list
+        setIsProfileModalOpen(false);
+        toast({
+        title: "User Updated",
+        description: `${updatedUser.firstName}'s profile has been saved.`
+        });
+    } catch (error) {
+        console.error("Error saving user:", error);
+        toast({ title: "Error", description: "Failed to save user details.", variant: "destructive" });
+    }
   }
 
   return (
@@ -105,41 +132,51 @@ export default function AdminCustomersListPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {users.map((user) => (
-                    <TableRow key={user.uid}>
-                        <TableCell>
-                            <div className="flex items-center gap-3">
-                                <Avatar>
-                                    <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                                </Avatar>
-                                <span className="font-medium">{user.firstName} {user.lastName}</span>
-                            </div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell className="text-right">
-                           <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                 <DropdownMenuItem onClick={() => handleViewProfile(user)}>
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    View Profile
+                {loading ? (
+                    Array.from({ length: 3 }).map((_, index) => (
+                        <TableRow key={index}>
+                            <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                  users.map((user) => (
+                      <TableRow key={user.uid}>
+                          <TableCell>
+                              <div className="flex items-center gap-3">
+                                  <Avatar>
+                                      <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                      <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="font-medium">{user.firstName} {user.lastName}</span>
+                              </div>
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Toggle menu</span>
+                                  </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                      <UserIcon className="mr-2 h-4 w-4" />
+                                      View Profile
+                                    </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)}>
+                                      <Trash2 className="mr-2 h-4 w-4"/>
+                                      Delete User
                                   </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)}>
-                                    <Trash2 className="mr-2 h-4 w-4"/>
-                                    Delete User
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                          </TableCell>
+                      </TableRow>
+                  ))
+                )}
             </TableBody>
         </Table>
       </CardContent>
@@ -161,3 +198,4 @@ export default function AdminCustomersListPage() {
     </>
   );
 }
+
