@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
       },
        {
         protocol: 'https',
-        hostname: 'graph.facebook.com',
+        hostname: '**.fbcdn.net',
         port: '',
         pathname: '/**',
       },
