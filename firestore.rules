@@ -2,55 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Allow public read access to collections needed for the public website
-    match /packages/{packageId} {
-      allow read: if true;
-      allow write: if request.auth != null; // Only authenticated users can write
-    }
     
-    match /posts/{postId} {
+    // Helper function to check for admin roles
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+
+    // PUBLIC READABLE COLLECTIONS
+    // Anyone can read, but only admins can write.
+    match /{collection}/{docId} where collection in ['packages', 'posts', 'categories', 'destinations', 'packageTypes', 'settings'] {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
     }
 
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /destinations/{destinationId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /packageTypes/{typeId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-
-    match /settings/{settingId} {
-        allow read: if true;
-        allow write: if request.auth != null;
-    }
-
-    // Secure user data
+    // USERS COLLECTION
+    // Users can create their own account.
+    // They can only read/update their own document.
+    // Admins can read/update any user document.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Admins can read any user profile
-      allow get: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
-       // Admins can update any user profile
-      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow create: if request.auth != null;
+      allow read, update: if (request.auth != null && request.auth.uid == userId) || (request.auth != null && isAdmin());
+      // Deletion should be handled by a backend function for safety, but for now allow admins.
+      allow delete: if request.auth != null && isAdmin();
     }
 
-    // Secure other collections
-    match /bookings/{bookingId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /contactMessages/{messageId} {
-       allow read, write: if request.auth != null;
-       allow create: if true; // Allow anyone to send a message
+    // BOOKINGS & MESSAGES
+    // Anyone can create (submit a form).
+    // Only admins can read, update, or delete them.
+    match /{collection}/{docId} where collection in ['bookings', 'contactMessages'] {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null && isAdmin();
     }
   }
 }
