@@ -63,12 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const superAdminPassword = "2002##flightblue.MHR";
         
         try {
-            // Check if user exists in auth first
-            const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-            const firebaseUser = userCredential.user;
+            // This function will create the auth user and the firestore doc
+            await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
             console.log("Super admin user created in Auth successfully.");
 
-            // Now create the user document in Firestore
+            // Now that we know the user is created, let's get the user to create the Firestore document
+            const userCredential = await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            const firebaseUser = userCredential.user;
+
             const userRef = doc(db, 'users', firebaseUser.uid);
             const superAdminData = {
                 email: superAdminEmail,
@@ -81,13 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
             await setDoc(userRef, superAdminData);
             console.log("Super admin user document created in Firestore.");
+            // Sign out the temporary user
+            await signOut(auth);
 
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 console.log("Super admin email already exists in Firebase Auth. Seeding not needed, but checking Firestore.");
                 // User exists in auth, but maybe not in firestore. Let's ensure it.
                 // To do this, we need to sign in to get the UID. This part is tricky without creating a login loop.
-                // For this scenario, we will assume that if the auth user exists, the firestore doc should also exist or be created on first login.
                 // The onAuthStateChanged listener below will handle creating the doc if it's missing for a logged-in user.
             } else {
                  console.error("Error creating super admin:", error);
