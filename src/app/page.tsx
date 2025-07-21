@@ -10,7 +10,7 @@ import { Package, Post } from "@/lib/data";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { useAppContext } from '@/context/AppContext';
-import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 
 type HomePageSettings = {
@@ -92,10 +92,17 @@ export default function Home() {
         const postsSnapshot = await getDocs(postsQuery);
         setPosts(postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post)));
 
-        // Fetch home settings from localStorage (as it's UI state)
-        const storedSettings = localStorage.getItem('homePageSettings');
-        if (storedSettings) {
-          setHomeSettings(JSON.parse(storedSettings));
+        // Fetch home settings from Firestore
+        const settingsDoc = await getDoc(doc(db, "settings", "global"));
+        if (settingsDoc.exists()) {
+          const settingsData = settingsDoc.data();
+          setHomeSettings({
+            heroImageUrl: settingsData.heroImageUrl,
+            heroTitle: settingsData.heroTitle,
+            heroSubtitle: settingsData.heroSubtitle,
+            heroButtonLabel: settingsData.heroButtonLabel,
+            heroButtonLink: settingsData.heroButtonLink,
+          });
         }
 
       } catch (error) {

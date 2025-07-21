@@ -8,20 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Youtube, Facebook, Twitter, Instagram, Linkedin, Pilcrow } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Pilcrow, Loader2 } from "lucide-react";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-
-// Define a type for home page settings
-type HomePageSettings = {
-    heroImageUrl: string;
-    heroTitle: string;
-    heroSubtitle: string;
-    heroButtonLabel: string;
-    heroButtonLink: string;
-};
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
 
@@ -37,17 +29,27 @@ type FooterLink = {
     url: string;
 }
 
-type FooterSettings = {
-    description: string;
-    column1: {
+type GlobalSettings = {
+    siteTitle: string;
+    logoUrl: string;
+    faviconUrl: string;
+    heroImageUrl: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    heroButtonLabel: string;
+    heroButtonLink: string;
+    footerDescription: string;
+    quickLinks: {
         title: string;
         links: FooterLink[];
     };
-    column2: {
+    supportLinks: {
         title: string;
         links: FooterLink[];
-    }
-}
+    };
+    socialLinks: SocialLink[];
+    googleMapEmbedCode: string;
+};
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'twitter', label: 'Twitter' },
@@ -57,157 +59,145 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'youtube', label: 'YouTube' },
 ];
 
-
 export default function AdminSettingsPage() {
     const { toast } = useToast();
+    const [settings, setSettings] = useState<GlobalSettings | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // General settings states
-    const [siteTitle, setSiteTitle] = useState("Flight Blu");
-    const [logoUrl, setLogoUrl] = useState("/logo.svg");
-    const [faviconUrl, setFaviconUrl] = useState("/favicon.ico");
-    
-    // Permalink settings states
-    const [packagePermalink, setPackagePermalink] = useState("/packages/%postname%");
-    const [mediaPermalink, setMediaPermalink] = useState("/uploads/%filename%");
+    const db = getFirestore(getFirebaseApp());
+    const settingsRef = doc(db, "settings", "global");
 
-    // Social and map settings
-    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-    const [googleMapEmbedCode, setGoogleMapEmbedCode] = useState('');
-    
-    // Home Page settings states
-    const [homePageSettings, setHomePageSettings] = useState<HomePageSettings>({
-        heroImageUrl: "https://placehold.co/1920x1080.png",
-        heroTitle: "Your Adventure Awaits",
-        heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-        heroButtonLabel: "Explore Packages",
-        heroButtonLink: "/packages",
-    });
-    
-    // Footer settings states
-    const [footerSettings, setFooterSettings] = useState<FooterSettings>({
-        description: "Your adventure starts here. Discover breathtaking destinations with us.",
-        column1: {
-            title: "Quick Links",
-            links: [
-                { id: "fl1-1", label: "About Us", url: "/about" },
-                { id: "fl1-2", label: "Packages", url: "/packages" },
-                { id: "fl1-3", label: "Blog", url: "/blog" },
-                { id: "fl1-4", label: "Contact", url: "/contact" },
-            ]
-        },
-        column2: {
-            title: "Support",
-            links: [
-                { id: "fl2-1", label: "FAQ", url: "/faq" },
-                { id: "fl2-2", label: "Terms of Service", url: "/terms" },
-                { id: "fl2-3", label: "Privacy Policy", url: "/privacy" },
-            ]
-        }
-    });
-
-    // Load all settings from localStorage on component mount
+    // Load settings from Firestore
     useEffect(() => {
-        const savedHomePageSettings = localStorage.getItem('homePageSettings');
-        if (savedHomePageSettings) setHomePageSettings(JSON.parse(savedHomePageSettings));
-
-        const savedSocialLinks = localStorage.getItem('socialLinks');
-        if (savedSocialLinks) setSocialLinks(JSON.parse(savedSocialLinks));
-
-        const savedMapCode = localStorage.getItem('googleMapEmbedCode');
-        if (savedMapCode) setGoogleMapEmbedCode(savedMapCode);
-        
-        const savedFooterSettings = localStorage.getItem('footerSettings');
-        if(savedFooterSettings) setFooterSettings(JSON.parse(savedFooterSettings));
+        const loadSettings = async () => {
+            setLoading(true);
+            try {
+                const docSnap = await getDoc(settingsRef);
+                if (docSnap.exists()) {
+                    setSettings(docSnap.data() as GlobalSettings);
+                } else {
+                    // Handle case where settings don't exist yet, maybe set defaults
+                    console.log("No settings document found. You may need to seed the database.");
+                }
+            } catch (error) {
+                console.error("Error loading settings:", error);
+                toast({ title: "Error", description: "Failed to load site settings.", variant: "destructive" });
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadSettings();
     }, []);
 
-    const handleHomePageSettingsChange = (field: keyof HomePageSettings, value: string) => {
-        setHomePageSettings(prev => ({...prev, [field]: value}));
-    }
-
-    const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
-        const newLinks = [...socialLinks];
-        newLinks[index] = { ...newLinks[index], [field]: value as any };
-        setSocialLinks(newLinks);
-    };
-
-    const addSocialLink = () => {
-        setSocialLinks([...socialLinks, { id: `soc-${Date.now()}`, platform: 'twitter', url: '' }]);
-    };
-
-    const removeSocialLink = (index: number) => {
-        setSocialLinks(socialLinks.filter((_, i) => i !== index));
-    };
-
-    const handleFooterChange = (field: keyof FooterSettings, value: string) => {
-        setFooterSettings(prev => ({ ...prev, [field]: value }));
+    const handleSettingsChange = (field: keyof GlobalSettings, value: any) => {
+        setSettings(prev => prev ? ({...prev, [field]: value}) : null);
     }
     
-    const handleFooterColumnChange = (columnIndex: 'column1' | 'column2', field: 'title', value: string) => {
-        setFooterSettings(prev => ({
-            ...prev,
-            [columnIndex]: {
-                ...prev[columnIndex],
-                [field]: value
+    const handleLinkColumnChange = (field: 'quickLinks' | 'supportLinks', subField: 'title' | 'links', value: any) => {
+        setSettings(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [field]: {
+                    ...prev[field],
+                    [subField]: value,
+                }
             }
-        }));
+        })
     }
     
-    const handleFooterLinkChange = (columnIndex: 'column1' | 'column2', linkIndex: number, field: 'label' | 'url', value: string) => {
-        setFooterSettings(prev => {
-            const newLinks = [...prev[columnIndex].links];
+    const handleFooterLinkChange = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number, field: 'label' | 'url', value: string) => {
+        setSettings(prev => {
+            if (!prev) return null;
+            const newLinks = [...prev[columnKey].links];
             newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
             return {
                 ...prev,
-                [columnIndex]: {
-                    ...prev[columnIndex],
-                    links: newLinks
-                }
-            }
+                [columnKey]: { ...prev[columnKey], links: newLinks }
+            };
         });
     }
 
-    const addFooterLink = (columnIndex: 'column1' | 'column2') => {
-        setFooterSettings(prev => {
-            const newLinks = [...prev[columnIndex].links, { id: `fl-${Date.now()}`, label: 'New Link', url: '/' }];
+    const addFooterLink = (columnKey: 'quickLinks' | 'supportLinks') => {
+        setSettings(prev => {
+            if (!prev) return null;
+            const newLinks = [...prev[columnKey].links, { id: `fl-${Date.now()}`, label: 'New Link', url: '/' }];
             return {
                 ...prev,
-                [columnIndex]: {
-                    ...prev[columnIndex],
-                    links: newLinks
-                }
-            }
+                [columnKey]: { ...prev[columnKey], links: newLinks }
+            };
         });
     }
 
-    const removeFooterLink = (columnIndex: 'column1' | 'column2', linkIndex: number) => {
-        setFooterSettings(prev => {
-            const newLinks = prev[columnIndex].links.filter((_, i) => i !== linkIndex);
+    const removeFooterLink = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number) => {
+        setSettings(prev => {
+            if (!prev) return null;
+            const newLinks = prev[columnKey].links.filter((_, i) => i !== linkIndex);
              return {
                 ...prev,
-                [columnIndex]: {
-                    ...prev[columnIndex],
-                    links: newLinks
-                }
-            }
+                [columnKey]: { ...prev[columnKey], links: newLinks }
+            };
         });
     }
 
-
-    const handleSaveChanges = () => {
-        // Here you would typically send the data to your backend to save in a database
-        // For this demo, we use localStorage.
-        
-        // Save Home Page Settings
-        localStorage.setItem('homePageSettings', JSON.stringify(homePageSettings));
-        localStorage.setItem('socialLinks', JSON.stringify(socialLinks));
-        localStorage.setItem('googleMapEmbedCode', googleMapEmbedCode);
-        localStorage.setItem('footerSettings', JSON.stringify(footerSettings));
-
-        toast({
-            title: "Settings Saved!",
-            description: "Your changes have been saved successfully.",
-        });
+    const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
+        if (!settings) return;
+        const newLinks = [...settings.socialLinks];
+        newLinks[index] = { ...newLinks[index], [field]: value as any };
+        handleSettingsChange('socialLinks', newLinks);
     };
+
+    const addSocialLink = () => {
+        if (!settings) return;
+        const newLinks = [...settings.socialLinks, { id: `soc-${Date.now()}`, platform: 'twitter', url: '' }];
+        handleSettingsChange('socialLinks', newLinks);
+    };
+
+    const removeSocialLink = (index: number) => {
+        if (!settings) return;
+        const newLinks = settings.socialLinks.filter((_, i) => i !== index);
+        handleSettingsChange('socialLinks', newLinks);
+    };
+
+
+    const handleSaveChanges = async () => {
+        if (!settings) return;
+        try {
+            await setDoc(settingsRef, settings, { merge: true });
+            toast({
+                title: "Settings Saved!",
+                description: "Your changes have been saved to the database.",
+            });
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+        }
+    };
+    
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Site Settings</CardTitle>
+                    <CardDescription>Manage your global site settings from here.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center items-center py-20">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </CardContent>
+            </Card>
+        )
+    }
+    
+    if (!settings) {
+         return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Error</CardTitle>
+                    <CardDescription>Could not load site settings. Please try seeding the database from the dashboard or check console for errors.</CardDescription>
+                </CardHeader>
+            </Card>
+        )
+    }
 
   return (
     <Card>
@@ -217,11 +207,10 @@ export default function AdminSettingsPage() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
                 <TabsTrigger value="homepage"><Home className="mr-2"/>Home Page</TabsTrigger>
                 <TabsTrigger value="footer"><Pilcrow className="mr-2"/>Footer</TabsTrigger>
-                <TabsTrigger value="permalinks"><LinkIcon className="mr-2"/>Permalinks</TabsTrigger>
             </TabsList>
             
             <TabsContent value="general" className="pt-6">
@@ -232,8 +221,8 @@ export default function AdminSettingsPage() {
                             <Label htmlFor="siteTitle">Site Title</Label>
                             <Input 
                                 id="siteTitle" 
-                                value={siteTitle} 
-                                onChange={(e) => setSiteTitle(e.target.value)}
+                                value={settings.siteTitle} 
+                                onChange={(e) => handleSettingsChange('siteTitle', e.target.value)}
                                 placeholder="Your awesome travel agency"
                             />
                              <p className="text-sm text-muted-foreground mt-2">
@@ -250,8 +239,8 @@ export default function AdminSettingsPage() {
                             <Label htmlFor="logoUrl">Site Logo URL</Label>
                             <Input 
                                 id="logoUrl" 
-                                value={logoUrl} 
-                                onChange={(e) => setLogoUrl(e.target.value)}
+                                value={settings.logoUrl} 
+                                onChange={(e) => handleSettingsChange('logoUrl', e.target.value)}
                                 placeholder="https://example.com/logo.png"
                             />
                              <p className="text-sm text-muted-foreground mt-2">
@@ -262,8 +251,8 @@ export default function AdminSettingsPage() {
                             <Label htmlFor="faviconUrl">Favicon URL</Label>
                             <Input 
                                 id="faviconUrl" 
-                                value={faviconUrl} 
-                                onChange={(e) => setFaviconUrl(e.target.value)}
+                                value={settings.faviconUrl} 
+                                onChange={(e) => handleSettingsChange('faviconUrl', e.target.value)}
                                 placeholder="https://example.com/favicon.ico"
                             />
                              <p className="text-sm text-muted-foreground mt-2">
@@ -280,8 +269,8 @@ export default function AdminSettingsPage() {
                     <div className="space-y-2">
                         <Label>Hero Image</Label>
                         <MediaPicker 
-                            imageUrl={homePageSettings.heroImageUrl} 
-                            onImageUrlChange={(url) => handleHomePageSettingsChange('heroImageUrl', url)}
+                            imageUrl={settings.heroImageUrl} 
+                            onImageUrlChange={(url) => handleSettingsChange('heroImageUrl', url)}
                         />
                         <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
                     </div>
@@ -289,16 +278,16 @@ export default function AdminSettingsPage() {
                         <Label htmlFor="heroTitle">Hero Title</Label>
                         <Input 
                             id="heroTitle" 
-                            value={homePageSettings.heroTitle}
-                            onChange={(e) => handleHomePageSettingsChange('heroTitle', e.target.value)}
+                            value={settings.heroTitle}
+                            onChange={(e) => handleSettingsChange('heroTitle', e.target.value)}
                         />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
                         <Textarea 
                             id="heroSubtitle" 
-                            value={homePageSettings.heroSubtitle}
-                            onChange={(e) => handleHomePageSettingsChange('heroSubtitle', e.target.value)}
+                            value={settings.heroSubtitle}
+                            onChange={(e) => handleSettingsChange('heroSubtitle', e.target.value)}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -306,16 +295,16 @@ export default function AdminSettingsPage() {
                             <Label htmlFor="heroButtonLabel">Button Label</Label>
                             <Input 
                                 id="heroButtonLabel" 
-                                value={homePageSettings.heroButtonLabel}
-                                onChange={(e) => handleHomePageSettingsChange('heroButtonLabel', e.target.value)}
+                                value={settings.heroButtonLabel}
+                                onChange={(e) => handleSettingsChange('heroButtonLabel', e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="heroButtonLink">Button Link</Label>
                             <Input 
                                 id="heroButtonLink" 
-                                value={homePageSettings.heroButtonLink}
-                                onChange={(e) => handleHomePageSettingsChange('heroButtonLink', e.target.value)}
+                                value={settings.heroButtonLink}
+                                onChange={(e) => handleSettingsChange('heroButtonLink', e.target.value)}
                                 placeholder="/packages"
                             />
                         </div>
@@ -326,13 +315,13 @@ export default function AdminSettingsPage() {
              <TabsContent value="footer" className="pt-6">
                 <div className="space-y-8">
                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Footer Description</h3>
+                        <h3 className="text-lg font-medium">Column 1: Description</h3>
                         <div>
                             <Label htmlFor="footerDescription">Text under logo</Label>
                             <Textarea 
                                 id="footerDescription" 
-                                value={footerSettings.description} 
-                                onChange={(e) => handleFooterChange('description', e.target.value)}
+                                value={settings.footerDescription} 
+                                onChange={(e) => handleSettingsChange('footerDescription', e.target.value)}
                                 placeholder="Your adventure starts here..."
                             />
                         </div>
@@ -341,62 +330,62 @@ export default function AdminSettingsPage() {
                     <Separator />
 
                     <div className="space-y-4">
-                         <h3 className="text-lg font-medium">Footer Column 1 (e.g., Quick Links)</h3>
+                         <h3 className="text-lg font-medium">Column 2: Quick Links</h3>
                          <div>
                             <Label>Column Title</Label>
                             <Input 
-                                value={footerSettings.column1.title} 
-                                onChange={(e) => handleFooterColumnChange('column1', 'title', e.target.value)}
+                                value={settings.quickLinks.title} 
+                                onChange={(e) => handleLinkColumnChange('quickLinks', 'title', e.target.value)}
                             />
                          </div>
                          <Label>Links</Label>
                          <div className="space-y-2">
-                            {footerSettings.column1.links.map((link, index) => (
+                            {settings.quickLinks.links.map((link, index) => (
                                 <div key={link.id} className="flex items-center gap-2">
-                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('column1', index, 'label', e.target.value)} />
-                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('column1', index, 'url', e.target.value)} />
-                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('column1', index)}>
+                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'label', e.target.value)} />
+                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'url', e.target.value)} />
+                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('quickLinks', index)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </div>
                             ))}
                          </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column1')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('quickLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                     </div>
                     
                     <Separator />
 
                      <div className="space-y-4">
-                         <h3 className="text-lg font-medium">Footer Column 2 (e.g., Support)</h3>
+                         <h3 className="text-lg font-medium">Column 3: Support Links</h3>
                           <div>
                             <Label>Column Title</Label>
                             <Input 
-                                value={footerSettings.column2.title} 
-                                onChange={(e) => handleFooterColumnChange('column2', 'title', e.target.value)}
+                                value={settings.supportLinks.title} 
+                                onChange={(e) => handleLinkColumnChange('supportLinks', 'title', e.target.value)}
                             />
                          </div>
                          <Label>Links</Label>
                          <div className="space-y-2">
-                            {footerSettings.column2.links.map((link, index) => (
+                            {settings.supportLinks.links.map((link, index) => (
                                 <div key={link.id} className="flex items-center gap-2">
-                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('column2', index, 'label', e.target.value)} />
-                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('column2', index, 'url', e.target.value)} />
-                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('column2', index)}>
+                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'label', e.target.value)} />
+                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'url', e.target.value)} />
+                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('supportLinks', index)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </div>
                             ))}
                          </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('column2')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                         <Button variant="outline" size="sm" onClick={() => addFooterLink('supportLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                     </div>
 
                     <Separator/>
 
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Social Media & Location</h3>
-                        <p className="text-sm text-muted-foreground">Add links to your social media profiles. The first four will be shown in the footer.</p>
+                        <h3 className="text-lg font-medium">Column 1 & 4: Social Media & Location Map</h3>
+                        <p className="text-sm text-muted-foreground">Add links to your social media profiles. These will appear in the first column of the footer.</p>
                         <div className="space-y-3">
-                            {socialLinks.map((link, index) => (
+                            {settings.socialLinks.map((link, index) => (
                                 <div key={link.id} className="flex items-end gap-2">
                                     <div className="flex-grow grid grid-cols-3 gap-2">
                                          <select
@@ -425,11 +414,11 @@ export default function AdminSettingsPage() {
                         </Button>
                          <div className="pt-4 space-y-4">
                             <div>
-                                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code</Label>
+                                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code (Column 4)</Label>
                                 <Textarea 
                                     id="googleMapEmbedCode" 
-                                    value={googleMapEmbedCode} 
-                                    onChange={(e) => setGoogleMapEmbedCode(e.target.value)}
+                                    value={settings.googleMapEmbedCode} 
+                                    onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
                                     placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
                                     rows={4}
                                 />
@@ -441,61 +430,6 @@ export default function AdminSettingsPage() {
                     </div>
                 </div>
              </TabsContent>
-
-            <TabsContent value="permalinks" className="pt-6">
-                <div className="space-y-6">
-                    <p className="text-sm text-muted-foreground">
-                        Customize the URL structure for your content. Changes can affect your SEO, so be careful. Available tags: <code className="bg-muted px-1 py-0.5 rounded">%postname%</code>, <code className="bg-muted px-1 py-0.5 rounded">%post_id%</code>, <code className="bg-muted px-1 py-0.5 rounded">%category%</code>, <code className="bg-muted px-1 py-0.5 rounded">%filename%</code>.
-                    </p>
-                    <div className="space-y-4">
-                        <h4 className="font-semibold">Packages Permalink Base</h4>
-                        <RadioGroup defaultValue={packagePermalink} onValueChange={setPackagePermalink} className="space-y-2">
-                            <div key="p-default" className="flex items-center space-x-2">
-                                <RadioGroupItem value="/packages/%postname%" id="p-default" />
-                                <Label htmlFor="p-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/packages/%postname%</code></Label>
-                            </div>
-                            <div key="p-tours" className="flex items-center space-x-2">
-                                <RadioGroupItem value="/tours/%postname%" id="p-tours" />
-                                <Label htmlFor="p-tours" className="font-normal">Tour base: <code className="bg-muted px-1 py-0.5 rounded">/tours/%postname%</code></Label>
-                            </div>
-                            <div key="p-custom" className="flex items-center space-x-2">
-                                <RadioGroupItem value="custom" id="p-custom" />
-                                <Label htmlFor="p-custom" className="font-normal">Custom Structure:</Label>
-                                <Input
-                                    className="max-w-xs"
-                                    placeholder="/your-base/%postname%"
-                                    disabled={packagePermalink !== "custom"}
-                                    onChange={(e) => {
-                                        // This is a bit of a hack to make the input work with the radio group.
-                                        // In a real app, state management would be more robust.
-                                        setPackagePermalink(e.target.value);
-                                    }}
-                                />
-                            </div>
-                        </RadioGroup>
-                    </div>
-                     <div className="space-y-4 pt-4 border-t">
-                        <h4 className="font-semibold">Media Permalink Base</h4>
-                         <RadioGroup defaultValue={mediaPermalink} onValueChange={setMediaPermalink} className="space-y-2">
-                            <div key="m-default" className="flex items-center space-x-2">
-                                <RadioGroupItem value="/uploads/%filename%" id="m-default" />
-                                <Label htmlFor="m-default" className="font-normal">Default: <code className="bg-muted px-1 py-0.5 rounded">/uploads/%filename%</code></Label>
-                            </div>
-                            <div key="m-postname" className="flex items-center space-x-2">
-                                <RadioGroupItem value="/media/%postname%" id="m-postname" />
-                                <Label htmlFor="m-postname" className="font-normal">Post name: <code className="bg-muted px-1 py-0.5 rounded">/media/%postname%</code> (Uses a slug from the filename)</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                     <div className="space-y-4 pt-4 border-t">
-                        <h4 className="font-semibold">Blog Permalink Base</h4>
-                         <p className="text-sm text-muted-foreground">
-                            Blog permalink settings will be available when the blog module is active.
-                        </p>
-                    </div>
-                </div>
-            </TabsContent>
-
         </Tabs>
         
         <div className="mt-8 pt-6 border-t flex justify-end">
