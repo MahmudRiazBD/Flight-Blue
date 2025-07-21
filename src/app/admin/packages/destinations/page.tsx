@@ -1,12 +1,11 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { destinations as initialDestinations, Destination } from "@/lib/data";
-import { PlusCircle, MoreHorizontal, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { Destination } from "@/lib/data";
+import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -14,28 +13,37 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import MediaPicker from "@/components/admin/MediaPicker";
+import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDestinationsPage() {
-  const [destinations, setDestinations] = useState<Destination[]>(initialDestinations);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDestination, setEditingDestination] = useState<Destination | null>(null);
   const [currentDestination, setCurrentDestination] = useState<Partial<Destination>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedDestinations = localStorage.getItem('destinations');
-      if (storedDestinations) {
-        setDestinations(JSON.parse(storedDestinations));
-      }
+  const db = getFirestore(getFirebaseApp());
+  const destinationsCollection = collection(db, "destinations");
+
+  const loadDestinations = async () => {
+    setLoading(true);
+    try {
+      const snapshot = await getDocs(destinationsCollection);
+      const destList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Destination));
+      setDestinations(destList);
+    } catch (e) {
+      toast({ title: "Error", description: "Could not fetch destinations.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('destinations', JSON.stringify(destinations));
-    }
-  }, [destinations]);
+    loadDestinations();
+  }, []);
   
   const handleAddNew = () => {
     setEditingDestination(null);
@@ -52,16 +60,21 @@ export default function AdminDestinationsPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDelete = (id: string) => {
-    setDestinations(destinations.filter(d => d.id !== id));
-    toast({
-        title: "Destination Deleted",
-        description: "The destination has been successfully deleted.",
-        variant: "destructive"
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "destinations", id));
+      toast({
+          title: "Destination Deleted",
+          description: "The destination has been successfully deleted.",
+          variant: "destructive"
+      });
+      loadDestinations();
+    } catch(e) {
+      toast({ title: "Error", description: "Could not delete destination.", variant: "destructive" });
+    }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentDestination.name?.trim()) {
       toast({
         title: "Error",
@@ -71,32 +84,33 @@ export default function AdminDestinationsPage() {
       return;
     }
 
-    if (editingDestination) {
-      // Editing existing destination
-      setDestinations(destinations.map(d => 
-        d.id === editingDestination.id ? { ...editingDestination, ...currentDestination } : d
-      ));
-      toast({
-        title: "Destination Updated",
-        description: "The destination has been successfully updated.",
-      });
-    } else {
-      // Adding new destination
-      const newDestination: Destination = {
-        id: `dest-${new Date().getTime()}`,
-        name: currentDestination.name,
-        imageUrl: currentDestination.imageUrl || "https://placehold.co/600x400.png"
-      };
-      setDestinations([...destinations, newDestination]);
-      toast({
-        title: "Destination Added",
-        description: `"${currentDestination.name}" has been added.`,
-      });
+    try {
+      if (editingDestination) {
+        // Editing existing destination
+        const destDoc = doc(db, "destinations", editingDestination.id);
+        await updateDoc(destDoc, { ...currentDestination });
+        toast({
+          title: "Destination Updated",
+          description: "The destination has been successfully updated.",
+        });
+      } else {
+        // Adding new destination
+        await addDoc(destinationsCollection, {
+            name: currentDestination.name,
+            imageUrl: currentDestination.imageUrl || "https://placehold.co/600x400.png"
+        });
+        toast({
+          title: "Destination Added",
+          description: `"${currentDestination.name}" has been added.`,
+        });
+      }
+      loadDestinations();
+      setIsDialogOpen(false);
+      setCurrentDestination({});
+      setEditingDestination(null);
+    } catch(e) {
+       toast({ title: "Error", description: "Could not save destination.", variant: "destructive" });
     }
-
-    setIsDialogOpen(false);
-    setCurrentDestination({});
-    setEditingDestination(null);
   };
 
   return (
@@ -121,41 +135,58 @@ export default function AdminDestinationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {destinations.map((dest) => (
-              <TableRow key={dest.id}>
-                <TableCell>
-                  <Image 
-                    src={dest.imageUrl} 
-                    alt={dest.name} 
-                    width={64} 
-                    height={48} 
-                    className="rounded-md object-cover aspect-[4/3]"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{dest.name}</TableCell>
-                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleEdit(dest)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(dest.id)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+             {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                    <TableRow key={index}>
+                    <TableCell><Skeleton className="h-12 w-16 rounded-md" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+            ) : (
+                destinations.map((dest) => (
+                  <TableRow key={dest.id}>
+                    <TableCell>
+                      <Image 
+                        src={dest.imageUrl} 
+                        alt={dest.name} 
+                        width={64} 
+                        height={48} 
+                        className="rounded-md object-cover aspect-[4/3]"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{dest.name}</TableCell>
+                     <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(dest)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(dest.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+             {!loading && destinations.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                        No destinations found. Add one to get started.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

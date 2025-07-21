@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,10 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Post, Category, posts as initialPosts, categories as initialCategories } from "@/lib/data";
+import { Post, Category } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 
 const postSchema = z.object({
@@ -35,53 +36,54 @@ export default function EditPostPage() {
   const { toast } = useToast();
   const [post, setPost] = useState<Post | null | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
+  
+  const db = getFirestore(getFirebaseApp());
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
   });
   
   useEffect(() => {
-    const storedCategories = localStorage.getItem('categories');
-    if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-    } else {
-        setCategories(initialCategories);
-    }
-  }, []);
+    const loadCategories = async () => {
+      const snapshot = await getDocs(collection(db, "categories"));
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+    };
+    loadCategories();
+  }, [db]);
 
   useEffect(() => {
-    const storedPosts = localStorage.getItem('posts');
-    const posts: Post[] = storedPosts ? JSON.parse(storedPosts) : initialPosts;
-    const postToEdit = posts.find(p => p.slug === slug);
-    if (postToEdit) {
-      setPost(postToEdit);
-      form.reset(postToEdit);
-    } else {
-      setPost(null); // Not found
-    }
-  }, [slug, form]);
+    const loadPost = async () => {
+      if (!slug) return;
+      const postsRef = collection(db, "posts");
+      const q = query(postsRef, where("slug", "==", slug));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setPost(null);
+      } else {
+        const postDoc = querySnapshot.docs[0];
+        const postData = { id: postDoc.id, ...postDoc.data() } as Post;
+        setPost(postData);
+        form.reset(postData);
+      }
+    };
+    loadPost();
+  }, [slug, db, form]);
 
-  const onSubmit = (data: z.infer<typeof postSchema>) => {
+  const onSubmit = async (data: z.infer<typeof postSchema>) => {
     if (!post) return;
 
-    const storedPosts = localStorage.getItem('posts');
-    const posts: Post[] = storedPosts ? JSON.parse(storedPosts) : initialPosts;
-
-    const updatedPosts = posts.map(p => {
-      if (p.id === post.id) {
-        return { ...p, ...data };
-      }
-      return p;
-    });
-
-    localStorage.setItem('posts', JSON.stringify(updatedPosts));
-
-    toast({
-      title: "Post Updated!",
-      description: "Your blog post has been successfully updated.",
-    });
-
-    router.push("/admin/blog/posts");
+    try {
+      const postRef = doc(db, "posts", post.id);
+      await updateDoc(postRef, { ...data });
+      toast({
+        title: "Post Updated!",
+        description: "Your blog post has been successfully updated.",
+      });
+      router.push("/admin/blog/posts");
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to update post.", variant: "destructive" });
+    }
   };
   
   if (post === undefined) {

@@ -1,31 +1,36 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
 import PackageCard from "@/components/PackageCard";
-import { packages as initialPackages, Package } from "@/lib/data";
+import { Package } from "@/lib/data";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
 
 export default function PackagesPage() {
-    const [packages, setPackages] = useState<Package[]>(initialPackages);
+    const [allPackages, setAllPackages] = useState<Package[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
     const [priceRange, setPriceRange] = useState([0, 1000000]);
     
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const storedPackages = localStorage.getItem('packages');
-            if (storedPackages) {
-                setPackages(JSON.parse(storedPackages));
-            }
-        }
+        const fetchPackages = async () => {
+            setLoading(true);
+            const db = getFirestore(getFirebaseApp());
+            const packagesSnapshot = await getDocs(collection(db, 'packages'));
+            const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
+            setAllPackages(packagesList);
+            setLoading(false);
+        };
+        fetchPackages();
     }, []);
 
-    const filteredPackages = packages.filter(pkg => {
+    const filteredPackages = allPackages.filter(pkg => {
         const matchesSearch = pkg.title.toLowerCase().includes(searchTerm.toLowerCase()) || pkg.destination.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = packageType === 'all' || pkg.type === packageType;
         const matchesPrice = pkg.price >= priceRange[0] && pkg.price <= priceRange[1];
@@ -84,7 +89,12 @@ export default function PackagesPage() {
             </aside>
             
             <main>
-                {filteredPackages.length > 0 ? (
+                {loading ? (
+                    <div className="text-center py-16">
+                        <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+                        <p className="mt-4 text-muted-foreground">Loading packages...</p>
+                    </div>
+                ) : filteredPackages.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredPackages.map(pkg => (
                             <PackageCard key={pkg.id} pkg={pkg} />

@@ -1,4 +1,3 @@
-
 "use-client"
 
 import { useForm } from "react-hook-form";
@@ -10,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { contactMessages as initialMessages, ContactMessage } from "@/lib/data";
+import { ContactMessage } from "@/lib/data";
 import { useAppContext } from "@/context/AppContext";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -23,6 +24,8 @@ const contactSchema = z.object({
 export default function ContactForm() {
   const { isContactFormOpen, setContactFormOpen } = useAppContext();
   const { toast } = useToast();
+  const db = getFirestore(getFirebaseApp());
+
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -38,26 +41,30 @@ export default function ContactForm() {
     form.reset();
   }
 
-  const onSubmit = (data: z.infer<typeof contactSchema>) => {
-    const storedMessages = localStorage.getItem('contactMessages');
-    const messages: ContactMessage[] = storedMessages ? JSON.parse(storedMessages) : initialMessages;
-    
-    const newMessage: ContactMessage = {
-      ...data,
-      id: `msg-${new Date().getTime()}`,
-      submittedAt: new Date().toISOString(),
-      isRead: false,
-    };
-    
-    const updatedMessages = [...messages, newMessage];
-    localStorage.setItem('contactMessages', JSON.stringify(updatedMessages));
+  const onSubmit = async (data: z.infer<typeof contactSchema>) => {
+    try {
+      const newMessage: Omit<ContactMessage, 'id'> = {
+        ...data,
+        submittedAt: new Date().toISOString(),
+        isRead: false,
+      };
+      
+      await addDoc(collection(db, "contactMessages"), newMessage);
 
-    toast({
-      title: "Message Sent!",
-      description: "Thank you for contacting us. We will get back to you shortly.",
-    });
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We will get back to you shortly.",
+      });
 
-    handleClose();
+      handleClose();
+
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

@@ -1,11 +1,10 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { packageTypes as initialPackageTypes, PackageType } from "@/lib/data";
+import { PackageType } from "@/lib/data";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -14,28 +13,37 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import MediaPicker from "@/components/admin/MediaPicker";
+import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminPackageTypesPage() {
-  const [packageTypes, setPackageTypes] = useState<PackageType[]>(initialPackageTypes);
+  const [packageTypes, setPackageTypes] = useState<PackageType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<PackageType | null>(null);
   const [currentType, setCurrentType] = useState<Partial<PackageType>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedTypes = localStorage.getItem('packageTypes');
-      if (storedTypes) {
-        setPackageTypes(JSON.parse(storedTypes));
-      }
+  const db = getFirestore(getFirebaseApp());
+  const typesCollection = collection(db, "packageTypes");
+
+  const loadPackageTypes = async () => {
+    setLoading(true);
+    try {
+      const snapshot = await getDocs(typesCollection);
+      const typesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PackageType));
+      setPackageTypes(typesList);
+    } catch (e) {
+      toast({ title: "Error", description: "Could not fetch package types.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('packageTypes', JSON.stringify(packageTypes));
-    }
-  }, [packageTypes]);
+    loadPackageTypes();
+  }, []);
   
   const handleAddNew = () => {
     setEditingType(null);
@@ -52,16 +60,21 @@ export default function AdminPackageTypesPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDelete = (id: string) => {
-    setPackageTypes(packageTypes.filter(d => d.id !== id));
-    toast({
-        title: "Package Type Deleted",
-        description: "The package type has been successfully deleted.",
-        variant: "destructive"
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "packageTypes", id));
+      toast({
+          title: "Package Type Deleted",
+          description: "The package type has been successfully deleted.",
+          variant: "destructive"
+      });
+      loadPackageTypes();
+    } catch (e) {
+       toast({ title: "Error", description: "Could not delete package type.", variant: "destructive" });
+    }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentType.name?.trim()) {
       toast({
         title: "Error",
@@ -71,32 +84,31 @@ export default function AdminPackageTypesPage() {
       return;
     }
 
-    if (editingType) {
-      // Editing existing type
-      setPackageTypes(packageTypes.map(t => 
-        t.id === editingType.id ? { ...editingType, ...currentType } : t
-      ));
-      toast({
-        title: "Package Type Updated",
-        description: "The package type has been successfully updated.",
-      });
-    } else {
-      // Adding new type
-      const newPackageType: PackageType = {
-        id: `type-${new Date().getTime()}`,
-        name: currentType.name,
-        imageUrl: currentType.imageUrl || "https://placehold.co/600x400.png"
-      };
-      setPackageTypes([...packageTypes, newPackageType]);
-      toast({
-        title: "Package Type Added",
-        description: `"${currentType.name}" has been added.`,
-      });
+    try {
+      if (editingType) {
+        const typeDoc = doc(db, "packageTypes", editingType.id);
+        await updateDoc(typeDoc, { ...currentType });
+        toast({
+          title: "Package Type Updated",
+          description: "The package type has been successfully updated.",
+        });
+      } else {
+        await addDoc(typesCollection, {
+            name: currentType.name,
+            imageUrl: currentType.imageUrl || "https://placehold.co/600x400.png"
+        });
+        toast({
+          title: "Package Type Added",
+          description: `"${currentType.name}" has been added.`,
+        });
+      }
+      loadPackageTypes();
+      setIsDialogOpen(false);
+      setCurrentType({});
+      setEditingType(null);
+    } catch (e) {
+      toast({ title: "Error", description: "Could not save package type.", variant: "destructive" });
     }
-
-    setIsDialogOpen(false);
-    setCurrentType({});
-    setEditingType(null);
   };
 
   return (
@@ -121,41 +133,58 @@ export default function AdminPackageTypesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {packageTypes.map((type) => (
-              <TableRow key={type.id}>
-                 <TableCell>
-                  <Image 
-                    src={type.imageUrl} 
-                    alt={type.name} 
-                    width={64} 
-                    height={48} 
-                    className="rounded-md object-cover aspect-[4/3]"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{type.name}</TableCell>
-                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleEdit(type)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(type.id)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                    <TableRow key={index}>
+                    <TableCell><Skeleton className="h-12 w-16 rounded-md" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+            ) : (
+                packageTypes.map((type) => (
+                  <TableRow key={type.id}>
+                     <TableCell>
+                      <Image 
+                        src={type.imageUrl} 
+                        alt={type.name} 
+                        width={64} 
+                        height={48} 
+                        className="rounded-md object-cover aspect-[4/3]"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{type.name}</TableCell>
+                     <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(type)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(type.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+            {!loading && packageTypes.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                        No package types found. Add one to get started.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

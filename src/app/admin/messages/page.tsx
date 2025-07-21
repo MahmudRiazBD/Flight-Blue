@@ -1,37 +1,45 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ContactMessage, contactMessages as initialMessages } from "@/lib/data";
+import { ContactMessage } from "@/lib/data";
 import { format, formatDistanceToNow } from "date-fns";
 import { Mail, MailOpen, Trash2, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const { toast } = useToast();
+  const db = getFirestore(getFirebaseApp());
 
-  const loadMessages = () => {
-    const storedMessages = localStorage.getItem('contactMessages');
-    const allMessages: ContactMessage[] = storedMessages ? JSON.parse(storedMessages) : initialMessages;
-    allMessages.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
-    setMessages(allMessages);
+  const loadMessages = async () => {
+    setLoading(true);
+    try {
+      const messagesCollection = collection(db, "contactMessages");
+      const q = query(messagesCollection, orderBy("submittedAt", "desc"));
+      const snapshot = await getDocs(q);
+      const allMessages = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ContactMessage));
+      setMessages(allMessages);
+    } catch(e) {
+      console.error("Failed to load messages:", e);
+      toast({ title: "Error", description: "Could not fetch messages.", variant: "destructive" });
+    } finally {
+        setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadMessages();
-    window.addEventListener('storage', loadMessages);
-    return () => {
-      window.removeEventListener('storage', loadMessages);
-    };
   }, []);
 
   const handleRowClick = (message: ContactMessage) => {
@@ -41,21 +49,28 @@ export default function AdminMessagesPage() {
     }
   };
 
-  const markAsRead = (messageId: string, isRead: boolean) => {
-    const updatedMessages = messages.map(m => m.id === messageId ? { ...m, isRead } : m);
-    setMessages(updatedMessages);
-    localStorage.setItem('contactMessages', JSON.stringify(updatedMessages));
+  const markAsRead = async (messageId: string, isRead: boolean) => {
+    try {
+        const messageRef = doc(db, "contactMessages", messageId);
+        await updateDoc(messageRef, { isRead });
+        loadMessages(); // Refresh the list to show style changes
+    } catch(e) {
+        console.error("Failed to update message status:", e);
+    }
   };
   
-  const deleteMessage = (messageId: string) => {
-    const updatedMessages = messages.filter(m => m.id !== messageId);
-    setMessages(updatedMessages);
-    localStorage.setItem('contactMessages', JSON.stringify(updatedMessages));
-    toast({
-        title: "Message Deleted",
-        description: "The message has been successfully removed.",
-        variant: "destructive"
-    });
+  const deleteMessage = async (messageId: string) => {
+    try {
+        await deleteDoc(doc(db, "contactMessages", messageId));
+        toast({
+            title: "Message Deleted",
+            description: "The message has been successfully removed.",
+            variant: "destructive"
+        });
+        loadMessages();
+    } catch(e) {
+        toast({ title: "Error", description: "Failed to delete message", variant: "destructive" });
+    }
   };
 
   return (
@@ -77,7 +92,17 @@ export default function AdminMessagesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {messages.length > 0 ? messages.map((message) => (
+              {loading ? (
+                 Array.from({length: 3}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-6 w-6" /></TableCell>
+                        <TableCell><Skeleton className="h-10 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                        <TableCell><Skeleton className="h-10 w-32" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                 ))
+              ) : messages.length > 0 ? messages.map((message) => (
                 <TableRow 
                   key={message.id} 
                   onClick={() => handleRowClick(message)} 

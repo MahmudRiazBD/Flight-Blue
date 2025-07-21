@@ -1,15 +1,16 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useParams, notFound } from "next/navigation";
 import Image from "next/image";
-import { Post, posts as initialPosts } from "@/lib/data";
+import { Post } from "@/lib/data";
 import { Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEmbedUrl } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirebaseApp } from '@/lib/firebase';
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
@@ -33,11 +34,23 @@ export default function BlogPostPage() {
   const embedUrl = post?.videoUrl ? getEmbedUrl(post.videoUrl) : null;
 
   useEffect(() => {
+    const fetchPost = async () => {
+      if (!slug) return;
+      const db = getFirestore(getFirebaseApp());
+      const postsRef = collection(db, "posts");
+      const q = query(postsRef, where("slug", "==", slug));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setPost(null);
+      } else {
+        const postDoc = querySnapshot.docs[0];
+        setPost({ id: postDoc.id, ...postDoc.data() } as Post);
+      }
+    };
+
     if (slug) {
-        const storedPosts = localStorage.getItem('posts');
-        const posts: Post[] = storedPosts ? JSON.parse(storedPosts) : initialPosts;
-        const foundPost = posts.find((p) => p.slug === slug);
-        setPost(foundPost || null);
+      fetchPost();
     }
   }, [slug]);
 

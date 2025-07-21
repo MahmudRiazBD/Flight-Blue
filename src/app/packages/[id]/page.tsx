@@ -1,45 +1,57 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
-import { packages as initialPackages, Package } from "@/lib/data";
+import { Package } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import PackageDetailClient from "./PackageDetailClient";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirebaseApp } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Although the page is a client component, the props are passed from the server-side router.
-// We'll use the useParams hook for client-side parameter access to be safe.
 export default function PackageDetailPage() {
-  const [packages, setPackages] = useState<Package[]>(initialPackages);
   const [pkg, setPkg] = useState<Package | null | undefined>(undefined); // undefined: loading, null: not found
   const params = useParams();
   const packageId = params.id as string;
 
   useEffect(() => {
-    // Load packages from localStorage on the client side
-    const storedPackages = localStorage.getItem('packages');
-    let currentPackages = initialPackages;
-    if (storedPackages) {
-      try {
-        currentPackages = JSON.parse(storedPackages);
-      } catch (e) {
-        console.error("Failed to parse packages from localStorage", e);
-      }
-    }
-    setPackages(currentPackages);
+    const fetchPackage = async () => {
+        if (!packageId) return;
+        const db = getFirestore(getFirebaseApp());
+        const packageRef = doc(db, 'packages', packageId);
+        const packageSnap = await getDoc(packageRef);
+
+        if (packageSnap.exists()) {
+            setPkg({ id: packageSnap.id, ...packageSnap.data() } as Package);
+        } else {
+            setPkg(null);
+        }
+    };
     
-    // Find the specific package
-    const foundPkg = currentPackages.find((p) => p.id === packageId);
-    setPkg(foundPkg || null); // Set to null if not found
+    fetchPackage();
     
-  }, [packageId]); // Rerun effect if packageId changes
+  }, [packageId]);
 
   if (pkg === undefined) {
-    // A better implementation would show a loading skeleton here
-    return <div>Loading...</div>;
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-96 w-full" />
+            <div className="container mx-auto grid grid-cols-3 gap-8">
+                <div className="col-span-2 space-y-4">
+                    <Skeleton className="h-8 w-1/2" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-8 w-1/3 mt-8" />
+                    <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                </div>
+                <div className="col-span-1 space-y-4">
+                     <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        </div>
+    )
   }
 
   if (pkg === null) {
-    // If we've finished loading and pkg is still null, then it's not found.
     notFound();
   }
 

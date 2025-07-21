@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Booking, bookings as initialBookings } from "@/lib/data";
+import { Booking } from "@/lib/data";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
@@ -40,6 +41,7 @@ type BookingFormProps = {
 
 export default function BookingForm({ packageId, packageName, setDialogOpen }: BookingFormProps) {
   const { toast } = useToast();
+  const db = getFirestore(getFirebaseApp());
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,32 +55,35 @@ export default function BookingForm({ packageId, packageName, setDialogOpen }: B
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     
-    const storedBookings = localStorage.getItem('bookings');
-    const bookings: Booking[] = storedBookings ? JSON.parse(storedBookings) : initialBookings;
+    try {
+        const newBooking: Omit<Booking, 'id'> = {
+            packageId,
+            packageName,
+            customerName: values.fullName,
+            customerEmail: values.email,
+            customerPhone: values.phone,
+            travelers: values.travelers,
+            departureDate: values.departureDate.toISOString(),
+            bookingDate: new Date().toISOString(),
+            status: "Pending"
+        };
+        
+        await addDoc(collection(db, "bookings"), newBooking);
 
-    const newBooking: Booking = {
-        id: `booking-${new Date().getTime()}`,
-        packageId,
-        packageName,
-        customerName: values.fullName,
-        customerEmail: values.email,
-        customerPhone: values.phone,
-        travelers: values.travelers,
-        departureDate: values.departureDate.toISOString(),
-        bookingDate: new Date().toISOString(),
-        status: "Pending"
-    };
-
-    const updatedBookings = [...bookings, newBooking];
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-
-    console.log("Booking Submitted", newBooking);
-    toast({
-      title: "Booking Submitted!",
-      description: "Thank you for your booking. We will contact you shortly to confirm the details.",
-    });
-    setDialogOpen(false);
-    form.reset();
+        toast({
+          title: "Booking Submitted!",
+          description: "Thank you for your booking. We will contact you shortly to confirm the details.",
+        });
+        setDialogOpen(false);
+        form.reset();
+    } catch(e) {
+        console.error("Booking Error:", e);
+        toast({
+          title: "Booking Failed",
+          description: "There was an error submitting your booking. Please try again.",
+          variant: "destructive"
+        });
+    }
   }
 
   return (

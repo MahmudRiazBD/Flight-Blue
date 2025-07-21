@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -6,34 +5,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { posts as initialPosts, Post, categories as initialCategories, Category } from "@/lib/data";
+import { Post, Category } from "@/lib/data";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { getFirestore, collection, getDocs, doc, deleteDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const db = getFirestore(getFirebaseApp());
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const postsSnapshot = await getDocs(collection(db, "posts"));
+      const postsList = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
+      postsList.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      setPosts(postsList);
+      
+      const categoriesSnapshot = await getDocs(collection(db, "categories"));
+      const categoriesList = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(categoriesList);
+
+    } catch(e) {
+      console.error("Error loading blog data:", e);
+      toast({ title: "Error", description: "Could not fetch blog posts or categories.", variant: "destructive"});
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const storedPosts = localStorage.getItem('posts');
-    if (storedPosts) {
-      setPosts(JSON.parse(storedPosts));
-    } else {
-        setPosts(initialPosts);
-        localStorage.setItem('posts', JSON.stringify(initialPosts));
-    }
-    
-    const storedCategories = localStorage.getItem('categories');
-    if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-    } else {
-        setCategories(initialCategories);
-        localStorage.setItem('categories', JSON.stringify(initialCategories));
-    }
+    loadData();
   }, []);
 
   const getCategoryName = (categoryId?: string) => {
@@ -41,15 +52,18 @@ export default function AdminBlogPage() {
     return categories.find(c => c.id === categoryId)?.name || "Uncategorized";
   };
 
-  const handleDelete = (postId: string) => {
-    const updatedPosts = posts.filter(post => post.id !== postId);
-    setPosts(updatedPosts);
-    localStorage.setItem('posts', JSON.stringify(updatedPosts));
-    toast({
-      title: "Post Deleted",
-      description: "The blog post has been successfully deleted.",
-      variant: "destructive"
-    });
+  const handleDelete = async (postId: string) => {
+    try {
+      await deleteDoc(doc(db, "posts", postId));
+      toast({
+        title: "Post Deleted",
+        description: "The blog post has been successfully deleted.",
+        variant: "destructive"
+      });
+      loadData();
+    } catch (e) {
+      toast({ title: "Error", description: "Could not delete post.", variant: "destructive"});
+    }
   };
 
   return (
@@ -78,39 +92,58 @@ export default function AdminBlogPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {posts.map((post) => (
-              <TableRow key={post.id}>
-                <TableCell className="font-medium">{post.title}</TableCell>
-                <TableCell>{post.author}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{getCategoryName(post.categoryId)}</Badge>
-                </TableCell>
-                <TableCell>{format(new Date(post.publishedAt), 'PPP')}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/admin/blog/edit/${post.slug}`}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {loading ? (
+              Array.from({length: 3}).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : (
+                posts.map((post) => (
+                  <TableRow key={post.id}>
+                    <TableCell className="font-medium">{post.title}</TableCell>
+                    <TableCell>{post.author}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getCategoryName(post.categoryId)}</Badge>
+                    </TableCell>
+                    <TableCell>{format(new Date(post.publishedAt), 'PPP')}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/blog/edit/${post.slug}`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+             {!loading && posts.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="text-center h-24">
+                        No posts found. Add one to get started.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

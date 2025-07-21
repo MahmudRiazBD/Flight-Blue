@@ -1,41 +1,47 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { categories as initialCategories, Category } from "@/lib/data";
+import { Category } from "@/lib/data";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminBlogCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedCategories = localStorage.getItem('categories');
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        localStorage.setItem('categories', JSON.stringify(initialCategories));
-      }
+  const db = getFirestore(getFirebaseApp());
+  const categoriesCollection = collection(db, "categories");
+
+  const loadCategories = async () => {
+    setLoading(true);
+    try {
+      const snapshot = await getDocs(categoriesCollection);
+      const catList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(catList);
+    } catch (e) {
+      toast({ title: "Error", description: "Could not fetch categories.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('categories', JSON.stringify(categories));
-    }
-  }, [categories]);
+    loadCategories();
+  }, []);
   
   const handleAddNew = () => {
     setEditingCategory(null);
@@ -49,16 +55,21 @@ export default function AdminBlogCategoriesPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDelete = (id: string) => {
-    setCategories(categories.filter(c => c.id !== id));
-    toast({
-        title: "Category Deleted",
-        description: "The category has been successfully deleted.",
-        variant: "destructive"
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "categories", id));
+      toast({
+          title: "Category Deleted",
+          description: "The category has been successfully deleted.",
+          variant: "destructive"
+      });
+      loadCategories();
+    } catch(e) {
+       toast({ title: "Error", description: "Could not delete category.", variant: "destructive" });
+    }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentCategory.name?.trim()) {
       toast({
         title: "Error",
@@ -68,29 +79,29 @@ export default function AdminBlogCategoriesPage() {
       return;
     }
 
-    if (editingCategory) {
-      setCategories(categories.map(c => 
-        c.id === editingCategory.id ? { ...editingCategory, ...currentCategory } : c
-      ));
-      toast({
-        title: "Category Updated",
-        description: "The category has been successfully updated.",
-      });
-    } else {
-      const newCategory: Category = {
-        id: `cat-${new Date().getTime()}`,
-        name: currentCategory.name,
-      };
-      setCategories([...categories, newCategory]);
-      toast({
-        title: "Category Added",
-        description: `"${currentCategory.name}" has been added.`,
-      });
-    }
+    try {
+        if (editingCategory) {
+          const catDoc = doc(db, "categories", editingCategory.id);
+          await updateDoc(catDoc, { ...currentCategory });
+          toast({
+            title: "Category Updated",
+            description: "The category has been successfully updated.",
+          });
+        } else {
+          await addDoc(categoriesCollection, { name: currentCategory.name });
+          toast({
+            title: "Category Added",
+            description: `"${currentCategory.name}" has been added.`,
+          });
+        }
 
-    setIsDialogOpen(false);
-    setCurrentCategory({});
-    setEditingCategory(null);
+        loadCategories();
+        setIsDialogOpen(false);
+        setCurrentCategory({});
+        setEditingCategory(null);
+    } catch(e) {
+        toast({ title: "Error", description: "Could not save category.", variant: "destructive" });
+    }
   };
 
   return (
@@ -114,32 +125,48 @@ export default function AdminBlogCategoriesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categories.map((cat) => (
-              <TableRow key={cat.id}>
-                <TableCell className="font-medium">{cat.name}</TableCell>
-                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleEdit(cat)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(cat.id)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                    <TableRow key={index}>
+                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+            ) : (
+                categories.map((cat) => (
+                  <TableRow key={cat.id}>
+                    <TableCell className="font-medium">{cat.name}</TableCell>
+                     <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(cat)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(cat.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+             {!loading && categories.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={2} className="text-center h-24">
+                        No categories found. Add one to get started.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

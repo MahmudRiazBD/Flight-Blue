@@ -1,13 +1,14 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Post, posts as initialPosts } from '@/lib/data';
+import { Post } from '@/lib/data';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ArrowRight, Calendar, User } from 'lucide-react';
+import { ArrowRight, Calendar, User, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
 
 function PostCard({ post }: { post: Post }) {
   return (
@@ -53,13 +54,20 @@ function PostCard({ post }: { post: Post }) {
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const storedPosts = localStorage.getItem('posts');
-    const allPosts = storedPosts ? JSON.parse(storedPosts) : initialPosts;
-    // Sort posts by date, newest first
-    allPosts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    setPosts(allPosts);
+    const fetchPosts = async () => {
+      setLoading(true);
+      const db = getFirestore(getFirebaseApp());
+      const postsCollection = collection(db, 'posts');
+      const q = query(postsCollection, orderBy("publishedAt", "desc"));
+      const postsSnapshot = await getDocs(q);
+      const postsList = postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post));
+      setPosts(postsList);
+      setLoading(false);
+    };
+    fetchPosts();
   }, []);
 
   return (
@@ -70,7 +78,12 @@ export default function BlogPage() {
       </header>
       
       <main>
-        {posts.length > 0 ? (
+        {loading ? (
+           <div className="text-center py-16">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+            <p className="mt-4 text-muted-foreground">Loading posts...</p>
+          </div>
+        ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map(post => (
               <PostCard key={post.id} post={post} />

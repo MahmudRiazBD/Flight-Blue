@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -7,10 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, Star, Users, Loader2, Calendar, User as UserIcon } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
-import { packages as initialPackages, Package, posts as initialPosts, Post } from "@/lib/data";
+import { Package, Post } from "@/lib/data";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { useAppContext } from '@/context/AppContext';
+import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
 
 type HomePageSettings = {
     heroImageUrl: string;
@@ -69,45 +70,49 @@ function BlogCard({ post }: { post: Post }) {
 
 
 export default function Home() {
-  const [packages, setPackages] = useState<Package[]>(initialPackages);
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
-  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [loading, setLoading] = useState(true);
   const { setContactFormOpen } = useAppContext();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedPackages = localStorage.getItem('packages');
-      if (storedPackages) {
-        setPackages(JSON.parse(storedPackages));
-      }
-      
-      const storedPosts = localStorage.getItem('posts');
-      if(storedPosts) {
-        const allPosts = JSON.parse(storedPosts);
-        allPosts.sort((a:Post, b:Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        setPosts(allPosts);
-      } else {
-        initialPosts.sort((a:Post, b:Post) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-        setPosts(initialPosts);
-      }
+    const fetchFeaturedData = async () => {
+      setLoading(true);
+      try {
+        const db = getFirestore(getFirebaseApp());
 
-      const storedSettings = localStorage.getItem('homePageSettings');
-      if (storedSettings) {
-        setHomeSettings(JSON.parse(storedSettings));
+        // Fetch featured packages
+        const packagesQuery = query(collection(db, 'packages'), limit(3));
+        const packagesSnapshot = await getDocs(packagesQuery);
+        setPackages(packagesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Package)));
+
+        // Fetch featured posts
+        const postsQuery = query(collection(db, 'posts'), orderBy('publishedAt', 'desc'), limit(3));
+        const postsSnapshot = await getDocs(postsQuery);
+        setPosts(postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post)));
+
+        // Fetch home settings from localStorage (as it's UI state)
+        const storedSettings = localStorage.getItem('homePageSettings');
+        if (storedSettings) {
+          setHomeSettings(JSON.parse(storedSettings));
+        }
+
+      } catch (error) {
+        console.error("Error fetching featured data:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoadingSettings(false);
-    }
+    };
+    
+    fetchFeaturedData();
   }, []);
-
-  const featuredPackages = packages.slice(0, 3);
-  const featuredPosts = posts.slice(0, 3);
 
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
         <section className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center text-center text-white bg-black">
-          {loadingSettings ? (
+          {loading ? (
              <Loader2 className="h-12 w-12 animate-spin text-white" />
           ) : (
             <>
@@ -143,9 +148,13 @@ export default function Home() {
               Featured Tours & Packages
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredPackages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
+              {loading ? (
+                Array.from({length: 3}).map((_, i) => <Card key={i}><CardContent className="p-6"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></CardContent></Card>)
+              ) : (
+                packages.map((pkg) => (
+                  <PackageCard key={pkg.id} pkg={pkg} />
+                ))
+              )}
             </div>
             <div className="text-center mt-12">
               <Button asChild variant="outline">
@@ -198,9 +207,13 @@ export default function Home() {
               From Our Blog
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
-              ))}
+              {loading ? (
+                Array.from({length: 3}).map((_, i) => <Card key={i}><CardContent className="p-6"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></CardContent></Card>)
+              ) : (
+                posts.map((post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))
+              )}
             </div>
             <div className="text-center mt-12">
               <Button asChild variant="outline">

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -9,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Booking, bookings as initialBookings } from "@/lib/data";
+import { Booking } from "@/lib/data";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,8 +19,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusColors: Record<Booking['status'], "default" | "secondary" | "destructive"> = {
   Pending: "secondary",
@@ -31,42 +32,56 @@ const statusColors: Record<Booking['status'], "default" | "secondary" | "destruc
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const db = getFirestore(getFirebaseApp());
 
-  const loadBookings = () => {
-    const storedBookings = localStorage.getItem('bookings');
-    const allBookings: Booking[] = storedBookings ? JSON.parse(storedBookings) : initialBookings;
-    allBookings.sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
-    setBookings(allBookings);
+  const loadBookings = async () => {
+    setLoading(true);
+    try {
+      const bookingsCollection = collection(db, "bookings");
+      const q = query(bookingsCollection, orderBy("bookingDate", "desc"));
+      const snapshot = await getDocs(q);
+      const allBookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
+      setBookings(allBookings);
+    } catch (e) {
+      console.error("Error fetching bookings:", e);
+      toast({ title: "Error", description: "Failed to load bookings.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     loadBookings();
-    window.addEventListener('storage', loadBookings);
-    return () => {
-      window.removeEventListener('storage', loadBookings);
-    };
   }, []);
 
-  const updateBookingStatus = (bookingId: string, status: Booking['status']) => {
-    const updatedBookings = bookings.map(b => b.id === bookingId ? { ...b, status } : b);
-    setBookings(updatedBookings);
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-    toast({
-      title: "Booking Status Updated",
-      description: `Booking has been marked as ${status}.`
-    });
+  const updateBookingStatus = async (bookingId: string, status: Booking['status']) => {
+    try {
+      const bookingRef = doc(db, "bookings", bookingId);
+      await updateDoc(bookingRef, { status });
+      toast({
+        title: "Booking Status Updated",
+        description: `Booking has been marked as ${status}.`
+      });
+      loadBookings();
+    } catch(e) {
+       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+    }
   }
 
-  const deleteBooking = (bookingId: string) => {
-     const updatedBookings = bookings.filter(b => b.id !== bookingId);
-     setBookings(updatedBookings);
-     localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+  const deleteBooking = async (bookingId: string) => {
+    try {
+     await deleteDoc(doc(db, "bookings", bookingId));
      toast({
         title: "Booking Deleted",
         description: "The booking has been successfully removed.",
         variant: "destructive"
      });
+     loadBookings();
+    } catch(e) {
+        toast({ title: "Error", description: "Failed to delete booking.", variant: "destructive" });
+    }
   }
 
   return (
@@ -88,7 +103,18 @@ export default function AdminBookingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bookings.length > 0 ? bookings.map((booking) => (
+            {loading ? (
+                Array.from({length: 3}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-10 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+            ) : bookings.length > 0 ? bookings.map((booking) => (
               <TableRow key={booking.id}>
                 <TableCell>
                   <div className="font-medium">{booking.customerName}</div>

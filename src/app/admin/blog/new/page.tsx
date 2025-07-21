@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
@@ -11,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Post, Category, posts as initialPosts, categories as initialCategories } from "@/lib/data";
+import { Post, Category } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 
 const postSchema = z.object({
@@ -31,14 +32,20 @@ export default function NewPostPage() {
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
 
+  const db = getFirestore(getFirebaseApp());
+
   useEffect(() => {
-    const storedCategories = localStorage.getItem('categories');
-    if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
-    } else {
-        setCategories(initialCategories);
-    }
-  }, []);
+    const loadCategories = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "categories"));
+        const catList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+        setCategories(catList);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadCategories();
+  }, [db]);
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
@@ -51,29 +58,28 @@ export default function NewPostPage() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof postSchema>) => {
-    const storedPosts = localStorage.getItem('posts');
-    const posts: Post[] = storedPosts ? JSON.parse(storedPosts) : initialPosts;
+  const onSubmit = async (data: z.infer<typeof postSchema>) => {
+    try {
+      const slug = data.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 
-    const slug = data.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+      const newPost: Omit<Post, 'id'> = {
+        ...data,
+        slug,
+        author: "Admin User", // In a real app, this would come from the logged-in user
+        publishedAt: new Date().toISOString(),
+      };
+      
+      await addDoc(collection(db, "posts"), newPost);
 
-    const newPost: Post = {
-      ...data,
-      id: `post-${new Date().getTime()}`,
-      slug,
-      author: "Admin User", // In a real app, this would come from the logged-in user
-      publishedAt: new Date().toISOString(),
-    };
+      toast({
+        title: "Post Created!",
+        description: "Your new blog post has been saved.",
+      });
 
-    const updatedPosts = [...posts, newPost];
-    localStorage.setItem('posts', JSON.stringify(updatedPosts));
-
-    toast({
-      title: "Post Created!",
-      description: "Your new blog post has been saved.",
-    });
-
-    router.push("/admin/blog/posts");
+      router.push("/admin/blog/posts");
+    } catch(e) {
+      toast({ title: "Error", description: "Failed to create post.", variant: "destructive"});
+    }
   };
 
   return (
