@@ -49,6 +49,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'scontent.fdac19-1.fna.fbcdn.net',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'pbs.twimg.com',
         port: '',
         pathname: '/**',
