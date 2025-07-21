@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -64,38 +65,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const superAdminPassword = "2002##flightblue.MHR";
         
         try {
-            // Try to create the user. 
-            const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            // This is a temporary auth instance for seeding, separate from the main user's session
+            const tempAuth = getAuth(getFirebaseApp());
+            const userCredential = await createUserWithEmailAndPassword(tempAuth, superAdminEmail, superAdminPassword);
             console.log("Super admin auth user created successfully.");
 
             const firebaseUser = userCredential.user;
             if (firebaseUser) {
-                // Now create the Firestore document with the correct role
                 const userRef = doc(db, 'users', firebaseUser.uid);
                 await setDoc(userRef, {
                     email: superAdminEmail,
                     firstName: 'Super',
                     lastName: 'Admin',
-                    role: 'superadmin' as UserRole, // Explicitly set role
+                    role: 'superadmin' as UserRole,
                     createdAt: serverTimestamp(),
                     photoURL: '',
                     phone: ''
                 });
-                console.log("Super admin user document created in Firestore.");
-            }
-             // Sign out immediately after seeding to not affect current user session
-            await signOut(auth);
-            console.log("Super admin seeding session signed out.");
+                console.log("Super admin user document created in Firestore with correct role.");
+                
+                // IMPORTANT: Sign out the temporary seeding session *after* writing to Firestore
+                await signOut(tempAuth);
+                console.log("Super admin seeding session signed out.");
 
+                // Mark as run only after successful creation and sign out
+                sessionStorage.setItem(hasRunKey, 'true');
+            }
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 console.log("Super admin email already exists. Seeding process likely complete.");
+                sessionStorage.setItem(hasRunKey, 'true');
             } else {
                  console.error("Error creating super admin:", error);
             }
-        } finally {
-             // Mark as run to avoid retries, regardless of outcome
-             sessionStorage.setItem(hasRunKey, 'true');
         }
     };
     
@@ -116,8 +118,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
            const firstName = nameParts[0] || "New";
            const lastName = nameParts.slice(1).join(" ") || "User";
 
-           // This is the fallback for users who sign up through other means (e.g. social)
-           // or whose document was deleted. They default to 'customer'.
            const newUser: Omit<User, 'uid'> = {
             email: firebaseUser.email!,
             firstName: firstName,
@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       firstName: firstName,
       lastName: lastName,
-      role: role, // Use the provided role, which defaults to 'customer'
+      role: role,
       createdAt: serverTimestamp(),
       photoURL: '',
       phone: ''
