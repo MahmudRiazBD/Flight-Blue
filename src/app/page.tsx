@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -230,7 +231,7 @@ export default function Home() {
           </div>
         </section>
         
-        <section className="py-16 md:py-24 bg-secondary">
+        <section className="py-16 md:py-24 bg-background">
            <div className="container mx-auto px-4 text-center">
               <h2 className="text-3xl md:text-4xl font-headline font-bold">Ready to Start Your Journey?</h2>
               <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
