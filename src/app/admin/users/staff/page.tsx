@@ -127,6 +127,7 @@ export default function AdminStaffPage() {
             <TableHeader>
                 <TableRow>
                     <TableHead>User</TableHead>
+                    <TableHead>Username</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -136,6 +137,7 @@ export default function AdminStaffPage() {
                     Array.from({ length: 1 }).map((_, index) => (
                         <TableRow key={index}>
                             <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                         </TableRow>
@@ -152,6 +154,7 @@ export default function AdminStaffPage() {
                                     <span className="font-medium">{user.firstName} {user.lastName}</span>
                                 </div>
                             </TableCell>
+                            <TableCell>{user.username}</TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
@@ -198,4 +201,3 @@ export default function AdminStaffPage() {
     </>
   );
 }
-

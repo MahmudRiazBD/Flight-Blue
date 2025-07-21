@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 
 const profileSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters.").regex(/^[a-z0-9_.-]+$/, "Username can only contain lowercase letters, numbers, and symbols: . _ -"),
     firstName: z.string().min(1, "First name is required."),
     lastName: z.string().min(1, "Last name is required."),
     email: z.string().email(),
@@ -41,6 +42,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      username: user?.username || "",
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
@@ -54,6 +56,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   useEffect(() => {
     if (user) {
       form.reset({
+        username: user.username || "",
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
@@ -119,6 +122,11 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                 </div>
             </div>
             <Separator />
+            <div>
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" {...form.register("username")} />
+                {form.formState.errors.username && <p className="text-destructive text-sm mt-1">{form.formState.errors.username.message}</p>}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <Label htmlFor="firstName">First Name</Label>

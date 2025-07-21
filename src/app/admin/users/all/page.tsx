@@ -165,6 +165,7 @@ export default function AdminAllUsersPage() {
               <TableHeader>
                   <TableRow>
                       <TableHead>User</TableHead>
+                      <TableHead>Username</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -175,6 +176,7 @@ export default function AdminAllUsersPage() {
                      Array.from({ length: 5 }).map((_, index) => (
                         <TableRow key={index}>
                             <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-40" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -192,6 +194,7 @@ export default function AdminAllUsersPage() {
                                     <span className="font-medium">{user.firstName} {user.lastName}</span>
                                 </div>
                             </TableCell>
+                            <TableCell>{user.username}</TableCell>
                             <TableCell>
                                 <Badge variant={roleColors[user.role]}>{user.role}</Badge>
                             </TableCell>
