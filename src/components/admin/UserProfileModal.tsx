@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { User, UserRole } from "@/hooks/use-auth";
+import { User, UserRole, useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import MediaPicker from "./MediaPicker";
@@ -32,9 +32,10 @@ type UserProfileModalProps = {
   onClose: () => void;
   user: User | null;
   onSave: (updatedUser: User) => void;
+  isEditingSelf?: boolean; // New prop
 };
 
-export default function UserProfileModal({ isOpen, onClose, user, onSave }: UserProfileModalProps) {
+export default function UserProfileModal({ isOpen, onClose, user, onSave, isEditingSelf = false }: UserProfileModalProps) {
   const { toast } = useToast();
   
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -148,7 +149,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave }: User
                     name="role"
                     control={form.control}
                     render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={user.role === 'superadmin'}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditingSelf || user.role === 'superadmin'}>
                             <SelectTrigger id="role">
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
@@ -161,6 +162,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave }: User
                         </Select>
                     )}
                  />
+                 {isEditingSelf && <p className="text-xs text-muted-foreground mt-1">You cannot change your own role.</p>}
             </div>
 
             <Separator />
