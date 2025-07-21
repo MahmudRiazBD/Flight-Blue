@@ -19,6 +19,7 @@ import { getAuth } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import type { FirebaseApp } from 'firebase/app';
+import { seedSuperAdmin } from '@/lib/actions';
 
 export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 
@@ -55,20 +56,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const db = getFirestore(app);
     setFirebaseInstances({ auth, db });
 
+    // Seed the super admin on initial load if not exists
+    seedSuperAdmin();
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userRef);
+        
+        const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
 
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<User, 'uid'>;
-           if (firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && userData.role !== 'superadmin') {
+           if (firebaseUser.email === superAdminEmail && userData.role !== 'superadmin') {
               userData.role = 'superadmin';
               await setDoc(userRef, { role: 'superadmin' }, { merge: true });
            }
           setUser({ uid: firebaseUser.uid, ...userData });
         } else {
-           const isSuperAdmin = firebaseUser.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+           const isSuperAdmin = firebaseUser.email === superAdminEmail;
            const userRole: UserRole = isSuperAdmin ? 'superadmin' : 'customer';
            const nameParts = (firebaseUser.displayName || "New User").split(" ");
            const firstName = nameParts[0] || "New";
@@ -130,21 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { auth, db } = firebaseInstances;
 
-    // Check if user already exists in Auth. If so, throw error.
-    // Note: A more robust way is a Cloud Function, but this is a client-side check.
-    const existingUserDoc = await getDoc(doc(db, 'users', email)); // Not ideal to use email as ID, just for a quick check.
-    if(existingUserDoc.exists()){
-       // This check is flawed. A better check is needed.
-       // For now, let's rely on Firebase Auth's error.
+    const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+    if (email === superAdminEmail) {
+        throw new Error("Cannot register with super admin email.");
     }
-
+    
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
     await updateProfile(firebaseUser, { displayName });
-
-    const isSuperAdmin = email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-    const userRole: UserRole = isSuperAdmin ? 'superadmin' : role;
 
     const nameParts = displayName.split(' ');
     const firstName = nameParts[0] || displayName;
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       firstName: firstName,
       lastName: lastName,
-      role: userRole,
+      role: role,
       createdAt: serverTimestamp(),
       photoURL: '',
       phone: ''
@@ -187,4 +187,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
