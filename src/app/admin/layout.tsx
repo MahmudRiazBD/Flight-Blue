@@ -135,7 +135,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, setUser, loading, logout } = useAuth();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
     packages: pathname.startsWith('/admin/packages'),
@@ -201,10 +201,14 @@ export default function AdminLayout({
         const userRef = doc(db, "users", updatedUser.uid);
         const { uid, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
+        
+        // Immediately update the user state in the context
+        setUser(updatedUser);
+
         setIsProfileModalOpen(false);
         toast({
           title: "Profile Updated",
-          description: "Your profile has been successfully updated. Changes will be reflected on next login."
+          description: "Your profile has been successfully updated."
         });
     } catch (error) {
         console.error("Error saving profile:", error);

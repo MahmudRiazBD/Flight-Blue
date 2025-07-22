@@ -13,7 +13,7 @@ import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, setUser, loading } = useAuth();
   const { toast } = useToast();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -23,10 +23,14 @@ export default function DashboardPage() {
         const userRef = doc(db, "users", updatedUser.uid);
         const { uid, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
+        
+        // Immediately update the user state in the context
+        setUser(updatedUser);
+
         setIsProfileModalOpen(false);
         toast({
           title: "Profile Updated",
-          description: "Your profile has been successfully updated. Please refresh to see changes."
+          description: "Your profile has been successfully updated."
         });
     } catch (error) {
         console.error("Error saving profile:", error);
