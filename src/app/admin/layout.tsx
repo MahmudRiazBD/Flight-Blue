@@ -201,7 +201,10 @@ export default function AdminLayout({
      try {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
+        
+        // Destructure to remove fields that should not be directly written to Firestore this way
         const { uid, password, ...dataToSave } = updatedUser;
+        
         await updateDoc(userRef, dataToSave);
         
         setUser(updatedUser);
