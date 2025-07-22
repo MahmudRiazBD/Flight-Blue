@@ -201,14 +201,12 @@ export default function AdminLayout({
      try {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
-        // Exclude properties that shouldn't be directly saved, like 'uid' or 'password'
         const { uid, password, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
         
-        // Immediately update the user state in the context for instant UI feedback
         setUser(updatedUser);
-
         setIsProfileModalOpen(false);
+
         toast({
           title: "Profile Updated",
           description: "Your profile has been successfully updated."

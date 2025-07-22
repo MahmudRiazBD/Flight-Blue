@@ -25,7 +25,7 @@ const profileSchema = z.object({
     phone: z.string().optional(),
     photoURL: z.string().url().optional(),
     role: z.enum(["customer", "staff", "admin", "superadmin"]),
-    newPassword: z.string().min(6, "Password must be at least 6 characters.").optional().or(z.literal('')),
+    newPassword: z.string().optional().or(z.literal('')),
 });
 
 type UserProfileModalProps = {
@@ -44,8 +44,6 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   });
 
   useEffect(() => {
-    // Only reset the form if the user prop changes (i.e., when a new user is selected to be edited)
-    // or when the modal is opened for the first time with a user.
     if (user && isOpen) {
       form.reset({
         username: user.username || "",
@@ -58,7 +56,8 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
         newPassword: "",
       });
     }
-  }, [user, isOpen, form]);
+  }, [user, isOpen, form.reset]);
+
 
   if (!isOpen || !user) {
     return null;
@@ -72,22 +71,15 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   }
 
   const onSubmit = (data: z.infer<typeof profileSchema>) => {
-    // Merge the form data with the existing user data to create the updated user object.
     const updatedUser: User = {
         ...user,
         ...data,
     };
-    
-    // The password itself isn't stored in Firestore. 
-    // This is a placeholder for a real password update flow.
-    if(data.newPassword) {
-        toast({
-            title: "Password Updated (Simulated)",
-            description: "The user's password has been changed."
-        });
+
+    if (data.newPassword) {
+        updatedUser.password = data.newPassword;
     }
     
-    // Call the onSave prop function passed from the parent component.
     onSave(updatedUser);
   };
 
