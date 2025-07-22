@@ -9,43 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2 } from "lucide-react";
+import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useAppContext } from "@/context/AppContext";
-
-export type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
-
-export type SocialLink = {
-    id: string;
-    platform: SocialLinkPlatform;
-    url: string;
-};
-
-export type FooterLink = {
-    id: string;
-    label: string;
-    url: string;
-}
-
-export type GlobalSettings = {
-    siteTitle: string;
-    logoUrl: string;
-    faviconUrl: string;
-    footerDescription: string;
-    quickLinks: {
-        title: string;
-        links: FooterLink[];
-    };
-    supportLinks: {
-        title: string;
-        links: FooterLink[];
-    };
-    socialLinks: SocialLink[];
-    googleMapEmbedCode: string;
-};
+import type { GlobalSettings, SocialLinkPlatform, SocialLink, FooterLink } from "@/lib/data";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
@@ -239,6 +211,33 @@ export default function AdminSettingsPage() {
                             </p>
                         </div>
                     </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Search Engine Visibility</h3>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="searchEngineVisibility"
+                                checked={settings.searchEngineVisibility}
+                                onCheckedChange={(checked) => handleSettingsChange('searchEngineVisibility', checked)}
+                            />
+                            <Label htmlFor="searchEngineVisibility">Discourage search engines from indexing this site</Label>
+                        </div>
+                        {settings.searchEngineVisibility === false && (
+                             <Alert variant="destructive">
+                                <SearchX className="h-4 w-4" />
+                                <AlertTitle>Visibility Hidden</AlertTitle>
+                                <AlertDescription>
+                                   Search engines will be discouraged from showing this site in search results. This does not completely guarantee the site won't be indexed.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                         <p className="text-sm text-muted-foreground">
+                           It is up to search engines to honor this request.
+                        </p>
+                    </div>
+
                 </div>
             </TabsContent>
 

@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
@@ -106,6 +107,7 @@ export async function seedDatabase() {
         siteTitle: "Flight Blu",
         logoUrl: "/logo.svg",
         faviconUrl: "/favicon.ico",
+        searchEngineVisibility: true,
         footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
         quickLinks: {
             title: "Quick Links",

@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
-import type { GlobalSettings } from '@/app/admin/settings/page';
+import type { GlobalSettings } from '@/lib/data';
 
 
 // Default settings as a fallback
@@ -12,6 +13,7 @@ const defaultSettings: GlobalSettings = {
     siteTitle: "Flight Blu",
     logoUrl: "/logo.svg",
     faviconUrl: "/favicon.ico",
+    searchEngineVisibility: true,
     footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
     quickLinks: {
         title: "Quick Links",

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Metadata } from "next";
@@ -42,6 +43,10 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=PT+Sans:wght@400;700&display=swap"
           rel="stylesheet"
         />
+        {/* Discourage search engine indexing if the setting is turned off */}
+        {settings?.searchEngineVisibility === false && (
+          <meta name="robots" content="noindex, nofollow" />
+        )}
       </head>
       <body
         className={cn(

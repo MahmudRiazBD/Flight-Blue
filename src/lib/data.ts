@@ -1,5 +1,6 @@
 
 
+
 export type Page = {
   id: string;
   title: string;
@@ -19,6 +20,39 @@ export type HomePageSettings = {
   heroButtonLabel: string;
   heroButtonLink: string;
 }
+
+export type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
+
+export type SocialLink = {
+    id: string;
+    platform: SocialLinkPlatform;
+    url: string;
+};
+
+export type FooterLink = {
+    id: string;
+    label: string;
+    url: string;
+}
+
+export type GlobalSettings = {
+    siteTitle: string;
+    logoUrl: string;
+    faviconUrl: string;
+    searchEngineVisibility: boolean;
+    footerDescription: string;
+    quickLinks: {
+        title: string;
+        links: FooterLink[];
+    };
+    supportLinks: {
+        title: string;
+        links: FooterLink[];
+    };
+    socialLinks: SocialLink[];
+    googleMapEmbedCode: string;
+};
+
 
 export type Post = {
   id: string;
