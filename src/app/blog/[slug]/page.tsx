@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,9 +9,10 @@ import { Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEmbedUrl } from "@/lib/utils";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
+import Head from 'next/head';
+
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
@@ -74,72 +76,63 @@ export default function BlogPostPage() {
   if (post === null) {
     notFound();
   }
+  
+  const pageTitle = post.title;
+  const pageDescription = post.content.substring(0, 160);
 
   return (
-    <article className="container mx-auto px-4 py-12 max-w-4xl">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-4">{post.title}</h1>
-        <div className="flex justify-center items-center gap-6 text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            <span>{post.author}</span>
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+      </Head>
+      <article className="container mx-auto px-4 py-12 max-w-4xl">
+        <header className="mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-headline font-bold mb-4">{post.title}</h1>
+          <div className="flex justify-center items-center gap-6 text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              <span>{post.author}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              <time dateTime={post.publishedAt}>
+                {format(new Date(post.publishedAt), 'PPP')}
+              </time>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            <time dateTime={post.publishedAt}>
-              {format(new Date(post.publishedAt), 'PPP')}
-            </time>
-          </div>
-        </div>
-      </header>
-      
-      <div className="mb-12 shadow-lg">
-         {embedUrl ? (
-          <Carousel className="w-full rounded-lg overflow-hidden">
-            <CarouselContent>
-              <CarouselItem>
-                <div className="relative h-64 md:h-96 w-full">
-                  <Image
-                    src={post.imageUrl}
-                    alt={post.title}
-                    layout="fill"
-                    objectFit="cover"
-                    data-ai-hint={post.imageHint}
-                  />
-                </div>
-              </CarouselItem>
-              <CarouselItem>
-                <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
-                  <iframe
+        </header>
+        
+         <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden shadow-lg mb-8">
+              <Image
+                src={post.imageUrl}
+                alt={post.title}
+                layout="fill"
+                objectFit="cover"
+                data-ai-hint={post.imageHint}
+              />
+         </div>
+
+
+        <div className="prose prose-lg max-w-none mx-auto text-foreground/80">
+          <Markdown content={post.content} />
+
+           {embedUrl && (
+            <div className="mt-12 not-prose">
+              <div className="aspect-video w-full rounded-lg overflow-hidden shadow-lg">
+                <iframe
                     className="w-full h-full"
                     src={embedUrl}
                     title="Post Video"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                  ></iframe>
-                </div>
-              </CarouselItem>
-            </CarouselContent>
-            <CarouselPrevious className="left-4" />
-            <CarouselNext className="right-4" />
-          </Carousel>
-        ) : (
-          <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden">
-            <Image
-              src={post.imageUrl}
-              alt={post.title}
-              layout="fill"
-              objectFit="cover"
-              data-ai-hint={post.imageHint}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="prose prose-lg max-w-none mx-auto text-foreground/80">
-        <Markdown content={post.content} />
-      </div>
-    </article>
+                ></iframe>
+              </div>
+            </div>
+          )}
+        </div>
+      </article>
+    </>
   );
 }
