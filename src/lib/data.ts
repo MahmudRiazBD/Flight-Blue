@@ -77,6 +77,8 @@ export const destinations: Destination[] = [
     { id: "dest-3", name: "Tokyo, Japan", imageUrl: "https://placehold.co/600x400.png" },
     { id: "dest-4", name: "Rome, Italy", imageUrl: "https://placehold.co/600x400.png" },
     { id: "dest-5", name: "Istanbul, Turkey", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-6", name: "Switzerland", imageUrl: "https://placehold.co/600x400.png" },
+    { id: "dest-7", name: "Maldives", imageUrl: "https://placehold.co/600x400.png" },
 ]
 
 export const packageTypes: PackageType[] = [
@@ -217,12 +219,58 @@ export const packages: Package[] = [
     inclusions: ["5 nights accommodation", "Airport transfers", "Guided tours", "Bosphorus cruise", "Daily breakfast"],
     exclusions: ["Flights", "Visa fees", "Lunches & Dinners"],
   },
+  {
+    id: "swiss-alps-adventure",
+    title: "Swiss Alps Adventure",
+    type: "Tour",
+    destination: "Switzerland",
+    duration: 8,
+    price: 320000,
+    rating: 4.9,
+    imageUrl: "https://placehold.co/600x400.png",
+    imageHint: "swiss alps",
+    description: "Embark on a breathtaking journey through the Swiss Alps. Experience stunning mountain scenery, pristine lakes, and charming alpine villages.",
+    itinerary: [
+      { day: "1", title: "Arrival in Zurich", details: "Arrive in Zurich, transfer to your hotel, and explore the city at your leisure." },
+      { day: "2", title: "Lucerne & Mount Pilatus", details: "Travel to Lucerne, enjoy a boat trip on Lake Lucerne, and take a cogwheel railway up to Mount Pilatus for panoramic views." },
+      { day: "3", title: "Interlaken, Jungfrau Region", details: "Journey to Interlaken, the adventure capital of Switzerland. Optional skydiving or paragliding." },
+      { day: "4", title: "Top of Europe - Jungfraujoch", details: "Take a scenic train ride to Jungfraujoch, the highest railway station in Europe. Explore the Ice Palace and Sphinx Observatory." },
+      { day: "5", title: "Zermatt & the Matterhorn", details: "Travel to the car-free village of Zermatt, with stunning views of the iconic Matterhorn peak." },
+      { day: "6", title: "Gornergrat Railway", details: "Ride the Gornergrat railway for spectacular views of the Matterhorn and surrounding glaciers." },
+      { day: "7", title: "Return to Zurich", details: "Enjoy a scenic train journey back to Zurich. Farewell dinner at a traditional Swiss restaurant." },
+      { day: "8", title: "Departure", details: "Transfer to Zurich Airport for your departure." },
+    ],
+    inclusions: ["7 nights accommodation in 4-star hotels", "Swiss Travel Pass for all train journeys", "Excursions to Mount Pilatus and Jungfraujoch", "Daily breakfast and farewell dinner"],
+    exclusions: ["International flights", "Lunches and most dinners", "Optional activities"],
+  },
+  {
+    id: "maldives-getaway",
+    title: "Maldives Luxury Getaway",
+    type: "Tour",
+    destination: "Maldives",
+    duration: 5,
+    price: 280000,
+    rating: 5.0,
+    imageUrl: "https://placehold.co/600x400.png",
+    imageHint: "maldives bungalow water",
+    description: "Escape to paradise with a luxurious stay in an overwater bungalow in the Maldives. Enjoy crystal-clear waters, white sandy beaches, and ultimate relaxation.",
+    itinerary: [
+      { day: "1", title: "Arrival in Malé", details: "Arrive at Malé International Airport and take a scenic seaplane transfer to your resort." },
+      { day: "2", title: "Snorkeling & Water Sports", details: "Explore the vibrant house reef with a guided snorkeling tour. Enjoy complimentary non-motorized water sports." },
+      { day: "3", title: "Spa & Relaxation", details: "Indulge in a rejuvenating spa treatment or simply relax on your private sun deck." },
+      { day: "4", title: "Sunset Dolphin Cruise", details: "Embark on a romantic sunset cruise and watch playful dolphins in their natural habitat." },
+      { day: "5", title: "Departure", details: "Enjoy a final breakfast in paradise before your seaplane transfer back to Malé for your departure." },
+    ],
+    inclusions: ["4 nights in an overwater bungalow", "Seaplane transfers", "Full board (breakfast, lunch, and dinner)", "Sunset dolphin cruise", "Snorkeling equipment"],
+    exclusions: ["International flights", "Beverages", "Optional excursions and spa treatments"],
+  },
 ];
 
 export const categories: Category[] = [
   { id: 'cat-1', name: 'Travel Tips' },
   { id: 'cat-2', name: 'Spiritual Journeys' },
   { id: 'cat-3', name: 'City Guides' },
+  { id: 'cat-4', name: 'Food & Drink' },
 ];
 
 export const posts: Post[] = [
@@ -259,6 +307,28 @@ export const posts: Post[] = [
     author: 'Staff Member',
     publishedAt: '2024-06-01T08:00:00Z',
     categoryId: 'cat-3'
+  },
+  {
+    id: 'post-4',
+    title: 'Exploring the Grand Bazaar of Istanbul',
+    slug: 'exploring-the-grand-bazaar-of-istanbul',
+    content: 'The Grand Bazaar in Istanbul is one of the oldest and largest covered markets in the world. This guide provides tips on how to navigate its labyrinthine streets, what to buy (from beautiful carpets to intricate lanterns), and how to bargain like a local. Discover hidden courtyards, traditional workshops, and the best places to stop for a cup of Turkish tea. Prepare to get lost in a sensory overload of sights, sounds, and smells in this historic marketplace.',
+    imageUrl: 'https://placehold.co/600x400.png',
+    imageHint: 'istanbul grand bazaar',
+    author: 'Admin User',
+    publishedAt: '2024-06-10T09:00:00Z',
+    categoryId: 'cat-3',
+  },
+  {
+    id: 'post-5',
+    title: 'How to Enjoy Coffee Like an Italian in Rome',
+    slug: 'how-to-enjoy-coffee-like-an-italian-in-rome',
+    content: 'Coffee in Italy is a culture, not just a beverage. This post explores the unwritten rules of drinking coffee in Rome. Learn why you should drink your cappuccino only in the morning, how to order an espresso "al banco" (at the counter) like a true Roman, and the different types of coffee you can find. From a simple "caffè" to a "macchiato" or "corretto", we will guide you through the rich coffee traditions of the Eternal City.',
+    imageUrl: 'https://placehold.co/600x400.png',
+    imageHint: 'rome coffee shop',
+    author: 'Staff Member',
+    publishedAt: '2024-06-18T15:00:00Z',
+    categoryId: 'cat-4',
   },
 ];
 
