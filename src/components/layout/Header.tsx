@@ -44,7 +44,11 @@ export default function Header() {
       try {
         const db = getFirestore(getFirebaseApp());
         const pagesRef = collection(db, "pages");
-        const q = query(pagesRef, where("showInMenu", "==", true), where("status", "==", "published"), orderBy("menuOrder"));
+        const q = query(
+          pagesRef,
+          where("showInMenu", "==", true),
+          where("status", "==", "published")
+        );
         const querySnapshot = await getDocs(q);
 
         const fetchedPages = querySnapshot.docs.map(doc => {
@@ -52,15 +56,23 @@ export default function Header() {
           return {
             href: `/${data.slug}`,
             label: data.title,
-            order: data.menuOrder
+            order: data.menuOrder ?? 99
           }
         });
+        
+        // Sort pages client-side
+        fetchedPages.sort((a, b) => a.order - b.order);
 
-        // Combine default links with fetched pages, you might want to adjust logic here
-        // For simplicity, we are replacing them, but you could merge
+        // Combine default links with fetched pages
         const allLinks = [...defaultNavLinks];
         fetchedPages.forEach(page => {
-            allLinks.splice(page.order, 0, { href: page.href, label: page.label });
+            // Insert sorted pages into the default links
+            // This logic can be adjusted based on desired merge strategy
+             if (page.order < allLinks.length) {
+                allLinks.splice(page.order, 0, { href: page.href, label: page.label });
+            } else {
+                allLinks.push({ href: page.href, label: page.label });
+            }
         });
          
         // A simple way to avoid duplicates if a dynamic page has same route as a default one.
