@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Logo from "../icons/Logo";
 import { Twitter, Facebook, Instagram, Linkedin, Youtube, Loader2 } from "lucide-react";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { useAppContext } from "@/context/AppContext";
 
 type SocialLink = {
     id: string;
@@ -19,39 +17,6 @@ type FooterLink = {
     label: string;
     url: string;
 }
-
-type FooterSettings = {
-    description: string;
-    quickLinks: {
-        title: string;
-        links: FooterLink[];
-    };
-    supportLinks: {
-        title: string;
-        links: FooterLink[];
-    }
-}
-
-const defaultFooterSettings: FooterSettings = {
-    description: "Your adventure starts here. Discover breathtaking destinations with us.",
-    quickLinks: {
-        title: "Quick Links",
-        links: [
-            { id: "fl1-1", label: "About Us", url: "/about" },
-            { id: "fl1-2", label: "Packages", url: "/packages" },
-            { id: "fl1-3", label: "Blog", url: "/blog" },
-            { id: "fl1-4", label: "Contact", url: "/contact" },
-        ]
-    },
-    supportLinks: {
-        title: "Support",
-        links: [
-            { id: "fl2-1", label: "FAQ", url: "/faq" },
-            { id: "fl2-2", label: "Terms of Service", url: "/terms" },
-            { id: "fl2-3", label: "Privacy Policy", url: "/privacy" },
-        ]
-    }
-};
 
 const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
     switch (platform) {
@@ -66,46 +31,9 @@ const SocialIcon = ({ platform }: { platform: SocialLink['platform'] }) => {
 
 
 export default function Footer() {
-  const [settings, setSettings] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { settings, loading } = useAppContext();
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-        try {
-            const db = getFirestore(getFirebaseApp());
-            const settingsDoc = await getDoc(doc(db, "settings", "global"));
-            if (settingsDoc.exists()) {
-                setSettings(settingsDoc.data());
-            } else {
-                // Fallback to default if no settings found in DB
-                setSettings({
-                    footerDescription: defaultFooterSettings.description,
-                    quickLinks: defaultFooterSettings.quickLinks,
-                    supportLinks: defaultFooterSettings.supportLinks,
-                    socialLinks: [],
-                    googleMapEmbedCode: ''
-                });
-            }
-        } catch (error) {
-            console.error("Error fetching footer settings:", error);
-            // Fallback on error
-             setSettings({
-                footerDescription: defaultFooterSettings.description,
-                quickLinks: defaultFooterSettings.quickLinks,
-                supportLinks: defaultFooterSettings.supportLinks,
-                socialLinks: [],
-                googleMapEmbedCode: ''
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    fetchSettings();
-  }, []);
-
-
-  if (loading) {
+  if (loading || !settings) {
       return (
           <footer className="bg-secondary text-secondary-foreground">
               <div className="container mx-auto px-4 py-8 text-center">

@@ -11,24 +11,8 @@ import { Package, Post } from "@/lib/data";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { useAppContext } from '@/context/AppContext';
-import { getFirestore, collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
-
-type HomePageSettings = {
-    heroImageUrl: string;
-    heroTitle: string;
-    heroSubtitle: string;
-    heroButtonLabel: string;
-    heroButtonLink: string;
-};
-
-const defaultHomePageSettings: HomePageSettings = {
-    heroImageUrl: "https://placehold.co/1920x1080.png",
-    heroTitle: "Your Adventure Awaits",
-    heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-    heroButtonLabel: "Explore Packages",
-    heroButtonLink: "/packages",
-};
 
 function BlogCard({ post }: { post: Post }) {
   return (
@@ -73,13 +57,10 @@ function BlogCard({ post }: { post: Post }) {
 export default function Home() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [homeSettings, setHomeSettings] = useState<HomePageSettings>(defaultHomePageSettings);
-  const [loading, setLoading] = useState(true);
-  const { setContactFormOpen } = useAppContext();
+  const { settings: homeSettings, loading, setContactFormOpen } = useAppContext();
 
   useEffect(() => {
     const fetchFeaturedData = async () => {
-      setLoading(true);
       try {
         const db = getFirestore(getFirebaseApp());
 
@@ -92,24 +73,8 @@ export default function Home() {
         const postsQuery = query(collection(db, 'posts'), orderBy('publishedAt', 'desc'), limit(3));
         const postsSnapshot = await getDocs(postsQuery);
         setPosts(postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post)));
-
-        // Fetch home settings from Firestore
-        const settingsDoc = await getDoc(doc(db, "settings", "global"));
-        if (settingsDoc.exists()) {
-          const settingsData = settingsDoc.data();
-          setHomeSettings({
-            heroImageUrl: settingsData.heroImageUrl,
-            heroTitle: settingsData.heroTitle,
-            heroSubtitle: settingsData.heroSubtitle,
-            heroButtonLabel: settingsData.heroButtonLabel,
-            heroButtonLink: settingsData.heroButtonLink,
-          });
-        }
-
       } catch (error) {
         console.error("Error fetching featured data:", error);
-      } finally {
-        setLoading(false);
       }
     };
     
@@ -120,7 +85,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
         <section className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center text-center text-white bg-black">
-          {loading ? (
+          {loading || !homeSettings ? (
              <Loader2 className="h-12 w-12 animate-spin text-white" />
           ) : (
             <>

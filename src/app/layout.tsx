@@ -12,28 +12,26 @@ import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { usePathname } from "next/navigation";
 import ContactForm from "@/components/ContactForm";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useAppContext } from "@/context/AppContext";
+import { useEffect } from "react";
 
-// Metadata cannot be exported from a "use client" file, 
-// so we define it here and then use it in the component.
-export const metadataConfig: Metadata = {
-  title: "Flight Blu",
-  description: "Your adventure starts here.",
-};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const SiteLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
+  const { settings, loading } = useAppContext();
+
+  useEffect(() => {
+    if (!loading && settings) {
+      document.title = settings.siteTitle || "Flight Blu";
+    }
+  }, [settings, loading]);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning>
       <head>
-        <title>{String(metadataConfig.title)}</title>
-        <meta name="description" content={String(metadataConfig.description)} />
+        {/* Favicon link can be made dynamic similarly if needed */}
+        <link rel="icon" href={settings?.faviconUrl || "/favicon.ico"} type="image/x-icon" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -51,7 +49,6 @@ export default function RootLayout({
         )}
       >
         <AuthProvider>
-          <AppProvider>
             {isAdminRoute ? (
               <div className="relative flex min-h-screen flex-col">
                 {children}
@@ -68,9 +65,20 @@ export default function RootLayout({
             )}
             <Toaster />
             <ContactForm />
-          </AppProvider>
         </AuthProvider>
       </body>
     </html>
-  );
+  )
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AppProvider>
+      <SiteLayout>{children}</SiteLayout>
+    </AppProvider>
+  )
 }

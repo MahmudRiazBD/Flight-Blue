@@ -11,6 +11,7 @@ import { handleTravelChat, handleCulturalAdvice } from "@/lib/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAppContext } from "@/context/AppContext";
 
 type Message = {
   role: "user" | "bot";
@@ -23,6 +24,7 @@ export default function Chatbot() {
   const [destination, setDestination] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { settings } = useAppContext();
 
   const handleSendMessage = async (e: React.FormEvent, type: "travel" | "cultural") => {
     e.preventDefault();
@@ -72,7 +74,7 @@ export default function Chatbot() {
       <PopoverContent side="top" align="end" className="w-80 md:w-96 p-0 rounded-lg overflow-hidden">
         <div className="flex flex-col h-[60vh]">
           <header className="p-4 bg-primary text-primary-foreground font-bold font-headline text-lg text-center">
-            Flight Blu Assistant
+            {settings?.siteTitle || 'Flight Blu'} Assistant
           </header>
           
           <Tabs defaultValue="travel" className="w-full flex-grow flex flex-col">

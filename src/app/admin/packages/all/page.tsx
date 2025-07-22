@@ -6,25 +6,36 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Package } from "@/lib/data";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import AddPackageForm from "@/components/admin/AddPackageForm";
-import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function AdminAllPackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
+  const db = getFirestore(getFirebaseApp());
 
   const loadPackages = async () => {
     setLoading(true);
     try {
-      const db = getFirestore(getFirebaseApp());
       const packagesCollection = collection(db, "packages");
       const packagesSnapshot = await getDocs(packagesCollection);
       const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
@@ -43,20 +54,40 @@ export default function AdminAllPackagesPage() {
 
   const addPackage = async (newPackageData: Omit<Package, 'id'>) => {
     try {
-      const db = getFirestore(getFirebaseApp());
       const packagesCollection = collection(db, "packages");
       await addDoc(packagesCollection, newPackageData);
       toast({
         title: "Package Added!",
         description: `The package "${newPackageData.title}" has been successfully created.`,
       });
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
       loadPackages(); // Refresh the list
     } catch (error) {
       console.error("Error adding package:", error);
       toast({ title: "Error", description: "Failed to add the new package.", variant: "destructive" });
     }
   };
+  
+  const handleDelete = async (packageId: string) => {
+    try {
+        await deleteDoc(doc(db, "packages", packageId));
+        toast({
+            title: "Package Deleted",
+            description: "The package has been successfully deleted.",
+            variant: "destructive"
+        });
+        loadPackages();
+    } catch (e) {
+        toast({ title: "Error", description: "Could not delete package.", variant: "destructive"});
+    }
+  }
+  
+  const handleEdit = (pkg: Package) => {
+     toast({
+        title: "Coming Soon!",
+        description: "Editing functionality will be implemented in a future update.",
+    });
+  }
 
   return (
     <Card>
@@ -65,7 +96,7 @@ export default function AdminAllPackagesPage() {
             <CardTitle>All Packages</CardTitle>
             <CardDescription>Manage your tour, Hajj, and Umrah packages.</CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
              <Button size="sm" className="gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
@@ -79,7 +110,7 @@ export default function AdminAllPackagesPage() {
                 Fill in the details of the new package. Click save when you're done.
               </DialogDescription>
             </DialogHeader>
-            <AddPackageForm onSave={addPackage} setDialogOpen={setIsDialogOpen} />
+            <AddPackageForm onSave={addPackage} setDialogOpen={setIsAddDialogOpen} />
           </DialogContent>
         </Dialog>
       </CardHeader>
@@ -91,9 +122,7 @@ export default function AdminAllPackagesPage() {
               <TableHead>Type</TableHead>
               <TableHead>Destination</TableHead>
               <TableHead>Price</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,7 +133,7 @@ export default function AdminAllPackagesPage() {
                   <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
               ))
             ) : (
@@ -118,7 +147,7 @@ export default function AdminAllPackagesPage() {
                   </TableCell>
                   <TableCell>{pkg.destination}</TableCell>
                   <TableCell>৳{pkg.price.toLocaleString()}</TableCell>
-                   <TableCell>
+                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -128,8 +157,35 @@ export default function AdminAllPackagesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(pkg)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                 <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-destructive"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the package "{pkg.title}". This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(pkg.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Delete
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

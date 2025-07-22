@@ -31,8 +31,8 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const { settings, setContactFormOpen } = useAppContext();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const { setContactFormOpen } = useAppContext();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -40,7 +40,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="font-bold font-headline text-xl">Flight Blu</span>
+            <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'Flight Blu'}</span>
           </Link>
         </div>
 
@@ -106,7 +106,7 @@ export default function Header() {
                    <SheetTitle>
                      <Link href="/" className="flex items-center gap-2">
                         <Logo className="h-8 w-8 text-primary" />
-                        <span className="font-bold font-headline text-xl">Flight Blu</span>
+                        <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'Flight Blu'}</span>
                     </Link>
                    </SheetTitle>
                 </SheetHeader>

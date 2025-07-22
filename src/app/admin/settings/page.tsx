@@ -14,22 +14,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
+import { useAppContext } from "@/context/AppContext";
 
-type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
+export type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
 
-type SocialLink = {
+export type SocialLink = {
     id: string;
     platform: SocialLinkPlatform;
     url: string;
 };
 
-type FooterLink = {
+export type FooterLink = {
     id: string;
     label: string;
     url: string;
 }
 
-type GlobalSettings = {
+export type GlobalSettings = {
     siteTitle: string;
     logoUrl: string;
     faviconUrl: string;
@@ -51,27 +52,6 @@ type GlobalSettings = {
     googleMapEmbedCode: string;
 };
 
-const defaultSettings: GlobalSettings = {
-    siteTitle: "Flight Blu",
-    logoUrl: "/logo.svg",
-    faviconUrl: "/favicon.ico",
-    heroImageUrl: "https://placehold.co/1920x1080.png",
-    heroTitle: "Your Adventure Awaits",
-    heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-    heroButtonLabel: "Explore Packages",
-    heroButtonLink: "/packages",
-    footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
-    quickLinks: {
-        title: "Quick Links",
-        links: []
-    },
-    supportLinks: {
-        title: "Support",
-        links: []
-    },
-    socialLinks: [],
-    googleMapEmbedCode: ''
-};
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'twitter', label: 'Twitter' },
@@ -83,35 +63,13 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
-    const [settings, setSettings] = useState<GlobalSettings | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { settings: contextSettings, setSettings: setContextSettings, loading: contextLoading } = useAppContext();
+    const [settings, setSettings] = useState<GlobalSettings | null>(contextSettings);
 
-    const db = getFirestore(getFirebaseApp());
-    const settingsRef = doc(db, "settings", "global");
-
-    // Load settings from Firestore
+    // Sync local state with context state
     useEffect(() => {
-        const loadSettings = async () => {
-            setLoading(true);
-            try {
-                const docSnap = await getDoc(settingsRef);
-                if (docSnap.exists()) {
-                    setSettings(docSnap.data() as GlobalSettings);
-                } else {
-                    // Handle case where settings don't exist yet, maybe set defaults
-                    console.log("No settings document found. Initializing with default settings.");
-                    setSettings(defaultSettings);
-                }
-            } catch (error) {
-                console.error("Error loading settings:", error);
-                toast({ title: "Error", description: "Failed to load site settings.", variant: "destructive" });
-                setSettings(defaultSettings); // Fallback to defaults on error
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadSettings();
-    }, []);
+        setSettings(contextSettings);
+    }, [contextSettings]);
 
     const handleSettingsChange = (field: keyof GlobalSettings, value: any) => {
         setSettings(prev => prev ? ({...prev, [field]: value}) : null);
@@ -186,8 +144,11 @@ export default function AdminSettingsPage() {
 
     const handleSaveChanges = async () => {
         if (!settings) return;
+        const db = getFirestore(getFirebaseApp());
+        const settingsRef = doc(db, "settings", "global");
         try {
             await setDoc(settingsRef, settings, { merge: true });
+            setContextSettings(settings); // Update global context immediately
             toast({
                 title: "Settings Saved!",
                 description: "Your changes have been saved to the database.",
@@ -198,7 +159,7 @@ export default function AdminSettingsPage() {
         }
     };
     
-    if (loading) {
+    if (contextLoading) {
         return (
             <Card>
                 <CardHeader>
