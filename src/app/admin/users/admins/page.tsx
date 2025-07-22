@@ -89,7 +89,7 @@ export default function AdminAdminsPage() {
     try {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
-        const { uid, ...dataToSave } = updatedUser;
+        const { uid, password, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
         
         loadUsers(); // Reload the filtered & sorted list for this page

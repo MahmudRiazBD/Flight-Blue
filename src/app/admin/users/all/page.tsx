@@ -132,7 +132,7 @@ export default function AdminAllUsersPage() {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
         
-        const { uid, ...dataToSave } = updatedUser;
+        const { uid, password, ...dataToSave } = updatedUser;
         
         await updateDoc(userRef, dataToSave);
         setUsers(prevUsers => prevUsers.map(user => user.uid === updatedUser.uid ? updatedUser : user));

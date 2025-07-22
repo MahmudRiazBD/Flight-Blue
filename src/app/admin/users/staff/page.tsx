@@ -95,7 +95,7 @@ export default function AdminStaffPage() {
      try {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
-        const { uid, ...dataToSave } = updatedUser;
+        const { uid, password, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
         loadUsers();
         setIsProfileModalOpen(false);

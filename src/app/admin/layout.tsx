@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAppContext } from "@/context/AppContext";
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -136,6 +137,7 @@ export default function AdminLayout({
   const pathname = usePathname()
   const router = useRouter();
   const { user, setUser, loading, logout } = useAuth();
+  const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
     packages: pathname.startsWith('/admin/packages'),
@@ -199,10 +201,11 @@ export default function AdminLayout({
      try {
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
-        const { uid, ...dataToSave } = updatedUser;
+        // Exclude properties that shouldn't be directly saved, like 'uid' or 'password'
+        const { uid, password, ...dataToSave } = updatedUser;
         await updateDoc(userRef, dataToSave);
         
-        // Immediately update the user state in the context
+        // Immediately update the user state in the context for instant UI feedback
         setUser(updatedUser);
 
         setIsProfileModalOpen(false);
@@ -224,7 +227,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-2 p-2">
             <Logo className="size-8 text-sidebar-primary" />
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
-              Flight Blu
+              {settings?.siteTitle || "Flight Blu"}
             </span>
           </div>
         </SidebarHeader>
