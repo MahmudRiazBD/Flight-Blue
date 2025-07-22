@@ -6,6 +6,8 @@ import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getFirestore, collection, writeBatch, getDocs, doc, setDoc } from "firebase/firestore";
 import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
+import { getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
 type Message = {
   role: "user" | "bot";
@@ -23,10 +25,50 @@ export async function handleCulturalAdvice(destination: string, query: string): 
 }
 
 export async function seedDatabase() {
-  const db = getFirestore(getFirebaseApp());
+  const app = getFirebaseApp();
+  const db = getFirestore(app);
+  // Use a temporary auth instance for seeding to not interfere with any logged-in user
+  const auth = getAuth(app);
   const batch = writeBatch(db);
 
   try {
+    // Seed Super Admin
+    // This is a special case. We need to create the auth user if they don't exist.
+    // This is idempotent - it will only create the user once.
+    const superAdminEmail = "hello@riaz.com.bd";
+    const superAdminPassword = "2002##flightblue.MHR";
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+        // User exists, ensure their Firestore doc is correct
+        const userRef = doc(db, "users", userCredential.user.uid);
+        batch.set(userRef, {
+            email: superAdminEmail,
+            username: 'hello',
+            firstName: 'Super',
+            lastName: 'Admin',
+            role: 'superadmin',
+            photoURL: '',
+            phone: ''
+        }, { merge: true }); // Use merge to avoid overwriting existing fields unnecessarily
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            // User does not exist, create them
+            const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+            const userRef = doc(db, "users", userCredential.user.uid);
+            batch.set(userRef, {
+                email: superAdminEmail,
+                username: 'hello',
+                firstName: 'Super',
+                lastName: 'Admin',
+                role: 'superadmin',
+                photoURL: '',
+                phone: ''
+            });
+        } else {
+            throw error; // Rethrow other auth errors
+        }
+    }
+
     // Seed Packages
     packages.forEach((pkg) => {
       const docRef = doc(db, "packages", pkg.id);
@@ -91,10 +133,16 @@ export async function seedDatabase() {
             { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' },
         ],
         googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
-    });
+    }, { merge: true });
 
 
     await batch.commit();
+
+    // After seeding, sign out the temporary seeding session if it was active
+    if (auth.currentUser?.email === superAdminEmail) {
+      await signOut(auth);
+    }
+    
     console.log("Database seeded successfully!");
     return { success: true, message: "Database seeded successfully!" };
   } catch (error) {
@@ -102,6 +150,6 @@ export async function seedDatabase() {
     if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
         return { success: false, message: "Seeding failed due to Firestore permissions. Please check your security rules." };
     }
-    return { success: false, message: "An unexpected error occurred during seeding." };
+    return { success: false, message: `An unexpected error occurred during seeding: ${error}` };
   }
 }
