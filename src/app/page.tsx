@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -7,11 +8,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, Star, Users, Loader2, Calendar, User as UserIcon } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
-import { Package, Post } from "@/lib/data";
+import { Package, Post, HomePageSettings } from "@/lib/data";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { useAppContext } from '@/context/AppContext';
-import { getFirestore, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 
 function BlogCard({ post }: { post: Post }) {
@@ -57,12 +58,21 @@ function BlogCard({ post }: { post: Post }) {
 export default function Home() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const { settings: homeSettings, loading, setContactFormOpen } = useAppContext();
+  const [homeSettings, setHomeSettings] = useState<HomePageSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { setContactFormOpen } = useAppContext();
 
   useEffect(() => {
     const fetchFeaturedData = async () => {
+      setLoading(true);
       try {
         const db = getFirestore(getFirebaseApp());
+
+        // Fetch homepage settings
+        const homeSettingsDoc = await getDoc(doc(db, "settings", "homePage"));
+        if (homeSettingsDoc.exists()) {
+          setHomeSettings(homeSettingsDoc.data() as HomePageSettings);
+        }
 
         // Fetch featured packages
         const packagesQuery = query(collection(db, 'packages'), limit(3));
@@ -75,6 +85,8 @@ export default function Home() {
         setPosts(postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post)));
       } catch (error) {
         console.error("Error fetching featured data:", error);
+      } finally {
+        setLoading(false);
       }
     };
     

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
@@ -99,17 +100,12 @@ export async function seedDatabase() {
       batch.set(docRef, type);
     });
     
-    // Seed default settings
-    const settingsRef = doc(db, "settings", "global");
-    batch.set(settingsRef, {
+    // Seed default global settings
+    const globalSettingsRef = doc(db, "settings", "global");
+    batch.set(globalSettingsRef, {
         siteTitle: "Flight Blu",
         logoUrl: "/logo.svg",
         faviconUrl: "/favicon.ico",
-        heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-        heroTitle: "Your Adventure Awaits",
-        heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-        heroButtonLabel: "Explore Packages",
-        heroButtonLink: "/packages",
         footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
         quickLinks: {
             title: "Quick Links",
@@ -133,6 +129,16 @@ export async function seedDatabase() {
             { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' },
         ],
         googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+    }, { merge: true });
+
+    // Seed default homepage settings
+    const homePageSettingsRef = doc(db, "settings", "homePage");
+    batch.set(homePageSettingsRef, {
+      heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+      heroTitle: "Your Adventure Awaits",
+      heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+      heroButtonLabel: "Explore Packages",
+      heroButtonLink: "/packages",
     }, { merge: true });
 
 

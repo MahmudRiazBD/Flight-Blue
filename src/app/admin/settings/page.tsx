@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react";
@@ -8,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Home, Trash2, PlusCircle, Pilcrow, Loader2 } from "lucide-react";
-import MediaPicker from "@/components/admin/MediaPicker";
+import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
@@ -34,11 +34,6 @@ export type GlobalSettings = {
     siteTitle: string;
     logoUrl: string;
     faviconUrl: string;
-    heroImageUrl: string;
-    heroTitle: string;
-    heroSubtitle: string;
-    heroButtonLabel: string;
-    heroButtonLink: string;
     footerDescription: string;
     quickLinks: {
         title: string;
@@ -163,7 +158,7 @@ export default function AdminSettingsPage() {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Site Settings</CardTitle>
+                    <CardTitle>Global Site Settings</CardTitle>
                     <CardDescription>Manage your global site settings from here.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center items-center py-20">
@@ -187,14 +182,13 @@ export default function AdminSettingsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Site Settings</CardTitle>
+        <CardTitle>Global Site Settings</CardTitle>
         <CardDescription>Manage your global site settings from here.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
-                <TabsTrigger value="homepage"><Home className="mr-2"/>Home Page</TabsTrigger>
                 <TabsTrigger value="footer"><Pilcrow className="mr-2"/>Footer</TabsTrigger>
             </TabsList>
             
@@ -243,55 +237,6 @@ export default function AdminSettingsPage() {
                              <p className="text-sm text-muted-foreground mt-2">
                                 Enter the full URL for your site's favicon (the little icon in the browser tab).
                             </p>
-                        </div>
-                    </div>
-                </div>
-            </TabsContent>
-
-             <TabsContent value="homepage" className="pt-6">
-                <div className="space-y-6">
-                    <h3 className="text-lg font-medium">Hero Section</h3>
-                    <div className="space-y-2">
-                        <Label>Hero Image</Label>
-                        <MediaPicker 
-                            imageUrl={settings.heroImageUrl} 
-                            onImageUrlChange={(url) => handleSettingsChange('heroImageUrl', url)}
-                        />
-                        <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="heroTitle">Hero Title</Label>
-                        <Input 
-                            id="heroTitle" 
-                            value={settings.heroTitle}
-                            onChange={(e) => handleSettingsChange('heroTitle', e.target.value)}
-                        />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-                        <Textarea 
-                            id="heroSubtitle" 
-                            value={settings.heroSubtitle}
-                            onChange={(e) => handleSettingsChange('heroSubtitle', e.target.value)}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="heroButtonLabel">Button Label</Label>
-                            <Input 
-                                id="heroButtonLabel" 
-                                value={settings.heroButtonLabel}
-                                onChange={(e) => handleSettingsChange('heroButtonLabel', e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="heroButtonLink">Button Link</Label>
-                            <Input 
-                                id="heroButtonLink" 
-                                value={settings.heroButtonLink}
-                                onChange={(e) => handleSettingsChange('heroButtonLink', e.target.value)}
-                                placeholder="/packages"
-                            />
                         </div>
                     </div>
                 </div>

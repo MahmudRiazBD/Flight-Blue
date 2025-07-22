@@ -20,9 +20,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { useAppContext } from "@/context/AppContext";
+import { Page } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { getFirestore, collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { getFirebaseApp } from "@/lib/firebase";
 
 
-const navLinks = [
+const defaultNavLinks = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
   { href: "/blog", label: "Blog" },
@@ -33,6 +37,49 @@ export default function Header() {
   const { user, loading, logout } = useAuth();
   const { settings, setContactFormOpen } = useAppContext();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const [navLinks, setNavLinks] = useState(defaultNavLinks);
+
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        const db = getFirestore(getFirebaseApp());
+        const pagesRef = collection(db, "pages");
+        const q = query(pagesRef, where("showInMenu", "==", true), where("status", "==", "published"), orderBy("menuOrder"));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedPages = querySnapshot.docs.map(doc => {
+          const data = doc.data() as Page;
+          return {
+            href: `/${data.slug}`,
+            label: data.title,
+            order: data.menuOrder
+          }
+        });
+
+        // Combine default links with fetched pages, you might want to adjust logic here
+        // For simplicity, we are replacing them, but you could merge
+        const allLinks = [...defaultNavLinks];
+        fetchedPages.forEach(page => {
+            allLinks.splice(page.order, 0, { href: page.href, label: page.label });
+        });
+         
+        // A simple way to avoid duplicates if a dynamic page has same route as a default one.
+        const uniqueLinks = allLinks.filter((link, index, self) =>
+            index === self.findIndex((l) => (
+                l.href === link.href
+            ))
+        );
+        
+        setNavLinks(uniqueLinks);
+        
+      } catch (error) {
+        console.error("Failed to fetch dynamic pages for menu:", error);
+        setNavLinks(defaultNavLinks); // Fallback to default on error
+      }
+    };
+
+    fetchPages();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

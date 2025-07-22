@@ -36,6 +36,7 @@ import {
   User as UserIcon,
   ShieldAlert,
   Loader2,
+  File,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth, User } from "@/hooks/use-auth.tsx"
@@ -64,6 +65,14 @@ const menuItems = [
   },
   { href: "/admin/bookings", label: "Bookings", icon: BookCopy },
   { href: "/admin/messages", label: "Messages", icon: Mail },
+  {
+    label: "Pages",
+    icon: File,
+    subItems: [
+        { href: "/admin/pages/all", label: "All Pages"},
+        { href: "/admin/pages/new", label: "Add New"},
+    ]
+  },
   {
     label: "Users",
     icon: Users,
@@ -132,6 +141,7 @@ export default function AdminLayout({
     packages: pathname.startsWith('/admin/packages'),
     users: pathname.startsWith('/admin/users'),
     blog: pathname.startsWith('/admin/blog'),
+    pages: pathname.startsWith('/admin/pages'),
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const isAuthorized = user?.role === "admin" || user?.role === "superadmin";
@@ -165,6 +175,7 @@ export default function AdminLayout({
       if(label === 'Packages') return openState.packages;
       if(label === 'Users') return openState.users;
       if(label === 'Blog') return openState.blog;
+      if(label === 'Pages') return openState.pages;
       return false;
   }
   
@@ -172,6 +183,7 @@ export default function AdminLayout({
       if(label === 'Packages') return handleOpenChange('packages');
       if(label === 'Users') return handleOpenChange('users');
       if(label === 'Blog') return handleOpenChange('blog');
+      if(label === 'Pages') return handleOpenChange('pages');
       return () => {};
   }
   
@@ -179,6 +191,7 @@ export default function AdminLayout({
       if(label === 'Packages') return pathname.startsWith('/admin/packages');
       if(label === 'Users') return pathname.startsWith('/admin/users');
       if(label === 'Blog') return pathname.startsWith('/admin/blog');
+      if(label === 'Pages') return pathname.startsWith('/admin/pages');
       return false;
   }
 

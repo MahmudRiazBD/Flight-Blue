@@ -12,11 +12,6 @@ const defaultSettings: GlobalSettings = {
     siteTitle: "Flight Blu",
     logoUrl: "/logo.svg",
     faviconUrl: "/favicon.ico",
-    heroImageUrl: "https://placehold.co/1920x1080.png",
-    heroTitle: "Your Adventure Awaits",
-    heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-    heroButtonLabel: "Explore Packages",
-    heroButtonLink: "/packages",
     footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
     quickLinks: {
         title: "Quick Links",

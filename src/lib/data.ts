@@ -1,5 +1,25 @@
 
 
+export type Page = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  status: 'published' | 'draft';
+  showInMenu: boolean;
+  menuOrder: number;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+export type HomePageSettings = {
+  heroImageUrl: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroButtonLabel: string;
+  heroButtonLink: string;
+}
+
 export type Post = {
   id: string;
   title: string;
