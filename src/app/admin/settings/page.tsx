@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX } from "lucide-react";
+import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, Database, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
@@ -18,6 +18,7 @@ import { useAppContext } from "@/context/AppContext";
 import type { GlobalSettings, SocialLinkPlatform, SocialLink, FooterLink } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { seedDatabase } from "@/lib/actions";
 
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
@@ -27,6 +28,59 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'linkedin', label: 'LinkedIn' },
     { value: 'youtube', label: 'YouTube' },
 ];
+
+function DangerZone() {
+    const { toast } = useToast();
+    const [isSeeding, setIsSeeding] = useState(false);
+
+    const handleSeedDatabase = async () => {
+        setIsSeeding(true);
+        try {
+        const result = await seedDatabase();
+        toast({
+            title: result.success ? "Database Seeded" : "Seeding Failed",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+        } catch (error) {
+        toast({
+            title: "Error",
+            description: "An unexpected error occurred while seeding.",
+            variant: "destructive",
+        });
+        } finally {
+        setIsSeeding(false);
+        }
+    };
+
+    return (
+         <Card className="border-destructive">
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <AlertTriangle className="h-8 w-8 text-destructive" />
+                    <div>
+                        <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                        <CardDescription>These actions are irreversible. Please proceed with caution.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col md:flex-row items-center justify-between rounded-lg border border-destructive/50 p-4">
+                    <div>
+                        <h4 className="font-semibold">Seed Database</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Populate the database with initial demo data. This should only be done on a fresh install or for development purposes.
+                        </p>
+                    </div>
+                    <Button variant="destructive" onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4 md:mt-0 md:ml-4">
+                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                        {isSeeding ? "Seeding..." : "Seed Database"}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
@@ -145,224 +199,227 @@ export default function AdminSettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Error</CardTitle>
-                    <CardDescription>Could not load site settings. Please try seeding the database from the dashboard or check console for errors.</CardDescription>
+                    <CardDescription>Could not load site settings. Please try seeding the database or check console for errors.</CardDescription>
                 </CardHeader>
             </Card>
         )
     }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Global Site Settings</CardTitle>
-        <CardDescription>Manage your global site settings from here.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
-                <TabsTrigger value="footer"><Pilcrow className="mr-2"/>Footer</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="general" className="pt-6">
-                <div className="space-y-6">
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Site Identity</h3>
-                         <div>
-                            <Label htmlFor="siteTitle">Site Title</Label>
-                            <Input 
-                                id="siteTitle" 
-                                value={settings.siteTitle} 
-                                onChange={(e) => handleSettingsChange('siteTitle', e.target.value)}
-                                placeholder="Your awesome travel agency"
-                            />
-                             <p className="text-sm text-muted-foreground mt-2">
-                                This will appear in the browser tab and search engine results.
+    <div className="space-y-6">
+        <Card>
+        <CardHeader>
+            <CardTitle>Global Site Settings</CardTitle>
+            <CardDescription>Manage your global site settings from here.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Tabs defaultValue="general" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="general"><TextCursorInput className="mr-2"/>General</TabsTrigger>
+                    <TabsTrigger value="footer"><Pilcrow className="mr-2"/>Footer</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="general" className="pt-6">
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Site Identity</h3>
+                            <div>
+                                <Label htmlFor="siteTitle">Site Title</Label>
+                                <Input 
+                                    id="siteTitle" 
+                                    value={settings.siteTitle} 
+                                    onChange={(e) => handleSettingsChange('siteTitle', e.target.value)}
+                                    placeholder="Your awesome travel agency"
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    This will appear in the browser tab and search engine results.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Branding</h3>
+                            <div>
+                                <Label htmlFor="logoUrl">Site Logo URL</Label>
+                                <Input 
+                                    id="logoUrl" 
+                                    value={settings.logoUrl} 
+                                    onChange={(e) => handleSettingsChange('logoUrl', e.target.value)}
+                                    placeholder="https://example.com/logo.png"
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Enter the full URL for your site's logo.
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="faviconUrl">Favicon URL</Label>
+                                <Input 
+                                    id="faviconUrl" 
+                                    value={settings.faviconUrl} 
+                                    onChange={(e) => handleSettingsChange('faviconUrl', e.target.value)}
+                                    placeholder="https://example.com/favicon.ico"
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Enter the full URL for your site's favicon (the little icon in the browser tab).
+                                </p>
+                            </div>
+                        </div>
+
+                        <Separator />
+                        
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Search Engine Visibility</h3>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="searchEngineVisibility"
+                                    checked={settings.searchEngineVisibility}
+                                    onCheckedChange={(checked) => handleSettingsChange('searchEngineVisibility', checked)}
+                                />
+                                <Label htmlFor="searchEngineVisibility">Discourage search engines from indexing this site</Label>
+                            </div>
+                            {settings.searchEngineVisibility === false && (
+                                <Alert variant="destructive">
+                                    <SearchX className="h-4 w-4" />
+                                    <AlertTitle>Visibility Hidden</AlertTitle>
+                                    <AlertDescription>
+                                    Search engines will be discouraged from showing this site in search results. This does not completely guarantee the site won't be indexed.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            <p className="text-sm text-muted-foreground">
+                            It is up to search engines to honor this request.
                             </p>
                         </div>
+
                     </div>
+                </TabsContent>
 
-                    <Separator />
-
-                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Branding</h3>
-                        <div>
-                            <Label htmlFor="logoUrl">Site Logo URL</Label>
-                            <Input 
-                                id="logoUrl" 
-                                value={settings.logoUrl} 
-                                onChange={(e) => handleSettingsChange('logoUrl', e.target.value)}
-                                placeholder="https://example.com/logo.png"
-                            />
-                             <p className="text-sm text-muted-foreground mt-2">
-                                Enter the full URL for your site's logo.
-                            </p>
-                        </div>
-                        <div>
-                            <Label htmlFor="faviconUrl">Favicon URL</Label>
-                            <Input 
-                                id="faviconUrl" 
-                                value={settings.faviconUrl} 
-                                onChange={(e) => handleSettingsChange('faviconUrl', e.target.value)}
-                                placeholder="https://example.com/favicon.ico"
-                            />
-                             <p className="text-sm text-muted-foreground mt-2">
-                                Enter the full URL for your site's favicon (the little icon in the browser tab).
-                            </p>
-                        </div>
-                    </div>
-
-                    <Separator />
-                    
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Search Engine Visibility</h3>
-                        <div className="flex items-center space-x-2">
-                            <Switch
-                                id="searchEngineVisibility"
-                                checked={settings.searchEngineVisibility}
-                                onCheckedChange={(checked) => handleSettingsChange('searchEngineVisibility', checked)}
-                            />
-                            <Label htmlFor="searchEngineVisibility">Discourage search engines from indexing this site</Label>
-                        </div>
-                        {settings.searchEngineVisibility === false && (
-                             <Alert variant="destructive">
-                                <SearchX className="h-4 w-4" />
-                                <AlertTitle>Visibility Hidden</AlertTitle>
-                                <AlertDescription>
-                                   Search engines will be discouraged from showing this site in search results. This does not completely guarantee the site won't be indexed.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                         <p className="text-sm text-muted-foreground">
-                           It is up to search engines to honor this request.
-                        </p>
-                    </div>
-
-                </div>
-            </TabsContent>
-
-             <TabsContent value="footer" className="pt-6">
-                <div className="space-y-8">
-                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Column 1: Description & Socials</h3>
-                        <div>
-                            <Label htmlFor="footerDescription">Text under logo</Label>
-                            <Textarea 
-                                id="footerDescription" 
-                                value={settings.footerDescription} 
-                                onChange={(e) => handleSettingsChange('footerDescription', e.target.value)}
-                                placeholder="Your adventure starts here..."
-                            />
-                        </div>
-                        <div className="space-y-3 pt-4">
-                            <Label>Social Media Links</Label>
-                            {settings.socialLinks.map((link, index) => (
-                                <div key={link.id} className="flex items-end gap-2">
-                                    <div className="flex-grow grid grid-cols-3 gap-2">
-                                         <select
-                                            value={link.platform}
-                                            onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
-                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {socialPlatforms.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                                        </select>
-                                        <Input
-                                            type="url"
-                                            placeholder="https://..."
-                                            value={link.url}
-                                            onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
-                                            className="col-span-2"
-                                        />
+                <TabsContent value="footer" className="pt-6">
+                    <div className="space-y-8">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Column 1: Description & Socials</h3>
+                            <div>
+                                <Label htmlFor="footerDescription">Text under logo</Label>
+                                <Textarea 
+                                    id="footerDescription" 
+                                    value={settings.footerDescription} 
+                                    onChange={(e) => handleSettingsChange('footerDescription', e.target.value)}
+                                    placeholder="Your adventure starts here..."
+                                />
+                            </div>
+                            <div className="space-y-3 pt-4">
+                                <Label>Social Media Links</Label>
+                                {settings.socialLinks.map((link, index) => (
+                                    <div key={link.id} className="flex items-end gap-2">
+                                        <div className="flex-grow grid grid-cols-3 gap-2">
+                                            <select
+                                                value={link.platform}
+                                                onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {socialPlatforms.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                                            </select>
+                                            <Input
+                                                type="url"
+                                                placeholder="https://..."
+                                                value={link.url}
+                                                onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                                                className="col-span-2"
+                                            />
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => removeSocialLink(index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
                                     </div>
-                                    <Button variant="ghost" size="icon" onClick={() => removeSocialLink(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={addSocialLink}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
+                            </Button>
                         </div>
-                        <Button variant="outline" size="sm" onClick={addSocialLink}>
-                           <PlusCircle className="mr-2 h-4 w-4" /> Add Social Link
-                        </Button>
-                    </div>
 
-                    <Separator />
+                        <Separator />
 
-                    <div className="space-y-4">
-                         <h3 className="text-lg font-medium">Column 2: Quick Links</h3>
-                         <div>
-                            <Label>Column Title</Label>
-                            <Input 
-                                value={settings.quickLinks.title} 
-                                onChange={(e) => handleLinkColumnChange('quickLinks', 'title', e.target.value)}
-                            />
-                         </div>
-                         <Label>Links</Label>
-                         <div className="space-y-2">
-                            {settings.quickLinks.links.map((link, index) => (
-                                <div key={link.id} className="flex items-center gap-2">
-                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'label', e.target.value)} />
-                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'url', e.target.value)} />
-                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('quickLinks', index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-                         </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('quickLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
-                    </div>
-                    
-                    <Separator />
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Column 2: Quick Links</h3>
+                            <div>
+                                <Label>Column Title</Label>
+                                <Input 
+                                    value={settings.quickLinks.title} 
+                                    onChange={(e) => handleLinkColumnChange('quickLinks', 'title', e.target.value)}
+                                />
+                            </div>
+                            <Label>Links</Label>
+                            <div className="space-y-2">
+                                {settings.quickLinks.links.map((link, index) => (
+                                    <div key={link.id} className="flex items-center gap-2">
+                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'label', e.target.value)} />
+                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'url', e.target.value)} />
+                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('quickLinks', index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => addFooterLink('quickLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                        </div>
+                        
+                        <Separator />
 
-                     <div className="space-y-4">
-                         <h3 className="text-lg font-medium">Column 3: Support Links</h3>
-                          <div>
-                            <Label>Column Title</Label>
-                            <Input 
-                                value={settings.supportLinks.title} 
-                                onChange={(e) => handleLinkColumnChange('supportLinks', 'title', e.target.value)}
-                            />
-                         </div>
-                         <Label>Links</Label>
-                         <div className="space-y-2">
-                            {settings.supportLinks.links.map((link, index) => (
-                                <div key={link.id} className="flex items-center gap-2">
-                                    <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'label', e.target.value)} />
-                                    <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'url', e.target.value)} />
-                                    <Button variant="ghost" size="icon" onClick={() => removeFooterLink('supportLinks', index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-                         </div>
-                         <Button variant="outline" size="sm" onClick={() => addFooterLink('supportLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
-                    </div>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Column 3: Support Links</h3>
+                            <div>
+                                <Label>Column Title</Label>
+                                <Input 
+                                    value={settings.supportLinks.title} 
+                                    onChange={(e) => handleLinkColumnChange('supportLinks', 'title', e.target.value)}
+                                />
+                            </div>
+                            <Label>Links</Label>
+                            <div className="space-y-2">
+                                {settings.supportLinks.links.map((link, index) => (
+                                    <div key={link.id} className="flex items-center gap-2">
+                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'label', e.target.value)} />
+                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'url', e.target.value)} />
+                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('supportLinks', index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => addFooterLink('supportLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                        </div>
 
-                    <Separator/>
+                        <Separator/>
 
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Column 4: Location Map</h3>
-                         <div>
-                            <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code</Label>
-                            <Textarea 
-                                id="googleMapEmbedCode" 
-                                value={settings.googleMapEmbedCode} 
-                                onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
-                                placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
-                                rows={4}
-                            />
-                            <p className="text-sm text-muted-foreground mt-2">
-                                Paste the full `&lt;iframe...&gt;` code from Google Maps here.
-                            </p>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Column 4: Location Map</h3>
+                            <div>
+                                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code</Label>
+                                <Textarea 
+                                    id="googleMapEmbedCode" 
+                                    value={settings.googleMapEmbedCode} 
+                                    onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
+                                    placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
+                                    rows={4}
+                                />
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    Paste the full `&lt;iframe...&gt;` code from Google Maps here.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-             </TabsContent>
-        </Tabs>
-        
-        <div className="mt-8 pt-6 border-t flex justify-end">
-            <Button onClick={handleSaveChanges}>Save Changes</Button>
-        </div>
-      </CardContent>
-    </Card>
+                </TabsContent>
+            </Tabs>
+            
+            <div className="mt-8 pt-6 border-t flex justify-end">
+                <Button onClick={handleSaveChanges}>Save Changes</Button>
+            </div>
+        </CardContent>
+        </Card>
+        <DangerZone />
+    </div>
   );
 }

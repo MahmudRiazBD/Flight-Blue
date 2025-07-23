@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Banknote, Package, Users, BookCopy, Database, Loader2 } from "lucide-react";
+import { Banknote, Package, Users, BookCopy } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -13,9 +13,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Button } from "@/components/ui/button";
-import { seedDatabase } from "@/lib/actions";
-import { useToast } from "@/hooks/use-toast";
 
 const kpiData = [
     { title: "Total Revenue", value: "৳12,543,000", icon: Banknote, change: "+20.1% from last month" },
@@ -34,49 +31,8 @@ const chartData = [
 ];
 
 export default function AdminDashboard() {
-  const { toast } = useToast();
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    try {
-      const result = await seedDatabase();
-      toast({
-        title: result.success ? "Database Seeded" : "Seeding Failed",
-        description: result.message,
-        variant: result.success ? "default" : "destructive",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while seeding.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
-
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-                <CardTitle>Quick Actions</CardTitle>
-            </div>
-            <Button onClick={handleSeedDatabase} disabled={isSeeding}>
-                {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                {isSeeding ? "Seeding..." : "Seed Database"}
-            </Button>
-        </CardHeader>
-         <CardContent>
-             <p className="text-sm text-muted-foreground">
-                If your app is missing data (packages, posts, etc.), click this button to populate the Firestore database with initial demo data. This action is safe to run multiple times.
-            </p>
-         </CardContent>
-      </Card>
-
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {kpiData.map((kpi) => (
             <Card key={kpi.title}>
