@@ -1,6 +1,6 @@
 
 "use client"
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,8 +47,8 @@ const placeholderMedia: MediaFile[] = [
 ];
 
 const placeholderTrashedMedia: MediaFile[] = [
-    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo", uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-    { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), uploadedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
+    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(new Date().getTime() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo", uploadedAt: new Date(new Date().getTime() - 5 * 24 * 60 * 60 * 1000) },
+    { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(new Date().getTime() - 15 * 24 * 60 * 60 * 1000), uploadedAt: new Date(new Date().getTime() - 15 * 24 * 60 * 60 * 1000) },
 ]
 
 const getIconForType = (type: MediaType) => {
@@ -62,8 +62,14 @@ const getIconForType = (type: MediaType) => {
 
 const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { file: MediaFile, onSelect: (id: string, checked: boolean) => void, isSelected: boolean, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void }) => {
     const isTrashed = !!file.deletedAt;
-    const daysInTrash = file.deletedAt ? Math.ceil((Date.now() - file.deletedAt.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    const daysLeft = 30 - daysInTrash;
+    const [daysLeft, setDaysLeft] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (isTrashed && file.deletedAt) {
+            const daysInTrash = Math.ceil((Date.now() - new Date(file.deletedAt).getTime()) / (1000 * 60 * 60 * 24));
+            setDaysLeft(30 - daysInTrash);
+        }
+    }, [file.deletedAt, isTrashed]);
 
     const imageProps = file.dataAiHint ? { "data-ai-hint": file.dataAiHint } : {};
 
@@ -141,13 +147,13 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
           <div className="p-2 text-xs border-t">
             <p className="font-semibold truncate">{file.name}</p>
             <p className="text-muted-foreground">{file.size}</p>
-            {isTrashed && (
+            {isTrashed && daysLeft !== null && (
                 <p className={cn(
                     "text-xs mt-1",
                     daysLeft <= 7 ? "text-destructive" : "text-muted-foreground"
                 )}>
                    <AlertTriangle className="inline-block h-3 w-3 mr-1" />
-                   Deletes in {daysLeft} day(s)
+                   {daysLeft > 0 ? `Deletes in ${daysLeft} day(s)` : 'Deletes soon'}
                 </p>
             )}
           </div>
