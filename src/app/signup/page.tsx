@@ -68,9 +68,7 @@ export default function SignupPage() {
         description: "You have successfully created an account. Please log in.",
       });
 
-      setTimeout(() => {
-          router.push("/login");
-      }, 1500);
+      router.push("/login");
 
     } catch (error: any) {
       console.error("Signup Failed", error);
@@ -181,4 +179,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

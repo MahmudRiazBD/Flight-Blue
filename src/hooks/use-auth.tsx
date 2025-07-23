@@ -18,7 +18,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
-import type { FirebaseApp } from 'firebase/app';
+import { initializeApp, deleteApp, type FirebaseApp } from 'firebase/app';
 
 export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 
@@ -144,35 +144,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signup = useCallback(async (email: string, password: string, displayName: string, role: UserRole = 'customer') => {
-    const app = getFirebaseApp();
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const mainApp = getFirebaseApp();
+    const db = getFirestore(mainApp);
 
-    const superAdminEmail = "hello@riaz.com.bd";
-    if (email === superAdminEmail) {
-        throw new Error("Cannot register with super admin email.");
-    }
+    // Create a temporary secondary app instance for user creation
+    // This prevents the current user from being signed out
+    const tempAppName = `temp-signup-${Date.now()}`;
+    const tempApp = initializeApp(mainApp.options, tempAppName);
+    const tempAuth = getAuth(tempApp);
     
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const firebaseUser = userCredential.user;
+    try {
+        const superAdminEmail = "hello@riaz.com.bd";
+        if (email === superAdminEmail) {
+            throw new Error("Cannot register with super admin email.");
+        }
+        
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        const firebaseUser = userCredential.user;
 
-    await updateProfile(firebaseUser, { displayName });
+        await updateProfile(firebaseUser, { displayName });
 
-    const nameParts = displayName.split(' ');
-    const firstName = nameParts[0] || displayName;
-    const lastName = nameParts.slice(1).join(' ') || '';
+        const nameParts = displayName.split(' ');
+        const firstName = nameParts[0] || displayName;
+        const lastName = nameParts.slice(1).join(' ') || '';
 
-    const userRef = doc(db, 'users', firebaseUser.uid);
-    await setDoc(userRef, {
-      email,
-      username: extractUsernameFromEmail(email),
-      firstName: firstName,
-      lastName: lastName,
-      role: role,
-      createdAt: serverTimestamp(),
-      photoURL: '',
-      phone: ''
-    });
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        await setDoc(userRef, {
+        email,
+        username: extractUsernameFromEmail(email),
+        firstName: firstName,
+        lastName: lastName,
+        role: role,
+        createdAt: serverTimestamp(),
+        photoURL: '',
+        phone: ''
+        });
+    } catch (error) {
+        // Re-throw the error so the calling component can handle it
+        throw error;
+    } finally {
+        // Clean up the temporary app instance
+        await deleteApp(tempApp);
+    }
   }, []);
 
   const logout = useCallback(async () => {
