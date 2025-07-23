@@ -2,7 +2,7 @@
 "use client"
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, ShieldAlert, User as UserIcon } from "lucide-react";
+import { PlusCircle, MoreHorizontal, ShieldAlert, User as UserIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -16,6 +16,7 @@ import { getInitials } from "@/lib/utils";
 import { getFirestore, collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { deleteUser } from "@/lib/actions";
 
 export default function AdminAdminsPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -84,6 +85,27 @@ export default function AdminAdminsPage() {
         });
     }
   };
+  
+  const handleDeleteUser = async (userId: string) => {
+    const userToDelete = users.find(u => u.uid === userId);
+    if (!userToDelete || userToDelete.role === 'superadmin') {
+      toast({ title: "Operation not allowed", description: "Super admin cannot be deleted.", variant: "destructive"});
+      return;
+    }
+    
+    const result = await deleteUser(userId);
+
+    if (result.success) {
+        setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+        toast({
+            title: "User Deleted",
+            description: `User ${userToDelete.firstName} has been removed from Authentication and Firestore.`,
+            variant: "destructive"
+        });
+    } else {
+        toast({ title: "Error Deleting User", description: result.message, variant: "destructive" });
+    }
+  }
 
   const handleSaveUser = async (updatedUser: User) => {
     try {
@@ -170,9 +192,9 @@ export default function AdminAdminsPage() {
                                         <UserIcon className="mr-2 h-4 w-4" />
                                         View Profile
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem disabled>
-                                        <ShieldAlert className="mr-2 h-4 w-4"/>
-                                        Manage Permissions
+                                     <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)} disabled={user.role === 'superadmin'}>
+                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        Delete User
                                     </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>

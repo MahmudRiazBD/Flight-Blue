@@ -16,6 +16,7 @@ import { getInitials } from "@/lib/utils";
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { deleteUser } from "@/lib/actions";
 
 const roleColors: Record<UserRole, "default" | "secondary" | "destructive"> = {
   customer: "secondary",
@@ -82,24 +83,23 @@ export default function AdminAllUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    const user = users.find(u => u.uid === userId);
-    if (!user || user.role === 'superadmin') {
+    const userToDelete = users.find(u => u.uid === userId);
+    if (!userToDelete || userToDelete.role === 'superadmin') {
       toast({ title: "Operation not allowed", description: "Super admin cannot be deleted.", variant: "destructive"});
       return;
     }
     
-    try {
-      const db = getFirestore(getFirebaseApp());
-      await deleteDoc(doc(db, "users", userId));
-      setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
-      toast({
-          title: "User Deleted",
-          description: `User ${user.firstName} has been removed.`,
-          variant: "destructive"
-      });
-    } catch (error) {
-       console.error("Error deleting user:", error);
-       toast({ title: "Error", description: "Failed to delete user.", variant: "destructive" });
+    const result = await deleteUser(userId);
+
+    if (result.success) {
+        setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+        toast({
+            title: "User Deleted",
+            description: `User ${userToDelete.firstName} has been removed from Authentication and Firestore.`,
+            variant: "destructive"
+        });
+    } else {
+        toast({ title: "Error Deleting User", description: result.message, variant: "destructive" });
     }
   }
   

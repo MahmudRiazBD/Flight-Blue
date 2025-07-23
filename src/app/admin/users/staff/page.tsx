@@ -12,9 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
-import { getFirestore, collection, getDocs, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { deleteUser } from "@/lib/actions";
 
 export default function AdminStaffPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -51,19 +52,20 @@ export default function AdminStaffPage() {
   }, []);
 
   const handleDeleteUser = async (userId: string) => {
-    const user = users.find(u => u.uid === userId);
-     try {
-      const db = getFirestore(getFirebaseApp());
-      await deleteDoc(doc(db, "users", userId));
-      setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
-      toast({
-          title: "User Deleted",
-          description: `User ${user?.firstName} has been removed.`,
-          variant: "destructive"
-      });
-    } catch (error) {
-       console.error("Error deleting user:", error);
-       toast({ title: "Error", description: "Failed to delete user.", variant: "destructive" });
+    const userToDelete = users.find(u => u.uid === userId);
+     if (!userToDelete) return;
+
+    const result = await deleteUser(userId);
+
+    if (result.success) {
+        setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+        toast({
+            title: "User Deleted",
+            description: `User ${userToDelete.firstName} has been removed from Authentication and Firestore.`,
+            variant: "destructive"
+        });
+    } else {
+        toast({ title: "Error Deleting User", description: result.message, variant: "destructive" });
     }
   }
 

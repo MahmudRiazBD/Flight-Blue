@@ -1,7 +1,4 @@
 
-
-
-
 'use server';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
@@ -11,6 +8,21 @@ import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps as getAdminApps, cert } from 'firebase-admin/app';
+
+// Initialize Firebase Admin SDK if not already initialized
+if (!getAdminApps().length) {
+    // This will work in a server environment where GOOGLE_APPLICATION_CREDENTIALS is set
+    // For local dev, you'd need a service account key
+    try {
+      initializeApp();
+    } catch(e) {
+      console.warn("Could not initialize Firebase Admin SDK. This is expected in a browser environment. Server actions requiring admin privileges might fail.");
+    }
+}
+
 
 type Message = {
   role: "user" | "bot";
@@ -25,6 +37,46 @@ export async function handleTravelChat(history: Message[], query: string): Promi
 export async function handleCulturalAdvice(destination: string, query: string): Promise<string> {
   const result = await getCulturalAdvice({ destination, query });
   return result.advice;
+}
+
+export async function deleteUser(uid: string) {
+    if (!uid) {
+        return { success: false, message: "User ID is required." };
+    }
+
+    try {
+        const adminAuth = getAdminAuth();
+        const adminDb = getAdminFirestore();
+
+        // Start a batch write
+        const batch = adminDb.batch();
+
+        // 1. Delete user from Firestore
+        const userRef = adminDb.collection('users').doc(uid);
+        batch.delete(userRef);
+        
+        // 2. Delete user from Firebase Auth
+        await adminAuth.deleteUser(uid);
+
+        // Commit the batch
+        await batch.commit();
+
+        console.log(`Successfully deleted user ${uid} from Auth and Firestore.`);
+        return { success: true, message: `Successfully deleted user ${uid}.`};
+    } catch (error: any) {
+        console.error(`Failed to delete user ${uid}:`, error);
+        
+        let message = "An unknown error occurred.";
+        if (error.code === 'auth/user-not-found') {
+            message = "User not found in Firebase Authentication. They may have already been deleted.";
+        } else if (error.code === 'permission-denied') {
+            message = "Permission denied. Make sure the server has admin privileges.";
+        } else {
+            message = error.message;
+        }
+
+        return { success: false, message: message };
+    }
 }
 
 export async function seedDatabase() {
