@@ -20,4 +20,4 @@ function getFirebaseApp(): FirebaseApp {
     return initializeApp(firebaseConfig);
 }
 
-export { getFirebaseApp, firebaseConfig };
+export { getFirebaseApp };

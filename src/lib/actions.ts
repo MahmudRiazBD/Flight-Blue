@@ -8,23 +8,7 @@ import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps as getAdminApps, deleteApp as deleteAdminApp, App } from 'firebase-admin/app';
-
-// Helper function to initialize Firebase Admin SDK
-function initializeAdminApp(): App {
-    const adminAppName = 'firebase-admin-app-' + Date.now();
-    const adminApps = getAdminApps();
-    const existingApp = adminApps.find(app => app.name === adminAppName);
-    if (existingApp) {
-        return existingApp;
-    }
-
-    // Initialize without specific credentials, relying on Application Default Credentials
-    // in the Google Cloud environment.
-    return initializeApp({}, adminAppName);
-}
+import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 
 type Message = {
   role: "user" | "bot";
@@ -46,11 +30,9 @@ export async function deleteUser(uid: string) {
         return { success: false, message: "User ID is required." };
     }
 
-    let adminApp: App | undefined;
     try {
-        adminApp = initializeAdminApp();
-        const adminAuth = getAdminAuth(adminApp);
-        const adminDb = getAdminFirestore(adminApp);
+        const adminAuth = getAdminAuth();
+        const adminDb = getAdminFirestore();
 
         const batch = adminDb.batch();
         const userRef = adminDb.collection('users').doc(uid);
@@ -67,7 +49,7 @@ export async function deleteUser(uid: string) {
         let message = "An unknown error occurred.";
         if (error.code === 'auth/user-not-found') {
             message = "User not found in Firebase Authentication. They may have already been deleted.";
-        } else if (error.code === 'permission-denied' || error.message.includes('permission')) {
+        } else if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
             message = "Permission denied. Make sure the server has admin privileges.";
         } else if (error.message && (error.message.includes('access token') || error.message.includes('Credential'))) {
             message = "Could not authenticate to Firebase Admin. " + error.message;
@@ -76,39 +58,25 @@ export async function deleteUser(uid: string) {
         }
 
         return { success: false, message: message };
-    } finally {
-        if (adminApp) {
-            await deleteAdminApp(adminApp);
-        }
     }
 }
 
 export async function seedDatabase() {
-  const app = getFirebaseApp();
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  const batch = writeBatch(db);
+  const db = getFirestore(getFirebaseApp());
+  const auth = getAuth(getFirebaseApp());
+  const adminDb = getAdminFirestore();
+  const batch = adminDb.batch();
 
   try {
     const superAdminEmail = "hello@riaz.com.bd";
     const superAdminPassword = "2002##flightblue.MHR";
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-        const userRef = doc(db, "users", userCredential.user.uid);
-        batch.set(userRef, {
-            email: superAdminEmail,
-            username: 'hello',
-            firstName: 'Super',
-            lastName: 'Admin',
-            role: 'superadmin',
-            photoURL: '',
-            phone: ''
-        }, { merge: true });
+        await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
     } catch (error: any) {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
             const userRef = doc(db, "users", userCredential.user.uid);
-            batch.set(userRef, {
+            await setDoc(userRef, {
                 email: superAdminEmail,
                 username: 'hello',
                 firstName: 'Super',
@@ -120,34 +88,38 @@ export async function seedDatabase() {
         } else {
             throw error;
         }
+    } finally {
+       if (auth.currentUser) {
+          await signOut(auth);
+       }
     }
 
     packages.forEach((pkg) => {
-      const docRef = doc(db, "packages", pkg.id);
+      const docRef = adminDb.collection("packages").doc(pkg.id);
       batch.set(docRef, pkg);
     });
 
     posts.forEach((post) => {
-      const docRef = doc(db, "posts", post.id);
+      const docRef = adminDb.collection("posts").doc(post.id);
       batch.set(docRef, post);
     });
 
     categories.forEach((cat) => {
-      const docRef = doc(db, "categories", cat.id);
+      const docRef = adminDb.collection("categories").doc(cat.id);
       batch.set(docRef, cat);
     });
 
     destinations.forEach((dest) => {
-      const docRef = doc(db, "destinations", dest.id);
+      const docRef = adminDb.collection("destinations").doc(dest.id);
       batch.set(docRef, dest);
     });
 
     packageTypes.forEach((type) => {
-      const docRef = doc(db, "packageTypes", type.id);
+      const docRef = adminDb.collection("packageTypes").doc(type.id);
       batch.set(docRef, type);
     });
     
-    const globalSettingsRef = doc(db, "settings", "global");
+    const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
         siteTitle: "Flight Blu",
         logoUrl: "/logo.svg",
@@ -178,7 +150,7 @@ export async function seedDatabase() {
         googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
     }, { merge: true });
 
-    const homePageSettingsRef = doc(db, "settings", "homePage");
+    const homePageSettingsRef = adminDb.collection("settings").doc("homePage");
     batch.set(homePageSettingsRef, {
       heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       heroTitle: "Your Adventure Awaits",
@@ -187,7 +159,7 @@ export async function seedDatabase() {
       heroButtonLink: "/packages",
     }, { merge: true });
 
-    const sitePagesSettingsRef = doc(db, "settings", "sitePages");
+    const sitePagesSettingsRef = adminDb.collection("settings").doc("sitePages");
     batch.set(sitePagesSettingsRef, {
         aboutUs: {
             title: "About Flight Blu",
@@ -214,10 +186,6 @@ export async function seedDatabase() {
 
 
     await batch.commit();
-
-    if (auth.currentUser?.email === superAdminEmail) {
-      await signOut(auth);
-    }
     
     console.log("Database seeded successfully!");
     return { success: true, message: "Database seeded successfully!" };
