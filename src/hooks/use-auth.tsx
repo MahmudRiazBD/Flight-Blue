@@ -25,7 +25,7 @@ export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 export interface User {
   uid: string;
   email: string | null;
-  username: string;
+  username?: string;
   firstName: string;
   lastName: string;
   phone?: string;
@@ -170,14 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userRef = doc(db, 'users', firebaseUser.uid);
         await setDoc(userRef, {
-        email,
-        username: extractUsernameFromEmail(email),
-        firstName: firstName,
-        lastName: lastName,
-        role: role,
-        createdAt: serverTimestamp(),
-        photoURL: '',
-        phone: ''
+            email,
+            username: extractUsernameFromEmail(email),
+            firstName: firstName,
+            lastName: lastName,
+            role: role,
+            createdAt: serverTimestamp(),
+            photoURL: '',
+            phone: ''
         });
     } catch (error) {
         // Re-throw the error so the calling component can handle it
