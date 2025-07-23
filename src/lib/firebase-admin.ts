@@ -22,27 +22,26 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  // Directly use environment variables for service account details
+  const serviceAccount: ServiceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    // Replace newline characters in the private key
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
   
-  if (!credentialsJson) {
-    throw new Error(
-      'The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set.'
+  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+     throw new Error(
+      'Firebase Admin SDK credentials are not set in environment variables.'
     );
   }
 
-  try {
-    const serviceAccount: ServiceAccount = JSON.parse(credentialsJson);
-
-    return initializeApp(
-      {
-        credential: cert(serviceAccount),
-      },
-      ADMIN_APP_NAME
-    );
-  } catch (error: any) {
-    console.error("Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON:", error.message);
-    throw new Error("The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not a valid JSON string.");
-  }
+  return initializeApp(
+    {
+      credential: cert(serviceAccount),
+    },
+    ADMIN_APP_NAME
+  );
 }
 
 /**
