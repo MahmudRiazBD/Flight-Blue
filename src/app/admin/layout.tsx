@@ -202,12 +202,15 @@ export default function AdminLayout({
         const db = getFirestore(getFirebaseApp());
         const userRef = doc(db, "users", updatedUser.uid);
         
-        // Destructure to remove fields that should not be directly written to Firestore this way
+        // Prepare data for Firestore by removing fields we don't want to save directly
+        // (like a new password, which should be handled by Firebase Auth)
         const { uid, password, ...dataToSave } = updatedUser;
         
         await updateDoc(userRef, dataToSave);
         
-        setUser(updatedUser);
+        // Update the user state in the context to reflect changes immediately
+        setUser(currentUser => currentUser ? { ...currentUser, ...dataToSave } : null);
+
         setIsProfileModalOpen(false);
 
         toast({

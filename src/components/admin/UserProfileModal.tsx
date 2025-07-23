@@ -44,7 +44,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   });
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (user) {
       form.reset({
         username: user.username || "",
         firstName: user.firstName || "",
@@ -76,7 +76,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
         ...data,
     };
 
-    if (data.newPassword) {
+    if (data.newPassword && data.newPassword.length > 0) {
         updatedUser.password = data.newPassword;
     }
     
