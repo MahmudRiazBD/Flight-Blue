@@ -39,7 +39,7 @@ interface AuthContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
+  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   logout: () => void;
 }
 
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, displayName: string, role: UserRole = 'customer') => {
+  const signup = useCallback(async (email: string, password: string, displayName: string, role: UserRole) => {
     const mainApp = getFirebaseApp();
     const db = getFirestore(mainApp);
 

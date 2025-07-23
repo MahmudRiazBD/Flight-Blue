@@ -61,7 +61,8 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setFormLoading(true);
     try {
-      await signup(values.email, values.password, values.name);
+      // Public signups should always be 'customer' role.
+      await signup(values.email, values.password, values.name, 'customer');
       
       toast({
         title: "Account Created!",
