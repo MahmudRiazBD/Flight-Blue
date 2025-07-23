@@ -137,7 +137,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading } = useAuth();
+  const { user, setUser, loading, logout } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
@@ -204,7 +204,6 @@ export default function AdminLayout({
         const userRef = doc(db, "users", updatedUser.uid);
         
         // Prepare data for Firestore by removing fields we don't want to save directly
-        // (like a new password, which should be handled by Firebase Auth separately)
         const { uid, password, ...dataToSave } = updatedUser;
         
         await updateDoc(userRef, dataToSave);
