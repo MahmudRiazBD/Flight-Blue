@@ -72,6 +72,7 @@ const menuItems = [
     subItems: [
         { href: "/admin/pages/all", label: "All Pages"},
         { href: "/admin/pages/new", label: "Add New"},
+        { href: "/admin/pages/static", label: "Static Pages"},
     ]
   },
   {
@@ -136,7 +137,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading, logout } = useAuth();
+  const { user, setUser, loading } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({

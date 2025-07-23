@@ -1,6 +1,7 @@
 
 
 
+
 'use server';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
@@ -112,7 +113,7 @@ export async function seedDatabase() {
         quickLinks: {
             title: "Quick Links",
             links: [
-                { id: "fl1-1", label: "About Us", url: "#" },
+                { id: "fl1-1", label: "About Us", url: "/about-us" },
                 { id: "fl1-2", label: "Packages", url: "/packages" },
                 { id: "fl1-3", label: "Blog", url: "/blog" },
             ]
@@ -120,9 +121,9 @@ export async function seedDatabase() {
         supportLinks: {
             title: "Support",
             links: [
-                { id: "fl2-1", label: "FAQ", url: "#" },
-                { id: "fl2-2", label: "Terms of Service", url: "#" },
-                { id: "fl2-3", label: "Privacy Policy", url: "#" },
+                { id: "fl2-1", label: "FAQ", url: "/faq" },
+                { id: "fl2-2", label: "Terms of Service", url: "/terms-of-service" },
+                { id: "fl2-3", label: "Privacy Policy", url: "/privacy-policy" },
             ]
         },
         socialLinks: [
@@ -141,6 +142,32 @@ export async function seedDatabase() {
       heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
       heroButtonLabel: "Explore Packages",
       heroButtonLink: "/packages",
+    }, { merge: true });
+
+    // Seed default static page settings
+    const sitePagesSettingsRef = doc(db, "settings", "sitePages");
+    batch.set(sitePagesSettingsRef, {
+        aboutUs: {
+            title: "About Flight Blu",
+            content: "Founded in 2024, Flight Blu was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\n\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
+        },
+        faq: {
+            title: "Frequently Asked Questions",
+            items: [
+                {id: "faq-1", question: "How do I book a package?", answer: "You can book a package directly through our website by clicking the 'Book Now' button on any package page and filling out the form. Alternatively, you can contact our customer support team for assistance."},
+                {id: "faq-2", question: "What is included in the package price?", answer: "Each package is different. Please refer to the 'Inclusions' and 'Exclusions' sections on the specific package page for detailed information."},
+                {id: "faq-3", question: "Can I customize a tour package?", answer: "We may be able to accommodate customization requests for private group tours. Please contact us with your specific requirements, and we will do our best to create a tailored itinerary for you."},
+                {id: "faq-4", question: "What are the visa requirements?", answer: "Visa requirements vary by destination and your nationality. While we provide visa processing assistance for many packages (like Hajj and Umrah), you are ultimately responsible for ensuring you have the correct travel documents. We recommend checking with the relevant embassy or consulate."},
+            ]
+        },
+        terms: {
+            title: "Terms of Service",
+            content: "By accessing and using the Flight Blu website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \n\nCancellations made within 30 days of departure are subject to cancellation fees. Flight Blu acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
+        },
+        privacy: {
+            title: "Privacy Policy",
+            content: "Flight Blu is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \n\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
+        }
     }, { merge: true });
 
 

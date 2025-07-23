@@ -1,6 +1,5 @@
 
 
-
 export type Page = {
   id: string;
   title: string;
@@ -52,6 +51,31 @@ export type GlobalSettings = {
     socialLinks: SocialLink[];
     googleMapEmbedCode: string;
 };
+
+export type FaqItem = {
+    id: string;
+    question: string;
+    answer: string;
+}
+
+export type SitePagesSettings = {
+    aboutUs: {
+        title: string;
+        content: string;
+    };
+    faq: {
+        title: string;
+        items: FaqItem[];
+    };
+    terms: {
+        title: string;
+        content: string;
+    };
+    privacy: {
+        title: string;
+        content: string;
+    };
+}
 
 
 export type Post = {
