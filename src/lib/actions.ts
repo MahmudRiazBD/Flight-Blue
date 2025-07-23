@@ -4,25 +4,24 @@
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getFirestore, collection, writeBatch, getDocs, doc, setDoc } from "firebase/firestore";
-import { getFirebaseApp } from "./firebase";
+import { getFirebaseApp, firebaseConfig } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps as getAdminApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps as getAdminApps, deleteApp as deleteAdminApp } from 'firebase-admin/app';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getAdminApps().length) {
-    // This will work in a server environment where GOOGLE_APPLICATION_CREDENTIALS is set
-    // For local dev, you'd need a service account key
-    try {
-      initializeApp();
-    } catch(e) {
-      console.warn("Could not initialize Firebase Admin SDK. This is expected in a browser environment. Server actions requiring admin privileges might fail.");
+// Helper function to initialize Firebase Admin SDK
+function initializeAdminApp() {
+    if (getAdminApps().length === 0) {
+        return initializeApp({
+            credential: undefined, // Let ADC find credentials
+            ...firebaseConfig
+        });
     }
+    return getAdminApps()[0];
 }
-
 
 type Message = {
   role: "user" | "bot";
@@ -45,6 +44,7 @@ export async function deleteUser(uid: string) {
     }
 
     try {
+        initializeAdminApp();
         const adminAuth = getAdminAuth();
         const adminDb = getAdminFirestore();
 
@@ -71,6 +71,8 @@ export async function deleteUser(uid: string) {
             message = "User not found in Firebase Authentication. They may have already been deleted.";
         } else if (error.code === 'permission-denied') {
             message = "Permission denied. Make sure the server has admin privileges.";
+        } else if (error.message && error.message.includes('access token')) {
+            message = "Could not authenticate to Firebase Admin. " + error.message;
         } else {
             message = error.message;
         }
@@ -201,7 +203,7 @@ export async function seedDatabase() {
     batch.set(sitePagesSettingsRef, {
         aboutUs: {
             title: "About Flight Blu",
-            content: "Founded in 2024, Flight Blu was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\n\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
+            content: "Founded in 2024, Flight Blu was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\\n\\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
         },
         faq: {
             title: "Frequently Asked Questions",
@@ -214,11 +216,11 @@ export async function seedDatabase() {
         },
         terms: {
             title: "Terms of Service",
-            content: "By accessing and using the Flight Blu website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \n\nCancellations made within 30 days of departure are subject to cancellation fees. Flight Blu acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
+            content: "By accessing and using the Flight Blu website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \\n\\nCancellations made within 30 days of departure are subject to cancellation fees. Flight Blu acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
         },
         privacy: {
             title: "Privacy Policy",
-            content: "Flight Blu is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \n\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
+            content: "Flight Blu is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \\n\\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
         }
     }, { merge: true });
 
