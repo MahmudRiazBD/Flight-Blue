@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This file initializes the Firebase Admin SDK for server-side operations.
@@ -23,25 +22,27 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  // Check if the environment variable is set
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  
+  if (!credentialsJson) {
     throw new Error(
       'The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set.'
     );
   }
 
-  // Parse the service account credentials from the environment variable
-  const serviceAccount: ServiceAccount = JSON.parse(
-    process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
-  );
+  try {
+    const serviceAccount: ServiceAccount = JSON.parse(credentialsJson);
 
-  // Initialize the Firebase Admin App with the service account credentials
-  return initializeApp(
-    {
-      credential: cert(serviceAccount),
-    },
-    ADMIN_APP_NAME
-  );
+    return initializeApp(
+      {
+        credential: cert(serviceAccount),
+      },
+      ADMIN_APP_NAME
+    );
+  } catch (error: any) {
+    console.error("Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON:", error.message);
+    throw new Error("The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not a valid JSON string.");
+  }
 }
 
 /**
