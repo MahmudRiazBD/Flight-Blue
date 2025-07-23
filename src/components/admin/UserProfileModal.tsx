@@ -41,6 +41,16 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
   
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+        username: user?.username || "",
+        firstName: user?.firstName || "",
+        lastName: user?.lastName || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
+        photoURL: user?.photoURL || "",
+        role: user?.role || "customer",
+        newPassword: "",
+    }
   });
 
   useEffect(() => {
@@ -77,6 +87,8 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
     };
 
     if (data.newPassword && data.newPassword.length > 0) {
+        // In a real app with a proper backend, you'd handle password updates securely.
+        // Here we just attach it to be handled by the onSave prop.
         updatedUser.password = data.newPassword;
     }
     
@@ -126,7 +138,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                  <div>
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input id="lastName" {...form.register("lastName")} />
-                    {form.formState.errors.lastName && <p className="text-destructive text-sm mt-1">{form.formState.errors.lastName.message}</p>}
+                     {form.formState.errors.lastName && <p className="text-destructive text-sm mt-1">{form.formState.errors.lastName.message}</p>}
                 </div>
             </div>
              <div>
@@ -143,7 +155,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                     name="role"
                     control={form.control}
                     render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditingSelf || user.role === 'superadmin'}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isEditingSelf || user.role === 'superadmin'}>
                             <SelectTrigger id="role">
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
@@ -157,6 +169,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                     )}
                  />
                  {isEditingSelf && <p className="text-xs text-muted-foreground mt-1">You cannot change your own role.</p>}
+                 {user.role === 'superadmin' && <p className="text-xs text-muted-foreground mt-1">Super Admin role cannot be changed.</p>}
             </div>
 
             <Separator />
@@ -171,7 +184,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                 <Input id="newPassword" type="password" {...form.register("newPassword")} placeholder="Leave blank to keep current password" />
                  {form.formState.errors.newPassword && <p className="text-destructive text-sm mt-1">{form.formState.errors.newPassword.message}</p>}
             </div>
-
+            
             <DialogFooter className="mt-auto pt-4 border-t sticky bottom-0 bg-background pb-0">
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>
