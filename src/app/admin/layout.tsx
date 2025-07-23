@@ -146,7 +146,7 @@ export default function AdminLayout({
     pages: pathname.startsWith('/admin/pages'),
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const isAuthorized = user?.role === "admin" || user?.role === "superadmin";
+  const isAuthorized = user?.role === "admin" || user?.role === "superadmin" || user?.role === "staff";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -203,7 +203,7 @@ export default function AdminLayout({
         const userRef = doc(db, "users", updatedUser.uid);
         
         // Prepare data for Firestore by removing fields we don't want to save directly
-        // (like a new password, which should be handled by Firebase Auth)
+        // (like a new password, which should be handled by Firebase Auth separately)
         const { uid, password, ...dataToSave } = updatedUser;
         
         await updateDoc(userRef, dataToSave);
