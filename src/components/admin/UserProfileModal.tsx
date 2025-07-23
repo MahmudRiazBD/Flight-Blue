@@ -56,7 +56,7 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
         newPassword: "",
       });
     }
-  }, [user, isOpen, form.reset]);
+  }, [user, form]);
 
 
   if (!isOpen || !user) {
