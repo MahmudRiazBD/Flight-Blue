@@ -4,23 +4,26 @@
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getFirestore, collection, writeBatch, getDocs, doc, setDoc } from "firebase/firestore";
-import { getFirebaseApp, firebaseConfig } from "./firebase";
+import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps as getAdminApps, deleteApp as deleteAdminApp } from 'firebase-admin/app';
+import { initializeApp, getApps as getAdminApps, deleteApp as deleteAdminApp, App } from 'firebase-admin/app';
 
 // Helper function to initialize Firebase Admin SDK
-function initializeAdminApp() {
-    if (getAdminApps().length === 0) {
-        return initializeApp({
-            credential: undefined, // Let ADC find credentials
-            ...firebaseConfig
-        });
+function initializeAdminApp(): App {
+    const adminAppName = 'firebase-admin-app-' + Date.now();
+    const adminApps = getAdminApps();
+    const existingApp = adminApps.find(app => app.name === adminAppName);
+    if (existingApp) {
+        return existingApp;
     }
-    return getAdminApps()[0];
+
+    // Initialize without specific credentials, relying on Application Default Credentials
+    // in the Google Cloud environment.
+    return initializeApp({}, adminAppName);
 }
 
 type Message = {
@@ -43,22 +46,17 @@ export async function deleteUser(uid: string) {
         return { success: false, message: "User ID is required." };
     }
 
+    let adminApp: App | undefined;
     try {
-        initializeAdminApp();
-        const adminAuth = getAdminAuth();
-        const adminDb = getAdminFirestore();
+        adminApp = initializeAdminApp();
+        const adminAuth = getAdminAuth(adminApp);
+        const adminDb = getAdminFirestore(adminApp);
 
-        // Start a batch write
         const batch = adminDb.batch();
-
-        // 1. Delete user from Firestore
         const userRef = adminDb.collection('users').doc(uid);
         batch.delete(userRef);
         
-        // 2. Delete user from Firebase Auth
         await adminAuth.deleteUser(uid);
-
-        // Commit the batch
         await batch.commit();
 
         console.log(`Successfully deleted user ${uid} from Auth and Firestore.`);
@@ -69,34 +67,33 @@ export async function deleteUser(uid: string) {
         let message = "An unknown error occurred.";
         if (error.code === 'auth/user-not-found') {
             message = "User not found in Firebase Authentication. They may have already been deleted.";
-        } else if (error.code === 'permission-denied') {
+        } else if (error.code === 'permission-denied' || error.message.includes('permission')) {
             message = "Permission denied. Make sure the server has admin privileges.";
-        } else if (error.message && error.message.includes('access token')) {
+        } else if (error.message && (error.message.includes('access token') || error.message.includes('Credential'))) {
             message = "Could not authenticate to Firebase Admin. " + error.message;
         } else {
             message = error.message;
         }
 
         return { success: false, message: message };
+    } finally {
+        if (adminApp) {
+            await deleteAdminApp(adminApp);
+        }
     }
 }
 
 export async function seedDatabase() {
   const app = getFirebaseApp();
   const db = getFirestore(app);
-  // Use a temporary auth instance for seeding to not interfere with any logged-in user
   const auth = getAuth(app);
   const batch = writeBatch(db);
 
   try {
-    // Seed Super Admin
-    // This is a special case. We need to create the auth user if they don't exist.
-    // This is idempotent - it will only create the user once.
     const superAdminEmail = "hello@riaz.com.bd";
     const superAdminPassword = "2002##flightblue.MHR";
     try {
         const userCredential = await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-        // User exists, ensure their Firestore doc is correct
         const userRef = doc(db, "users", userCredential.user.uid);
         batch.set(userRef, {
             email: superAdminEmail,
@@ -106,10 +103,9 @@ export async function seedDatabase() {
             role: 'superadmin',
             photoURL: '',
             phone: ''
-        }, { merge: true }); // Use merge to avoid overwriting existing fields unnecessarily
+        }, { merge: true });
     } catch (error: any) {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-            // User does not exist, create them
             const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
             const userRef = doc(db, "users", userCredential.user.uid);
             batch.set(userRef, {
@@ -122,41 +118,35 @@ export async function seedDatabase() {
                 phone: ''
             });
         } else {
-            throw error; // Rethrow other auth errors
+            throw error;
         }
     }
 
-    // Seed Packages
     packages.forEach((pkg) => {
       const docRef = doc(db, "packages", pkg.id);
       batch.set(docRef, pkg);
     });
 
-    // Seed Posts
     posts.forEach((post) => {
       const docRef = doc(db, "posts", post.id);
       batch.set(docRef, post);
     });
 
-    // Seed Categories
     categories.forEach((cat) => {
       const docRef = doc(db, "categories", cat.id);
       batch.set(docRef, cat);
     });
 
-    // Seed Destinations
     destinations.forEach((dest) => {
       const docRef = doc(db, "destinations", dest.id);
       batch.set(docRef, dest);
     });
 
-    // Seed Package Types
     packageTypes.forEach((type) => {
       const docRef = doc(db, "packageTypes", type.id);
       batch.set(docRef, type);
     });
     
-    // Seed default global settings
     const globalSettingsRef = doc(db, "settings", "global");
     batch.set(globalSettingsRef, {
         siteTitle: "Flight Blu",
@@ -188,7 +178,6 @@ export async function seedDatabase() {
         googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
     }, { merge: true });
 
-    // Seed default homepage settings
     const homePageSettingsRef = doc(db, "settings", "homePage");
     batch.set(homePageSettingsRef, {
       heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
@@ -198,7 +187,6 @@ export async function seedDatabase() {
       heroButtonLink: "/packages",
     }, { merge: true });
 
-    // Seed default static page settings
     const sitePagesSettingsRef = doc(db, "settings", "sitePages");
     batch.set(sitePagesSettingsRef, {
         aboutUs: {
@@ -227,7 +215,6 @@ export async function seedDatabase() {
 
     await batch.commit();
 
-    // After seeding, sign out the temporary seeding session if it was active
     if (auth.currentUser?.email === superAdminEmail) {
       await signOut(auth);
     }

@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 
 // Your web app's Firebase configuration
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyCyMBjo9WoRCCHxhx9bLeGRGNl2OpcPMFM",
   authDomain: "global-roam-elasz.firebaseapp.com",
   projectId: "global-roam-elasz",
@@ -20,4 +20,4 @@ function getFirebaseApp(): FirebaseApp {
     return initializeApp(firebaseConfig);
 }
 
-export { getFirebaseApp };
+export { getFirebaseApp, firebaseConfig };
