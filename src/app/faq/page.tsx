@@ -8,6 +8,7 @@ import { getFirebaseApp } from "@/lib/firebase";
 import { SitePagesSettings } from "@/lib/data";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
+import Head from "next/head";
 
 export default function FAQPage() {
     const [pageContent, setPageContent] = useState<SitePagesSettings['faq'] | null>(null);
@@ -50,7 +51,14 @@ export default function FAQPage() {
         return <div className="text-center py-20">No frequently asked questions found.</div>;
     }
 
+    const pageDescription = pageContent.items.map(item => item.question).join(' ').substring(0, 160);
+
     return (
+        <>
+        <Head>
+            <title>{pageContent.title}</title>
+            <meta name="description" content={pageDescription} />
+        </Head>
         <div className="bg-background">
             <div className="container mx-auto px-4 py-16 max-w-3xl">
                 <header className="text-center mb-12">
@@ -72,5 +80,6 @@ export default function FAQPage() {
                 </Accordion>
             </div>
         </div>
+        </>
     );
 }
