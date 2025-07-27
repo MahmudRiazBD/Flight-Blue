@@ -62,7 +62,6 @@ export async function deleteUser(uid: string) {
 }
 
 export async function seedDatabase() {
-  const db = getFirestore(getFirebaseApp());
   const auth = getAuth(getFirebaseApp());
   const adminDb = getAdminFirestore();
   const batch = adminDb.batch();
@@ -75,7 +74,7 @@ export async function seedDatabase() {
     } catch (error: any) {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-            const userRef = doc(db, "users", userCredential.user.uid);
+            const userRef = doc(getFirestore(getFirebaseApp()), "users", userCredential.user.uid);
             await setDoc(userRef, {
                 email: superAdminEmail,
                 username: 'hello',
