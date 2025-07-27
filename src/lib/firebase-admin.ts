@@ -12,9 +12,10 @@ import { getFirestore as getAdminFirestoreSDK, Firestore } from 'firebase-admin/
 const ADMIN_APP_NAME = 'firebase-admin-app-singleton';
 
 /**
- * Initializes and returns the Firebase Admin App instance using a service account.
+ * Initializes and returns the Firebase Admin App instance using a service account JSON.
  * Ensures that the app is initialized only once (Singleton pattern).
  * @returns {App} The Firebase Admin App instance.
+ * @throws {Error} If the GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set or is invalid.
  */
 function getAdminApp(): App {
   const apps = getApps();
@@ -23,18 +24,18 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  // Directly use environment variables for service account details
-  const serviceAccount: ServiceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    // Replace newline characters in the private key
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  };
+  const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   
-  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-     throw new Error(
-      'Firebase Admin SDK credentials are not set in environment variables.'
-    );
+  if (!serviceAccountString) {
+    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set.');
+  }
+
+  let serviceAccount: ServiceAccount;
+  try {
+    serviceAccount = JSON.parse(serviceAccountString);
+  } catch (e: any) {
+    console.error("Failed to parse service account JSON:", e.message);
+    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not a valid JSON string.');
   }
 
   return initializeApp(
