@@ -12,10 +12,11 @@ import { getFirestore as getAdminFirestoreSDK, Firestore } from 'firebase-admin/
 const ADMIN_APP_NAME = 'firebase-admin-app-singleton';
 
 /**
- * Initializes and returns the Firebase Admin App instance using a service account JSON.
+ * Initializes and returns the Firebase Admin App instance using service account credentials
+ * from environment variables.
  * Ensures that the app is initialized only once (Singleton pattern).
  * @returns {App} The Firebase Admin App instance.
- * @throws {Error} If the GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set or is invalid.
+ * @throws {Error} If the required environment variables are not set.
  */
 function getAdminApp(): App {
   const apps = getApps();
@@ -24,19 +25,20 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-  
-  if (!serviceAccountString) {
-    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set.');
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  // The private key needs to have its escaped newlines replaced with actual newlines.
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error('Required Firebase Admin credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are not set in environment variables.');
   }
 
-  let serviceAccount: ServiceAccount;
-  try {
-    serviceAccount = JSON.parse(serviceAccountString);
-  } catch (e: any) {
-    console.error("Failed to parse service account JSON:", e.message);
-    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not a valid JSON string.');
-  }
+  const serviceAccount: ServiceAccount = {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
 
   return initializeApp(
     {
@@ -59,5 +61,5 @@ export function getAdminAuth(): Auth {
  * @returns {Firestore} The Firebase Admin Firestore instance.
  */
 export function getAdminFirestore(): Firestore {
-  return getAdminFirestoreSDK(getAdminApp());
+    return getAdminFirestoreSDK(getAdminApp());
 }
