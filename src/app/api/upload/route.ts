@@ -1,7 +1,7 @@
-
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
+import { handleCors } from "@/lib/firebase";
 
 // Function to generate a URL-friendly slug from a filename
 const createSlug = (fileName: string): string => {
@@ -23,6 +23,12 @@ const createSlug = (fileName: string): string => {
 
 
 export async function POST(request: Request) {
+  // Handle CORS pre-flight requests
+  const corsResponse = handleCors(request);
+  if (corsResponse) {
+    return corsResponse;
+  }
+
   try {
     const { filename, contentType } = await request.json();
 
@@ -73,4 +79,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: "An unknown error occurred while creating signed URL." }, { status: 500 });
   }
+}
+
+// Add an OPTIONS handler to explicitly manage pre-flight requests
+export async function OPTIONS(request: Request) {
+  return handleCors(request) || new NextResponse(null, { status: 204 });
 }
