@@ -294,19 +294,6 @@ export default function AdminMediaPage() {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  const createSlug = (fileName: string) => {
-    const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-    const cleanedName = nameWithoutExtension
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') 
-      .trim()
-      .replace(/\s+/g, '-') 
-      .replace(/-+/g, '-');
-    const extension = fileName.split('.').pop()?.toLowerCase() || '';
-    const uniqueId = Date.now().toString(36).slice(-4);
-    return `${cleanedName}-${uniqueId}.${extension}`;
-  };
-
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -317,18 +304,16 @@ export default function AdminMediaPage() {
   
     for (const file of Array.from(files)) {
       try {
-        const slug = createSlug(file.name);
-  
         // 1. Get a pre-signed URL from our API route
         const presignResponse = await fetch(`${baseUrl}/api/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: slug, contentType: file.type }),
+          body: JSON.stringify({ filename: file.name, contentType: file.type }),
         });
   
         if (!presignResponse.ok) {
-          const errorBody = await presignResponse.text();
-          throw new Error(`Failed to get pre-signed URL for ${file.name}. Server responded with: ${errorBody}`);
+          const errorBody = await presignResponse.json();
+          throw new Error(`Failed to get pre-signed URL. Server: ${errorBody.error}`);
         }
   
         const { uploadUrl, finalUrl } = await presignResponse.json();
@@ -342,7 +327,7 @@ export default function AdminMediaPage() {
   
         if (!uploadResponse.ok) {
            const errorBody = await uploadResponse.text();
-           throw new Error(`File upload to R2 failed for ${file.name}. R2 responded with: ${errorBody}. Check CORS policy.`);
+           throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody}. Check CORS policy.`);
         }
   
         // 3. Create the new file object to update the UI
