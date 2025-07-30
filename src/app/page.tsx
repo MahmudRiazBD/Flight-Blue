@@ -21,13 +21,15 @@ function BlogCard({ post, author }: { post: Post, author?: UserData }) {
         const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
         return fullName || "Unknown Author";
     };
+    
+    const imageUrl = post.featuredImageUrl || "https://placehold.co/1200x600.png";
 
   return (
     <Card className="overflow-hidden group flex flex-col">
       <CardHeader className="p-0">
         <Link href={`/blog/${post.slug}`} className="block relative h-52 w-full">
           <Image
-            src={post.featuredImageUrl}
+            src={imageUrl}
             alt={post.title}
             layout="fill"
             objectFit="cover"
