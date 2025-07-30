@@ -11,13 +11,17 @@ const firebaseConfig = {
   appId: "1:398365154934:web:a841c7570aa30ffe54c957"
 };
 
-// Initialize Firebase for client-side
-function getFirebaseApp(): FirebaseApp {
-    if (getApps().length > 0) {
-        return getApp();
-    }
-    
-    return initializeApp(firebaseConfig);
+// Initialize Firebase for client-side using a robust singleton pattern
+let app: FirebaseApp;
+
+try {
+  app = getApp();
+} catch (e) {
+  app = initializeApp(firebaseConfig);
 }
+
+const getFirebaseApp = (): FirebaseApp => {
+  return app;
+};
 
 export { getFirebaseApp };
