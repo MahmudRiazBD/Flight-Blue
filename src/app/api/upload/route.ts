@@ -1,6 +1,5 @@
 
-import { R2, bucketName, publicUrl } from "@/lib/r2";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
@@ -30,6 +29,27 @@ export async function POST(request: Request) {
     if (!filename || !contentType) {
       return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400 });
     }
+    
+    // --- R2 Client Initialization - Moved directly here ---
+    const accountId = process.env.R2_ACCOUNT_ID;
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+    const bucketName = process.env.R2_BUCKET_NAME;
+    const publicUrl = process.env.R2_PUBLIC_URL;
+
+    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicUrl) {
+        throw new Error("Cloudflare R2 credentials are not set in environment variables.");
+    }
+    
+    const R2 = new S3Client({
+        region: "auto",
+        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        credentials: {
+            accessKeyId,
+            secretAccessKey,
+        },
+    });
+    // --- End R2 Client Initialization ---
 
     const slug = createSlug(filename);
 
