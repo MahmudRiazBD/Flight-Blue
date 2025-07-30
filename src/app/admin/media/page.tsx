@@ -313,12 +313,13 @@ export default function AdminMediaPage() {
 
     setIsUploading(true);
     const uploadedFiles: MediaFile[] = [];
+    const baseUrl = window.location.origin;
 
     for (const file of Array.from(files)) {
       try {
         const slug = createSlug(file.name);
         
-        const presignResponse = await fetch('/api/upload', {
+        const presignResponse = await fetch(`${baseUrl}/api/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename: slug, contentType: file.type }),

@@ -44,6 +44,11 @@ const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void
     );
 }
 
+type MediaPickerProps = {
+    imageUrl: string;
+    onImageUrlChange: (url: string) => void;
+};
+
 
 export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerProps) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,10 +81,11 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     }
     
     setIsUploading(true);
+    const baseUrl = window.location.origin;
 
     try {
         // 1. Get a pre-signed URL from our API route
-        const response = await fetch('/api/upload', {
+        const response = await fetch(`${baseUrl}/api/upload`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, contentType: file.type }),
