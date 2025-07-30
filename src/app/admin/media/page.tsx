@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { UploadCloud, MoreVertical, Copy, Trash2, FileText, Video, ImageIcon, File as FileIcon, RotateCw, AlertTriangle, Trash } from "lucide-react";
+import { UploadCloud, MoreVertical, Copy, Trash2, FileText, Video, ImageIcon, File as FileIcon, RotateCw, AlertTriangle, Trash, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,19 +37,11 @@ export type MediaFile = {
   dataAiHint?: string;
 };
 
-const placeholderMedia: MediaFile[] = [
-  { id: "1", name: "eiffel-tower.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "1.2 MB", dataAiHint: "eiffel tower", uploadedAt: new Date(), altText: "The Eiffel Tower in Paris" },
-  { id: "2", name: "promo-video.mp4", type: "video", url: "https://placehold.co/600x400.png", size: "15.8 MB", uploadedAt: new Date() },
-  { id: "3", name: "travel-guide.pdf", type: "pdf", url: "https://placehold.co/600x400.png", size: "5.4 MB", uploadedAt: new Date() },
-  { id: "4", name: "kaaba-mecca.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "2.1 MB", dataAiHint: "kaaba mecca", uploadedAt: new Date() },
-  { id: "5", name: "terms.docx", type: "file", url: "https://placehold.co/600x400.png", size: "87 KB", uploadedAt: new Date() },
-  { id: "6", name: "tokyo-skyline.jpg", type: "image", url: "https://placehold.co/600x400.png", size: "3.5 MB", dataAiHint: "tokyo skyline", uploadedAt: new Date(), altText: "Night view of Tokyo skyline" },
-];
+// Placeholder data - in a real app, this would be fetched from a database
+// and the 'url' would be the public R2 URL.
+const placeholderMedia: MediaFile[] = [];
+const placeholderTrashedMedia: MediaFile[] = [];
 
-const placeholderTrashedMedia: MediaFile[] = [
-    { id: "7", name: "old-logo.png", type: "image", url: "https://placehold.co/600x400.png", size: "350 KB", deletedAt: new Date(new Date().getTime() - 5 * 24 * 60 * 60 * 1000), dataAiHint: "old logo", uploadedAt: new Date(new Date().getTime() - 5 * 24 * 60 * 60 * 1000) },
-    { id: "8", name: "archive.zip", type: "file", url: "https://placehold.co/600x400.png", size: "25.1 MB", deletedAt: new Date(new Date().getTime() - 15 * 24 * 60 * 60 * 1000), uploadedAt: new Date(new Date().getTime() - 15 * 24 * 60 * 60 * 1000) },
-]
 
 const getIconForType = (type: MediaType) => {
     switch (type) {
@@ -116,7 +108,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will permanently delete the file. This action cannot be undone.
+                                        This will permanently delete the file from your R2 bucket. This action cannot be undone.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -190,6 +182,12 @@ export default function AdminMediaPage() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFileForDetail, setSelectedFileForDetail] = useState<MediaFile | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // In a real app, you would fetch media library data from your database here.
+  useEffect(() => {
+    // fetchMediaFiles();
+  }, []);
 
   const currentFileList = activeTab === 'all' ? mediaFiles : trashedFiles;
 
@@ -236,6 +234,7 @@ export default function AdminMediaPage() {
             }
             break;
         case "delete":
+            // TODO: Implement actual R2 deletion API call
             setTrashedFiles(prev => prev.filter(f => f.id !== id));
             toast({ title: "File Permanently Deleted" });
             break;
@@ -260,6 +259,7 @@ export default function AdminMediaPage() {
         })]);
         toast({ title: `${selectedFiles.length} file(s) restored.` });
     } else if (action === "delete") {
+        // TODO: Implement actual R2 deletion API call for multiple files
         setTrashedFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
         toast({ title: `${selectedFiles.length} file(s) permanently deleted.`, variant: "destructive" });
     }
@@ -268,6 +268,7 @@ export default function AdminMediaPage() {
   };
 
   const handleEmptyTrash = () => {
+    // TODO: Implement actual R2 deletion API call for all trashed files
     setTrashedFiles([]);
     toast({ title: "Trash has been emptied.", variant: "destructive" });
     setSelectedFiles([]);
@@ -295,46 +296,72 @@ export default function AdminMediaPage() {
 
   const createSlug = (fileName: string) => {
     const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-    return nameWithoutExtension
+    const cleanedName = nameWithoutExtension
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/[^a-z0-9\s-]/g, '') 
       .trim()
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
+      .replace(/\s+/g, '-') 
+      .replace(/-+/g, '-');
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+    const uniqueId = Date.now().toString(36).slice(-4);
+    return `${cleanedName}-${uniqueId}.${extension}`;
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    // This is a placeholder for where you'd get the permalink setting
-    // In a real app, this would come from a context or a fetch call
-    const permalinkStructure = "/media/%postname%"; // example setting
+    setIsUploading(true);
+    const uploadedFiles: MediaFile[] = [];
 
-    const newFiles: MediaFile[] = Array.from(files).map(file => {
+    for (const file of Array.from(files)) {
+      try {
         const slug = createSlug(file.name);
-        // Using a placeholder base URL. In a real app, this would be your domain.
-        const fileUrl = permalinkStructure === "/media/%postname%" 
-            ? `/media/${slug}` 
-            : `/uploads/${file.name}`;
+        
+        const presignResponse = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: slug, contentType: file.type }),
+        });
 
-        return {
-            id: `${file.name}-${Math.random().toString(36).substring(2, 9)}`,
+        if (!presignResponse.ok) throw new Error(`Failed to get pre-signed URL for ${file.name}.`);
+
+        const { uploadUrl, finalUrl } = await presignResponse.json();
+
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+
+        if (!uploadResponse.ok) throw new Error(`File upload to R2 failed for ${file.name}.`);
+
+        const newFile: MediaFile = {
+            id: finalUrl, // Use the final URL as a unique ID
             name: file.name,
             type: getFileType(file.name),
-            url: file.type.startsWith('image/') ? URL.createObjectURL(file) : fileUrl,
+            url: finalUrl,
             size: formatFileSize(file.size),
             uploadedAt: new Date(),
-        }
+        };
+        uploadedFiles.push(newFile);
+        
+        // TODO: In a real app, save 'newFile' metadata to your database here.
+
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast({ title: `Upload Failed for ${file.name}`, description: "Could not upload the file.", variant: "destructive" });
+      }
+    }
+    
+    setMediaFiles(prev => [...uploadedFiles, ...prev]);
+
+    toast({
+        title: "Uploads Complete",
+        description: `${uploadedFiles.length} of ${files.length} file(s) uploaded successfully.`
     });
 
-    setMediaFiles(prev => [...newFiles, ...prev]);
-    toast({
-        title: "Upload Successful",
-        description: `${files.length} file(s) have been added to the library.`
-    })
-
-    // Reset the file input
+    setIsUploading(false);
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -347,6 +374,8 @@ export default function AdminMediaPage() {
 
   const handleSaveFileDetails = (updatedFile: MediaFile) => {
     const fileToSave = { ...updatedFile, modifiedAt: new Date() };
+
+    // TODO: In a real app, save updatedFile metadata to your database here.
 
     const isTrashed = !!fileToSave.deletedAt;
     if (isTrashed) {
@@ -369,7 +398,7 @@ export default function AdminMediaPage() {
         <div className="flex flex-row items-center justify-between">
             <div>
             <CardTitle>Media Library</CardTitle>
-            <CardDescription>Manage your uploaded files.</CardDescription>
+            <CardDescription>Manage your uploaded files on Cloudflare R2.</CardDescription>
             </div>
             <div className="flex gap-2">
             <input 
@@ -378,10 +407,15 @@ export default function AdminMediaPage() {
                 onChange={handleFileChange}
                 className="hidden" 
                 multiple 
+                disabled={isUploading}
             />
-            <Button onClick={handleUploadClick}>
-                <UploadCloud className="mr-2 h-4 w-4" />
-                Upload Files
+            <Button onClick={handleUploadClick} disabled={isUploading}>
+                {isUploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                )}
+                {isUploading ? 'Uploading...' : 'Upload Files'}
             </Button>
             </div>
         </div>

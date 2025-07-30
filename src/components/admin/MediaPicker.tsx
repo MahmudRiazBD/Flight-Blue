@@ -7,28 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link, Library } from 'lucide-react';
+import { Upload, Link, Library, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
 import { Label } from "@/components/ui/label";
 
-type MediaPickerProps = {
-  imageUrl: string;
-  onImageUrlChange: (url: string) => void;
-};
-
 // Simplified version of MediaGrid for the picker
 const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void }) => {
-    // In a real app, this would be a fetch call. We'll use localStorage for this demo.
+    // In a real app, this would be a fetch call. We'll use localStorage for this demo for now.
+    // A more robust solution would fetch from the `/api/media` endpoint.
     const [files, setFiles] = useState<MediaFile[]>([]);
     
     useState(() => {
-        if(typeof window !== 'undefined'){
-            const storedMedia = localStorage.getItem('mediaFiles');
-            if(storedMedia){
-                setFiles(JSON.parse(storedMedia).filter((f: MediaFile) => f.type === 'image'));
-            }
-        }
+        // This is a temporary solution. A real app should fetch this from the server.
     });
 
     if (files.length === 0) {
@@ -43,7 +34,7 @@ const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void
                         <Image 
                             src={file.url}
                             alt={file.altText || file.name}
-                            layout="fill"
+                            fill
                             objectFit="cover"
                         />
                     </div>
@@ -58,11 +49,13 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
   const [modalOpen, setModalOpen] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const handleUrlConfirm = () => {
     if (urlInput && urlInput.startsWith('http')) {
       onImageUrlChange(urlInput);
+      setModalOpen(false);
       toast({ title: "Image URL set" });
     } else {
       toast({ title: "Invalid URL", description: "Please enter a valid URL.", variant: "destructive" });
@@ -73,18 +66,51 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const tempUrl = URL.createObjectURL(file);
-      onImageUrlChange(tempUrl);
-      toast({ title: "Image Uploaded", description: "This is a temporary preview. The file should be uploaded to a permanent location upon saving."});
-    } else {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
         toast({ title: "Invalid File", description: "Please select an image file.", variant: "destructive" });
+        return;
     }
-    // Reset file input
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+    
+    setIsUploading(true);
+
+    try {
+        // 1. Get a pre-signed URL from our API route
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        });
+
+        if (!response.ok) throw new Error('Failed to get pre-signed URL.');
+
+        const { uploadUrl, finalUrl } = await response.json();
+
+        // 2. Upload the file directly to R2 using the pre-signed URL
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+        });
+
+        if (!uploadResponse.ok) throw new Error('File upload to R2 failed.');
+
+        // 3. Update the form with the final, public URL
+        onImageUrlChange(finalUrl);
+        setModalOpen(false);
+        toast({ title: "Image Uploaded", description: "The image was successfully uploaded to Cloudflare R2." });
+
+    } catch (error) {
+        console.error("Upload error:", error);
+        toast({ title: "Upload Failed", description: "Could not upload the file. Please try again.", variant: "destructive" });
+    } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
     }
   };
 
@@ -102,10 +128,11 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             onChange={handleFileChange}
             className="hidden" 
             accept="image/*"
+            disabled={isUploading}
         />
         <div className="flex items-center gap-4">
             <div className="w-24 h-24 bg-muted rounded-md flex-shrink-0 relative overflow-hidden">
-                {imageUrl && <Image src={imageUrl} alt="Preview" layout="fill" objectFit="cover" />}
+                {imageUrl && <Image src={imageUrl} alt="Preview" fill objectFit="cover" />}
             </div>
             <div className="flex flex-col gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => setModalOpen(true)}>
@@ -121,9 +148,9 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
                     <DialogTitle>Select Media</DialogTitle>
                     <DialogDescription>Choose an image from your library, upload a new one, or enter a URL.</DialogDescription>
                 </DialogHeader>
-                <Tabs defaultValue="library" className="w-full">
+                <Tabs defaultValue="upload" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="library"><Library className="mr-2"/>From Library</TabsTrigger>
+                        <TabsTrigger value="library" disabled><Library className="mr-2"/>From Library</TabsTrigger>
                         <TabsTrigger value="upload"><Upload className="mr-2"/>Upload New</TabsTrigger>
                         <TabsTrigger value="url"><Link className="mr-2"/>From URL</TabsTrigger>
                     </TabsList>
@@ -132,10 +159,20 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
                     </TabsContent>
                     <TabsContent value="upload">
                         <div className="py-12 flex flex-col items-center justify-center text-center border-2 border-dashed rounded-md">
-                            <Upload className="h-12 w-12 text-muted-foreground mb-4"/>
-                            <h3 className="text-lg font-medium">Click to upload a file</h3>
-                            <p className="text-sm text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
-                            <Button type="button" size="sm" className="mt-4" onClick={handleUploadClick}>Browse Files</Button>
+                             {isUploading ? (
+                                <>
+                                    <Loader2 className="h-12 w-12 text-primary animate-spin mb-4"/>
+                                    <h3 className="text-lg font-medium">Uploading...</h3>
+                                    <p className="text-sm text-muted-foreground">Please wait.</p>
+                                </>
+                             ) : (
+                                <>
+                                    <Upload className="h-12 w-12 text-muted-foreground mb-4"/>
+                                    <h3 className="text-lg font-medium">Click to upload a file</h3>
+                                    <p className="text-sm text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                                    <Button type="button" size="sm" className="mt-4" onClick={handleUploadClick}>Browse Files</Button>
+                                </>
+                             )}
                         </div>
                     </TabsContent>
                     <TabsContent value="url">
