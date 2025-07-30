@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: slug,
+      // ACL: 'public-read', // This is often not needed if bucket is public
       ContentType: contentType,
     });
 

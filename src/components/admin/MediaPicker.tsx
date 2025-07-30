@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useRef } from 'react';
@@ -99,7 +100,6 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
             method: 'PUT',
-            headers: { 'Content-Type': file.type },
             body: file,
         });
 

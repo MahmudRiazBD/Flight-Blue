@@ -1,3 +1,4 @@
+
 "use client"
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -319,7 +320,6 @@ export default function AdminMediaPage() {
         // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
           body: file,
         });
   
