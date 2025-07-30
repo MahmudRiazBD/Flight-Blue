@@ -20,42 +20,52 @@ export default function AdminPagesPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const db = getFirestore(getFirebaseApp());
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const pagesSnapshot = await getDocs(collection(db, "pages"));
-      const pagesList = pagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Page));
-      // Sort pages by menuOrder if it exists, otherwise by title
-      pagesList.sort((a, b) => {
-        if (a.menuOrder !== undefined && b.menuOrder !== undefined) {
-          return a.menuOrder - b.menuOrder;
-        }
-        return a.title.localeCompare(b.title);
-      });
-      setPages(pagesList);
-    } catch(e) {
-      console.error("Error loading pages:", e);
-      toast({ title: "Error", description: "Could not fetch pages.", variant: "destructive"});
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const db = getFirestore(getFirebaseApp());
+        const pagesSnapshot = await getDocs(collection(db, "pages"));
+        const pagesList = pagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Page));
+        // Sort pages by menuOrder if it exists, otherwise by title
+        pagesList.sort((a, b) => {
+          if (a.menuOrder !== undefined && b.menuOrder !== undefined) {
+            return a.menuOrder - b.menuOrder;
+          }
+          return a.title.localeCompare(b.title);
+        });
+        setPages(pagesList);
+      } catch(e) {
+        console.error("Error loading pages:", e);
+        toast({ title: "Error", description: "Could not fetch pages.", variant: "destructive"});
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadData();
-  }, []);
+  }, [toast]);
 
   const handleDelete = async (pageId: string) => {
     try {
+      const db = getFirestore(getFirebaseApp());
       await deleteDoc(doc(db, "pages", pageId));
       toast({
         title: "Page Deleted",
         description: "The page has been successfully deleted.",
         variant: "destructive"
       });
-      loadData();
+      // Re-load data after deletion
+       const pagesSnapshot = await getDocs(collection(db, "pages"));
+        const pagesList = pagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Page));
+        pagesList.sort((a, b) => {
+            if (a.menuOrder !== undefined && b.menuOrder !== undefined) {
+            return a.menuOrder - b.menuOrder;
+            }
+            return a.title.localeCompare(b.title);
+        });
+        setPages(pagesList);
+
     } catch (e) {
       toast({ title: "Error", description: "Could not delete page.", variant: "destructive"});
     }
