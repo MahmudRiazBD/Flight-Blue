@@ -5,7 +5,7 @@
  * It uses a singleton pattern to ensure that the app is initialized only once,
  * using explicit service account credentials for robust authentication.
  */
-import { initializeApp, getApps, App, cert, ServiceAccount } from 'firebase-admin/app';
+import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuthSDK, Auth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestoreSDK, Firestore } from 'firebase-admin/firestore';
 
@@ -25,27 +25,26 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // The private key needs to have its escaped newlines replaced with actual newlines.
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // This is the recommended and most robust way to handle credentials in various environments.
+  // It relies on a single environment variable containing the entire service account JSON.
+  const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error('Required Firebase Admin credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are not set in environment variables.');
+  if (!serviceAccountJson) {
+    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set. Please provide the full service account JSON in this variable.');
   }
 
-  const serviceAccount: ServiceAccount = {
-    projectId,
-    clientEmail,
-    privateKey,
-  };
-
-  return initializeApp(
-    {
-      credential: cert(serviceAccount),
-    },
-    ADMIN_APP_NAME
-  );
+  try {
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    
+    return initializeApp(
+      {
+        credential: cert(serviceAccount),
+      },
+      ADMIN_APP_NAME
+    );
+  } catch (error: any) {
+     throw new Error(`Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON: ${error.message}. Please ensure it's a valid, single-line JSON string.`);
+  }
 }
 
 /**
@@ -61,5 +60,5 @@ export function getAdminAuth(): Auth {
  * @returns {Firestore} The Firebase Admin Firestore instance.
  */
 export function getAdminFirestore(): Firestore {
-    return getAdminFirestoreSDK(getAdminApp());
+  return getAdminFirestoreSDK(getAdminApp());
 }
