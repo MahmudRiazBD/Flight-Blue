@@ -13,8 +13,6 @@ import { getEmbedUrl } from "@/lib/utils";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
 import Head from 'next/head';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
@@ -138,33 +136,27 @@ export default function BlogPostPage() {
 
         {post.galleryImages && post.galleryImages.length > 0 && (
             <div className="my-12">
-                <Carousel
-                    opts={{
-                        align: "start",
-                        loop: true,
-                    }}
-                    className="w-full"
-                >
-                    <CarouselContent>
-                        {post.galleryImages.map((image, index) => (
-                            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                                <div className="p-1">
-                                    <div className="relative aspect-video rounded-lg overflow-hidden">
-                                         <Image
-                                            src={image.url}
-                                            alt={`Gallery image ${index + 1}`}
-                                            fill
-                                            className="object-cover"
-                                            data-ai-hint={image.hint}
-                                        />
-                                    </div>
-                                </div>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                </Carousel>
+                 <div className="flex flex-wrap -mx-2">
+                    {post.galleryImages.map((image, index) => (
+                        <div key={index} 
+                          className={
+                            post.galleryImages && post.galleryImages.length === 1 ? 'w-full p-2' :
+                            post.galleryImages && post.galleryImages.length === 2 ? 'w-1/2 p-2' :
+                            'w-full sm:w-1/2 md:w-1/3 p-2'
+                          }
+                        >
+                            <div className="relative aspect-video rounded-lg overflow-hidden shadow-lg">
+                                <Image
+                                    src={image.url}
+                                    alt={`Gallery image ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={image.hint}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         )}
 
