@@ -5,11 +5,12 @@ import { useState, useEffect } from 'react';
 import { useParams, notFound } from "next/navigation";
 import Image from "next/image";
 import { Post } from "@/lib/data";
+import { User as UserData } from '@/hooks/use-auth';
 import { Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEmbedUrl } from "@/lib/utils";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
 import Head from 'next/head';
 
@@ -32,29 +33,50 @@ export default function BlogPostPage() {
   const params = useParams();
   const slug = params.slug as string;
   const [post, setPost] = useState<Post | null | undefined>(undefined);
+  const [author, setAuthor] = useState<UserData | null>(null);
   
   const embedUrl = post?.videoUrl ? getEmbedUrl(post.videoUrl) : null;
 
   useEffect(() => {
-    const fetchPost = async () => {
+    const fetchPostAndAuthor = async () => {
       if (!slug) return;
       const db = getFirestore(getFirebaseApp());
+      
+      // Fetch Post
       const postsRef = collection(db, "posts");
       const q = query(postsRef, where("slug", "==", slug));
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
         setPost(null);
-      } else {
-        const postDoc = querySnapshot.docs[0];
-        setPost({ id: postDoc.id, ...postDoc.data() } as Post);
+        return;
+      }
+      
+      const postDoc = querySnapshot.docs[0];
+      const postData = { id: postDoc.id, ...postDoc.data() } as Post;
+      setPost(postData);
+
+      // Fetch Author if authorId exists
+      if (postData.authorId) {
+        const authorRef = doc(db, "users", postData.authorId);
+        const authorSnap = await getDoc(authorRef);
+        if (authorSnap.exists()) {
+          setAuthor(authorSnap.data() as UserData);
+        }
       }
     };
 
     if (slug) {
-      fetchPost();
+      fetchPostAndAuthor();
     }
   }, [slug]);
+
+  const getAuthorName = () => {
+    if (!author) return "Unknown Author";
+    const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
+    return fullName || "Unknown Author";
+  };
+
 
   if (post === undefined) {
     return (
@@ -92,7 +114,7 @@ export default function BlogPostPage() {
           <div className="flex justify-center items-center gap-6 text-muted-foreground">
             <div className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              <span>{post.author}</span>
+              <span>{getAuthorName()}</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />

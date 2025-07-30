@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Post, Category } from "@/lib/data";
+import { User } from "@/hooks/use-auth";
 import { PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
@@ -18,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -35,6 +38,10 @@ export default function AdminBlogPage() {
       const categoriesList = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
       setCategories(categoriesList);
 
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const usersList = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+      setUsers(usersList);
+
     } catch(e) {
       console.error("Error loading blog data:", e);
       toast({ title: "Error", description: "Could not fetch blog posts or categories.", variant: "destructive"});
@@ -50,6 +57,14 @@ export default function AdminBlogPage() {
   const getCategoryName = (categoryId?: string) => {
     if (!categoryId) return "Uncategorized";
     return categories.find(c => c.id === categoryId)?.name || "Uncategorized";
+  };
+  
+  const getAuthorName = (authorId?: string) => {
+    if (!authorId) return "Unknown Author";
+    const user = users.find(u => u.uid === authorId);
+    if (!user) return "Unknown Author";
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return fullName || "Unknown Author";
   };
 
   const handleDelete = async (postId: string) => {
@@ -106,7 +121,7 @@ export default function AdminBlogPage() {
                 posts.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell>{post.author}</TableCell>
+                    <TableCell>{getAuthorName(post.authorId)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{getCategoryName(post.categoryId)}</Badge>
                     </TableCell>

@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -9,13 +8,20 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle, Star, Users, Loader2, Calendar, User as UserIcon } from "lucide-react";
 import PackageCard from "@/components/PackageCard";
 import { Package, Post, HomePageSettings } from "@/lib/data";
+import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { useAppContext } from '@/context/AppContext';
 import { getFirestore, collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 
-function BlogCard({ post }: { post: Post }) {
+function BlogCard({ post, author }: { post: Post, author?: UserData }) {
+    const getAuthorName = () => {
+        if (!author) return "Unknown Author";
+        const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
+        return fullName || "Unknown Author";
+    };
+
   return (
     <Card className="overflow-hidden group flex flex-col">
       <CardHeader className="p-0">
@@ -34,7 +40,7 @@ function BlogCard({ post }: { post: Post }) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
             <div className="flex items-center gap-2">
                 <UserIcon className="h-4 w-4" />
-                <span>{post.author}</span>
+                <span>{getAuthorName()}</span>
             </div>
             <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -58,6 +64,7 @@ function BlogCard({ post }: { post: Post }) {
 export default function Home() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [homeSettings, setHomeSettings] = useState<HomePageSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const { setContactFormOpen } = useAppContext();
@@ -83,6 +90,11 @@ export default function Home() {
         const postsQuery = query(collection(db, 'posts'), orderBy('publishedAt', 'desc'), limit(3));
         const postsSnapshot = await getDocs(postsQuery);
         setPosts(postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post)));
+        
+        // Fetch all users to map author names
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        setUsers(usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserData)));
+
       } catch (error) {
         console.error("Error fetching featured data:", error);
       } finally {
@@ -92,6 +104,8 @@ export default function Home() {
     
     fetchFeaturedData();
   }, []);
+  
+  const findAuthor = (authorId?: string) => users.find(user => user.uid === authorId);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -196,7 +210,7 @@ export default function Home() {
                 Array.from({length: 3}).map((_, i) => <Card key={i}><CardContent className="p-6"><Loader2 className="h-8 w-8 animate-spin mx-auto"/></CardContent></Card>)
               ) : (
                 posts.map((post) => (
-                  <BlogCard key={post.id} post={post} />
+                  <BlogCard key={post.id} post={post} author={findAuthor(post.authorId)} />
                 ))
               )}
             </div>

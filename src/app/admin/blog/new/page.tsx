@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
+import { useAuth } from "@/hooks/use-auth";
 
 
 const postSchema = z.object({
@@ -31,6 +33,7 @@ export default function NewPostPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
+  const { user } = useAuth();
 
   const db = getFirestore(getFirebaseApp());
 
@@ -59,13 +62,18 @@ export default function NewPostPage() {
   });
 
   const onSubmit = async (data: z.infer<typeof postSchema>) => {
+    if (!user) {
+        toast({ title: "Error", description: "You must be logged in to create a post.", variant: "destructive"});
+        return;
+    }
+
     try {
       const slug = data.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 
       const newPost: Omit<Post, 'id'> = {
         ...data,
         slug,
-        author: "Admin User", // In a real app, this would come from the logged-in user
+        authorId: user.uid,
         publishedAt: new Date().toISOString(),
       };
       
