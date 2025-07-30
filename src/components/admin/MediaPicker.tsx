@@ -101,8 +101,8 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
             method: 'PUT',
-            body: file,
             headers: { 'Content-Type': file.type },
+            body: file,
         });
 
         if (!uploadResponse.ok) {
@@ -117,7 +117,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
 
     } catch (error) {
         console.error("Upload error:", error);
-        toast({ title: "Upload Failed", description: "Could not upload the file. Please try again.", variant: "destructive" });
+        toast({ title: "Upload Failed", description: "Could not upload the file. Please check console for details.", variant: "destructive" });
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) {

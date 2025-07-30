@@ -321,8 +321,8 @@ export default function AdminMediaPage() {
         // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
-          body: file,
           headers: { 'Content-Type': file.type },
+          body: file,
         });
   
         if (!uploadResponse.ok) {
