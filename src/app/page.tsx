@@ -19,6 +19,9 @@ function BlogCard({ post, author }: { post: Post, author?: UserData }) {
     const getAuthorName = () => {
         if (!author) return "Unknown Author";
         const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
+        if (fullName.length > 15) {
+            return `${fullName.substring(0, 15)}...`;
+        }
         return fullName || "Unknown Author";
     };
     
@@ -42,7 +45,7 @@ function BlogCard({ post, author }: { post: Post, author?: UserData }) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
             <div className="flex items-center gap-2">
                 <UserIcon className="h-4 w-4" />
-                <span>{getAuthorName()}</span>
+                <span className="truncate">{getAuthorName()}</span>
             </div>
             <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />

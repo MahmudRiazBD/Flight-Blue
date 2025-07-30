@@ -121,7 +121,7 @@ export default function AdminBlogPage() {
                 posts.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell>{getAuthorName(post.authorId)}</TableCell>
+                    <TableCell className="truncate max-w-xs">{getAuthorName(post.authorId)}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{getCategoryName(post.categoryId)}</Badge>
                     </TableCell>

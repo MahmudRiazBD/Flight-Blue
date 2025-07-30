@@ -73,6 +73,9 @@ export default function BlogPostPage() {
   const getAuthorName = () => {
     if (!author) return "Unknown Author";
     const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
+    if (fullName.length > 20) {
+        return `${fullName.substring(0, 20)}...`;
+    }
     return fullName || "Unknown Author";
   };
 
@@ -113,7 +116,7 @@ export default function BlogPostPage() {
           <div className="flex justify-center items-center gap-6 text-muted-foreground">
             <div className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              <span>{getAuthorName()}</span>
+              <span className="truncate">{getAuthorName()}</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
