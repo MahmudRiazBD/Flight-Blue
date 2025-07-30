@@ -309,62 +309,73 @@ export default function AdminMediaPage() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
-
+    if (!files || files.length === 0) return;
+  
     setIsUploading(true);
     const uploadedFiles: MediaFile[] = [];
     const baseUrl = window.location.origin;
-
+  
     for (const file of Array.from(files)) {
       try {
         const slug = createSlug(file.name);
-        
+  
+        // 1. Get a pre-signed URL from our API route
         const presignResponse = await fetch(`${baseUrl}/api/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename: slug, contentType: file.type }),
         });
-
-        if (!presignResponse.ok) throw new Error(`Failed to get pre-signed URL for ${file.name}.`);
-
+  
+        if (!presignResponse.ok) {
+          const errorBody = await presignResponse.text();
+          throw new Error(`Failed to get pre-signed URL for ${file.name}. Server responded with: ${errorBody}`);
+        }
+  
         const { uploadUrl, finalUrl } = await presignResponse.json();
-
+  
+        // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
           body: file,
           headers: { 'Content-Type': file.type },
         });
-
-        if (!uploadResponse.ok) throw new Error(`File upload to R2 failed for ${file.name}.`);
-
+  
+        if (!uploadResponse.ok) {
+           const errorBody = await uploadResponse.text();
+           throw new Error(`File upload to R2 failed for ${file.name}. R2 responded with: ${errorBody}. Check CORS policy.`);
+        }
+  
+        // 3. Create the new file object to update the UI
         const newFile: MediaFile = {
-            id: finalUrl, // Use the final URL as a unique ID
-            name: file.name,
-            type: getFileType(file.name),
-            url: finalUrl,
-            size: formatFileSize(file.size),
-            uploadedAt: new Date(),
+          id: finalUrl, // Use the final URL as a unique ID for simplicity
+          name: file.name,
+          type: getFileType(file.name),
+          url: finalUrl,
+          size: formatFileSize(file.size),
+          uploadedAt: new Date(),
         };
         uploadedFiles.push(newFile);
-        
-        // TODO: In a real app, save 'newFile' metadata to your database here.
-
+  
+        // TODO: In a real app, you would also save 'newFile' metadata to your database here.
+  
       } catch (error) {
-        console.error("Upload error:", error);
-        toast({ title: `Upload Failed for ${file.name}`, description: "Could not upload the file.", variant: "destructive" });
+        console.error("Upload error for file " + file.name + ":", error);
+        toast({ title: `Upload Failed`, description: `Could not upload ${file.name}. Check console for details.`, variant: "destructive" });
       }
     }
+  
+    if (uploadedFiles.length > 0) {
+        setMediaFiles(prev => [...uploadedFiles, ...prev]);
+        toast({
+            title: "Uploads Complete",
+            description: `${uploadedFiles.length} of ${files.length} file(s) uploaded successfully.`
+        });
+    }
     
-    setMediaFiles(prev => [...uploadedFiles, ...prev]);
-
-    toast({
-        title: "Uploads Complete",
-        description: `${uploadedFiles.length} of ${files.length} file(s) uploaded successfully.`
-    });
-
     setIsUploading(false);
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
+    // Clear the file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
