@@ -77,14 +77,19 @@ export type SitePagesSettings = {
     };
 }
 
+export type GalleryImage = {
+  url: string;
+  hint?: string;
+};
 
 export type Post = {
   id: string;
   title: string;
   slug: string;
   content: string;
-  imageUrl: string;
-  imageHint?: string;
+  featuredImageUrl: string;
+  featuredImageHint?: string;
+  galleryImages?: GalleryImage[];
   authorId: string;
   publishedAt: string; // ISO date string
   videoUrl?: string;
@@ -357,8 +362,12 @@ export const posts: Post[] = [
     title: '10 Essential Tips for Your First Trip to Japan',
     slug: '10-essential-tips-for-your-first-trip-to-japan',
     content: 'Japan is a country of amazing contrasts, blending ancient traditions with futuristic technology. To help you navigate your first adventure in the Land of the Rising Sun, we\'ve compiled 10 essential tips. From mastering the incredibly efficient railway system (and why a JR Pass is a must-have) to understanding basic etiquette like bowing and handling money, we\'ve got you covered. Don\'t forget to try the authentic ramen from a local shop - it\'s an experience in itself! We also touch on navigating the bustling cities, finding tranquility in temples, and the convenience of 7-Eleven stores.',
-    imageUrl: 'https://images.pexels.com/photos/364096/pexels-photo-364096.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    imageHint: 'tokyo street night',
+    featuredImageUrl: 'https://images.pexels.com/photos/364096/pexels-photo-364096.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    featuredImageHint: 'tokyo street night',
+    galleryImages: [
+        { url: 'https://placehold.co/1200x800.png', hint: 'fushimi inari shrine' },
+        { url: 'https://placehold.co/1200x800.png', hint: 'shibuya crossing' },
+    ],
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-15T10:00:00Z',
     categoryId: 'cat-1'
@@ -368,8 +377,8 @@ export const posts: Post[] = [
     title: 'A Pilgrim\'s Guide: Preparing for a Meaningful Umrah',
     slug: 'a-pilgrims-guide-preparing-for-umrah',
     content: 'Performing Umrah is a profound spiritual experience for Muslims worldwide. This guide covers the essential rituals, preparations, and practical advice for a meaningful pilgrimage to the holy cities of Makkah and Madinah. We explain the spiritual significance and practical steps of entering the state of Ihram, performing the Tawaf around the Kaaba, and completing the Sa\'i between Safa and Marwah. Learn about the best times to go, what to pack, and how to maintain focus and devotion throughout your journey to make it a success.',
-    imageUrl: 'https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    imageHint: 'kaaba mecca pilgrimage',
+    featuredImageUrl: 'https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    featuredImageHint: 'kaaba mecca pilgrimage',
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-20T12:30:00Z',
     categoryId: 'cat-2',
@@ -380,8 +389,8 @@ export const posts: Post[] = [
     title: 'The Art of the Parisian Café: An Ultimate Guide',
     slug: 'the-ultimate-guide-to-parisian-cafes',
     content: 'No trip to Paris is complete without whiling away an afternoon at a classic sidewalk cafe. It\'s an essential part of the city\'s culture. From historical literary haunts where Hemingway and Sartre once wrote, to modern specialty coffee shops pushing the boundaries of brewing, this guide will help you discover the best places to sip an espresso and watch the world go by. We\'ll teach you how to order like a local, explaining the difference between a "café crème", a "noisette", and an "allongé". Find your perfect spot to soak in the Parisian atmosphere.',
-    imageUrl: 'https://images.pexels.com/photos/1578332/pexels-photo-1578332.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    imageHint: 'paris cafe street',
+    featuredImageUrl: 'https://images.pexels.com/photos/1578332/pexels-photo-1578332.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    featuredImageHint: 'paris cafe street',
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-01T08:00:00Z',
     categoryId: 'cat-3'
@@ -391,8 +400,8 @@ export const posts: Post[] = [
     title: 'Exploring the Grand Bazaar of Istanbul',
     slug: 'exploring-the-grand-bazaar-of-istanbul',
     content: 'The Grand Bazaar in Istanbul is one of the oldest and largest covered markets in the world. This guide provides tips on how to navigate its labyrinthine streets, what to buy (from beautiful carpets to intricate lanterns), and how to bargain like a local. Discover hidden courtyards, traditional workshops, and the best places to stop for a cup of Turkish tea. Prepare to get lost in a sensory overload of sights, sounds, and smells in this historic marketplace.',
-    imageUrl: 'https://placehold.co/600x400.png',
-    imageHint: 'istanbul grand bazaar',
+    featuredImageUrl: 'https://placehold.co/600x400.png',
+    featuredImageHint: 'istanbul grand bazaar',
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-06-10T09:00:00Z',
     categoryId: 'cat-3',
@@ -402,8 +411,8 @@ export const posts: Post[] = [
     title: 'How to Enjoy Coffee Like an Italian in Rome',
     slug: 'how-to-enjoy-coffee-like-an-italian-in-rome',
     content: 'Coffee in Italy is a culture, not just a beverage. This post explores the unwritten rules of drinking coffee in Rome. Learn why you should drink your cappuccino only in the morning, how to order an espresso "al banco" (at the counter) like a true Roman, and the different types of coffee you can find. From a simple "caffè" to a "macchiato" or "corretto", we will guide you through the rich coffee traditions of the Eternal City.',
-    imageUrl: 'https://placehold.co/600x400.png',
-    imageHint: 'rome coffee shop',
+    featuredImageUrl: 'https://placehold.co/600x400.png',
+    featuredImageHint: 'rome coffee shop',
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-18T15:00:00Z',
     categoryId: 'cat-4',

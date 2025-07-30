@@ -13,6 +13,7 @@ import { getEmbedUrl } from "@/lib/utils";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
 import Head from 'next/head';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 
 // A simple Markdown to HTML converter
@@ -127,13 +128,45 @@ export default function BlogPostPage() {
         
          <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden shadow-lg mb-8">
               <Image
-                src={post.imageUrl}
+                src={post.featuredImageUrl}
                 alt={post.title}
                 fill
                 className="object-cover"
-                data-ai-hint={post.imageHint}
+                data-ai-hint={post.featuredImageHint}
               />
          </div>
+
+        {post.galleryImages && post.galleryImages.length > 0 && (
+            <div className="my-12">
+                <Carousel
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    className="w-full"
+                >
+                    <CarouselContent>
+                        {post.galleryImages.map((image, index) => (
+                            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                                <div className="p-1">
+                                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                                         <Image
+                                            src={image.url}
+                                            alt={`Gallery image ${index + 1}`}
+                                            fill
+                                            className="object-cover"
+                                            data-ai-hint={image.hint}
+                                        />
+                                    </div>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                </Carousel>
+            </div>
+        )}
 
 
         <div className="prose prose-lg max-w-none mx-auto text-foreground/80">

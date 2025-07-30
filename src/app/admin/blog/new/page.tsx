@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -18,13 +18,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 
 const postSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
-  imageUrl: z.string().url("A valid image URL is required."),
-  imageHint: z.string().optional(),
+  featuredImageUrl: z.string().url("A valid featured image URL is required."),
+  featuredImageHint: z.string().optional(),
+  galleryImages: z.array(z.object({
+    url: z.string().url("A valid gallery image URL is required."),
+    hint: z.string().optional(),
+  })).optional(),
   videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   categoryId: z.string().optional(),
 });
@@ -55,10 +61,16 @@ export default function NewPostPage() {
     defaultValues: {
       title: "",
       content: "",
-      imageUrl: "https://placehold.co/1200x600.png",
-      imageHint: "",
+      featuredImageUrl: "https://placehold.co/1200x600.png",
+      featuredImageHint: "",
+      galleryImages: [],
       videoUrl: "",
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "galleryImages",
   });
 
   const onSubmit = async (data: z.infer<typeof postSchema>) => {
@@ -137,19 +149,64 @@ export default function NewPostPage() {
           <div className="space-y-2">
             <Label>Featured Image</Label>
             <Controller
-              name="imageUrl"
+              name="featuredImageUrl"
               control={form.control}
               render={({ field }) => (
                 <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
               )}
             />
-             {form.formState.errors.imageUrl && <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>}
+             {form.formState.errors.featuredImageUrl && <p className="text-sm text-destructive">{form.formState.errors.featuredImageUrl.message}</p>}
           </div>
           
            <div className="space-y-2">
-            <Label htmlFor="imageHint">Image Hint (for AI)</Label>
-            <Input id="imageHint" {...form.register("imageHint")} placeholder="e.g. tokyo street night" />
+            <Label htmlFor="featuredImageHint">Featured Image Hint (for AI)</Label>
+            <Input id="featuredImageHint" {...form.register("featuredImageHint")} placeholder="e.g. tokyo street night" />
           </div>
+
+          <Separator />
+          
+          <div className="space-y-4">
+            <Label>Image Gallery</Label>
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md">
+                <div className="flex-grow space-y-4">
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.url`}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Image {index + 1}</Label>
+                        <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
+                      </div>
+                    )}
+                  />
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.hint`}
+                    render={({ field }) => (
+                       <div className="space-y-2">
+                        <Label>Image Hint {index + 1} (for AI)</Label>
+                        <Input {...field} placeholder="e.g. cherry blossom" />
+                       </div>
+                    )}
+                  />
+                </div>
+                 <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => append({ url: 'https://placehold.co/1200x800.png', hint: '' })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Gallery Image
+            </Button>
+          </div>
+
+          <Separator />
 
           <div className="space-y-2">
             <Label htmlFor="videoUrl">Video URL (Optional)</Label>

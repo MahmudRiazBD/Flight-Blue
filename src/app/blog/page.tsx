@@ -24,12 +24,12 @@ function PostCard({ post, author }: { post: Post, author?: UserData }) {
       <CardHeader className="p-0">
         <Link href={`/blog/${post.slug}`} className="block relative h-60 w-full">
           <Image
-            src={post.imageUrl}
+            src={post.featuredImageUrl}
             alt={post.title}
             layout="fill"
             objectFit="cover"
             className="transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={post.imageHint}
+            data-ai-hint={post.featuredImageHint}
           />
         </Link>
       </CardHeader>
