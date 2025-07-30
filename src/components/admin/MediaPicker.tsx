@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useRef } from 'react';
@@ -81,11 +80,10 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     }
     
     setIsUploading(true);
-    const baseUrl = window.location.origin;
 
     try {
         // 1. Get a pre-signed URL from our API route
-        const presignResponse = await fetch(`${baseUrl}/api/upload`, {
+        const presignResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filename: file.name, contentType: file.type }),
@@ -93,7 +91,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
 
         if (!presignResponse.ok) {
             const errorBody = await presignResponse.json();
-            throw new Error(`Failed to get pre-signed URL. Server: ${errorBody.error}`);
+            throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
 
         const { uploadUrl, finalUrl } = await presignResponse.json();
@@ -107,7 +105,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
 
         if (!uploadResponse.ok) {
             const errorBody = await uploadResponse.text();
-            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody}. Check CORS policy.`);
+            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
 
         // 3. Update the form with the final, public URL

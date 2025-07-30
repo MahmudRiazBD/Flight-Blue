@@ -2,20 +2,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
-// This function handles CORS pre-flight requests and sets headers for actual requests.
-function handleCors(request: Request, responseHeaders: Headers): NextResponse | null {
-  responseHeaders.set('Access-Control-Allow-Origin', '*');
-  responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (request.method === 'OPTIONS') {
-    return new NextResponse(null, { status: 204, headers: responseHeaders });
-  }
-
-  return null;
-}
-
-// Function to generate a URL-friendly slug from a filename
+// This function generates a URL-friendly slug from a filename
 const createSlug = (fileName: string): string => {
     const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
@@ -33,39 +20,35 @@ const createSlug = (fileName: string): string => {
     return extension ? `${cleanedName}-${uniqueId}.${extension}` : `${cleanedName}-${uniqueId}`;
 };
 
-
+// This handles the main POST request to get a pre-signed URL
 export async function POST(request: Request) {
-  const responseHeaders = new Headers();
-  const corsResponse = handleCors(request, responseHeaders);
-  if (corsResponse) return corsResponse;
+  const { filename, contentType } = await request.json();
+
+  if (!filename || !contentType) {
+    return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400 });
+  }
+
+  // --- R2 Client Initialization ---
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const bucketName = process.env.R2_BUCKET_NAME;
+  const publicUrl = process.env.R2_PUBLIC_URL;
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicUrl) {
+    console.error("R2 environment variables are not fully set.");
+    return NextResponse.json({ error: "Server configuration error: R2 environment variables are missing." }, { status: 500 });
+  }
 
   try {
-    const { filename, contentType } = await request.json();
-
-    if (!filename || !contentType) {
-      return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400, headers: responseHeaders });
-    }
-    
-    // --- R2 Client Initialization ---
-    const accountId = process.env.R2_ACCOUNT_ID;
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-    const bucketName = process.env.R2_BUCKET_NAME;
-    const publicUrl = process.env.R2_PUBLIC_URL;
-
-    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicUrl) {
-        throw new Error("Cloudflare R2 credentials are not set in environment variables.");
-    }
-    
     const R2 = new S3Client({
-        region: "auto",
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-            accessKeyId,
-            secretAccessKey,
-        },
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
     });
-    // --- End R2 Client Initialization ---
 
     const slug = createSlug(filename);
 
@@ -75,25 +58,22 @@ export async function POST(request: Request) {
       ContentType: contentType,
     });
 
-    const signedUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
-    
-    // The public URL that will be stored in the database
+    const uploadUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
     const finalUrl = `${publicUrl}/${slug}`;
 
-    return NextResponse.json({ uploadUrl: signedUrl, finalUrl: finalUrl }, { headers: responseHeaders });
+    return NextResponse.json({ uploadUrl, finalUrl });
 
   } catch (error) {
     console.error("Error creating signed URL:", error);
-    if (error instanceof Error) {
-        return NextResponse.json({ error: `Failed to create signed URL: ${error.message}` }, { status: 500, headers: responseHeaders });
-    }
-    return NextResponse.json({ error: "An unknown error occurred while creating signed URL." }, { status: 500, headers: responseHeaders });
+    return NextResponse.json({ error: "Could not create upload URL. Check server logs." }, { status: 500 });
   }
 }
 
-// Add an OPTIONS handler to explicitly manage pre-flight requests
+// This handles the CORS pre-flight OPTIONS request
 export async function OPTIONS(request: Request) {
-  const responseHeaders = new Headers();
-  const corsResponse = handleCors(request, responseHeaders);
-  return corsResponse || new NextResponse(null, { status: 204, headers: responseHeaders });
+  const headers = new Headers();
+  headers.set('Access-Control-Allow-Origin', '*');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return new NextResponse(null, { status: 204, headers });
 }
