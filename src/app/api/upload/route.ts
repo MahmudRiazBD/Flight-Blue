@@ -1,7 +1,19 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
-import { handleCors } from "@/lib/firebase";
+
+// This function handles CORS pre-flight requests and sets headers for actual requests.
+function handleCors(request: Request, responseHeaders: Headers): NextResponse | null {
+  responseHeaders.set('Access-Control-Allow-Origin', '*');
+  responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, { status: 204, headers: responseHeaders });
+  }
+
+  return null;
+}
 
 // Function to generate a URL-friendly slug from a filename
 const createSlug = (fileName: string): string => {
@@ -23,20 +35,18 @@ const createSlug = (fileName: string): string => {
 
 
 export async function POST(request: Request) {
-  // Handle CORS pre-flight requests
-  const corsResponse = handleCors(request);
-  if (corsResponse) {
-    return corsResponse;
-  }
+  const responseHeaders = new Headers();
+  const corsResponse = handleCors(request, responseHeaders);
+  if (corsResponse) return corsResponse;
 
   try {
     const { filename, contentType } = await request.json();
 
     if (!filename || !contentType) {
-      return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400 });
+      return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400, headers: responseHeaders });
     }
     
-    // --- R2 Client Initialization - Moved directly here ---
+    // --- R2 Client Initialization ---
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
@@ -70,18 +80,20 @@ export async function POST(request: Request) {
     // The public URL that will be stored in the database
     const finalUrl = `${publicUrl}/${slug}`;
 
-    return NextResponse.json({ uploadUrl: signedUrl, finalUrl: finalUrl });
+    return NextResponse.json({ uploadUrl: signedUrl, finalUrl: finalUrl }, { headers: responseHeaders });
 
   } catch (error) {
     console.error("Error creating signed URL:", error);
     if (error instanceof Error) {
-        return NextResponse.json({ error: `Failed to create signed URL: ${error.message}` }, { status: 500 });
+        return NextResponse.json({ error: `Failed to create signed URL: ${error.message}` }, { status: 500, headers: responseHeaders });
     }
-    return NextResponse.json({ error: "An unknown error occurred while creating signed URL." }, { status: 500 });
+    return NextResponse.json({ error: "An unknown error occurred while creating signed URL." }, { status: 500, headers: responseHeaders });
   }
 }
 
 // Add an OPTIONS handler to explicitly manage pre-flight requests
 export async function OPTIONS(request: Request) {
-  return handleCors(request) || new NextResponse(null, { status: 204 });
+  const responseHeaders = new Headers();
+  const corsResponse = handleCors(request, responseHeaders);
+  return corsResponse || new NextResponse(null, { status: 204, headers: responseHeaders });
 }
