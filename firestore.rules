@@ -4,71 +4,74 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if the user has an admin-level role.
     function isAdmin() {
-      return request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'staff'];
+      // Check if the user is authenticated and their role is one of the admin types.
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'staff'];
     }
 
-    // Helper function to check if a user is authenticated.
-    function isSignedIn() {
-      return request.auth.uid != null;
+    function isOwner(userId) {
+      // Check if the authenticated user is the owner of the document.
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Collections that are publicly readable by anyone.
-    // Admins have full write access.
-    match /packages/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /posts/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /categories/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /destinations/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /packageTypes/{docId} {
-       allow read: if true;
-       allow write: if isAdmin();
-    }
-     match /pages/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-     match /settings/{docId} {
+    // Public collections, readable by anyone.
+    // Writable only by admins.
+    match /packages/{packageId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Users collection rules
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /destinations/{destId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /packageTypes/{typeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /pages/{pageId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+
+    // Settings should be readable by anyone for site configuration.
+    match /settings/{settingId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+
+    // User profiles can be read by anyone (for author names, etc.)
+    // but can only be created/updated by the owner or an admin.
     match /users/{userId} {
-      // Any authenticated user can read any user's public profile data.
-      allow read: if isSignedIn();
-      // A user can create their own profile document.
-      allow create: if request.auth.uid == userId;
-       // A user can update their own profile, but cannot change their own role.
-      allow update: if (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin();
-      // Only admins can delete users.
-      allow delete: if isAdmin();
+      allow read: if true;
+      allow create: if isOwner(userId); // User can create their own document on signup.
+      // User can update their own profile but cannot change their own role.
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      allow delete: if isAdmin(); // Only admins can delete users.
     }
 
-    // Bookings can be created by any signed-in user.
-    // Only admins can read, update, or delete them.
+    // Bookings can be created by authenticated users, but only managed by admins.
     match /bookings/{bookingId} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
+      allow create: if request.auth != null;
     }
 
-    // Anyone can submit a contact message.
-    // Only admins can read, update, or delete them.
+    // Anyone can send a message, but only admins can read/manage them.
     match /contactMessages/{messageId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
+        allow read, write: if isAdmin();
+        allow create: if true;
     }
   }
 }
