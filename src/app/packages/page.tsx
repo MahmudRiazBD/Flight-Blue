@@ -17,16 +17,29 @@ export default function PackagesPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
-    const [maxPrice, setMaxPrice] = useState(1000000);
+    const [priceRange, setPriceRange] = useState({ min: 1000, max: 2000000 });
+    const [maxPrice, setMaxPrice] = useState(2000000);
     
     useEffect(() => {
         const fetchPackages = async () => {
             setLoading(true);
-            const db = getFirestore(getFirebaseApp());
-            const packagesSnapshot = await getDocs(collection(db, 'packages'));
-            const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
-            setAllPackages(packagesList);
-            setLoading(false);
+            try {
+                const db = getFirestore(getFirebaseApp());
+                const packagesSnapshot = await getDocs(collection(db, 'packages'));
+                const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
+                setAllPackages(packagesList);
+
+                if (packagesList.length > 0) {
+                    const highestPrice = Math.max(...packagesList.map(p => p.price));
+                    const newMax = Math.ceil(highestPrice / 10000) * 10000; // Round up to nearest 10k
+                    setPriceRange({ min: 1000, max: newMax });
+                    setMaxPrice(newMax); // Set initial filter to max
+                }
+            } catch (error) {
+                console.error("Error fetching packages:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchPackages();
     }, []);
@@ -79,9 +92,9 @@ export default function PackagesPage() {
                         <label htmlFor="price" className="block text-sm font-medium mb-2">Max Price: <span className="font-bold text-primary">৳{maxPrice.toLocaleString()}</span></label>
                         <Slider
                             id="price"
-                            min={0}
-                            max={1000000}
-                            step={10000}
+                            min={priceRange.min}
+                            max={priceRange.max}
+                            step={1000}
                             value={[maxPrice]}
                             onValueChange={(value) => setMaxPrice(value[0])}
                         />
