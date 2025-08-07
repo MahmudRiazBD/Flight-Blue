@@ -34,11 +34,11 @@ export default function PackagesPage() {
                     const lowestPrice = Math.min(...prices);
                     const highestPrice = Math.max(...prices);
                     
-                    const newMin = Math.floor(lowestPrice / 100) * 100; // Round down to nearest 100
-                    const newMax = Math.ceil(highestPrice / 1000) * 1000; // Round up to nearest 1000
+                    const newMin = lowestPrice > 0 ? lowestPrice : 0;
+                    const newMax = highestPrice > 0 ? highestPrice : 500000;
 
                     setPriceRange({ min: newMin, max: newMax });
-                    setMaxPrice(newMax); // Set initial filter to max
+                    setMaxPrice(newMax); 
                 } else {
                     // Default values if no packages are found
                     setPriceRange({ min: 0, max: 500000 });
