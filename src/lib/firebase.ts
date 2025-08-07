@@ -1,5 +1,4 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { initializeApp, getApp, getApps, FirebaseApp } from "firebase/app";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -11,14 +10,16 @@ const firebaseConfig = {
   appId: "1:398365154934:web:a841c7570aa30ffe54c957"
 };
 
+// Initialize Firebase
 let app: FirebaseApp;
-
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
 } else {
   app = getApp();
 }
 
-const getFirebaseApp = () => app;
+const getFirebaseApp = (): FirebaseApp => {
+    return app;
+};
 
 export { getFirebaseApp };
