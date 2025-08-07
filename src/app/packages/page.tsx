@@ -17,8 +17,8 @@ export default function PackagesPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
-    const [priceRange, setPriceRange] = useState({ min: 1000, max: 2000000 });
-    const [maxPrice, setMaxPrice] = useState(2000000);
+    const [priceRange, setPriceRange] = useState({ min: 0, max: 500000 });
+    const [maxPrice, setMaxPrice] = useState(500000);
     
     useEffect(() => {
         const fetchPackages = async () => {
@@ -30,10 +30,19 @@ export default function PackagesPage() {
                 setAllPackages(packagesList);
 
                 if (packagesList.length > 0) {
-                    const highestPrice = Math.max(...packagesList.map(p => p.price));
-                    const newMax = Math.ceil(highestPrice / 10000) * 10000; // Round up to nearest 10k
-                    setPriceRange({ min: 1000, max: newMax });
+                    const prices = packagesList.map(p => p.price);
+                    const lowestPrice = Math.min(...prices);
+                    const highestPrice = Math.max(...prices);
+                    
+                    const newMin = Math.floor(lowestPrice / 100) * 100; // Round down to nearest 100
+                    const newMax = Math.ceil(highestPrice / 1000) * 1000; // Round up to nearest 1000
+
+                    setPriceRange({ min: newMin, max: newMax });
                     setMaxPrice(newMax); // Set initial filter to max
+                } else {
+                    // Default values if no packages are found
+                    setPriceRange({ min: 0, max: 500000 });
+                    setMaxPrice(500000);
                 }
             } catch (error) {
                 console.error("Error fetching packages:", error);
@@ -97,6 +106,7 @@ export default function PackagesPage() {
                             step={1000}
                             value={[maxPrice]}
                             onValueChange={(value) => setMaxPrice(value[0])}
+                            disabled={loading}
                         />
                     </div>
                 </div>
