@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ export default function PackagesPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [packageType, setPackageType] = useState('all');
-    const [priceRange, setPriceRange] = useState([0, 1000000]);
+    const [maxPrice, setMaxPrice] = useState(1000000);
     
     useEffect(() => {
         const fetchPackages = async () => {
@@ -33,7 +34,7 @@ export default function PackagesPage() {
     const filteredPackages = allPackages.filter(pkg => {
         const matchesSearch = pkg.title.toLowerCase().includes(searchTerm.toLowerCase()) || pkg.destination.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = packageType === 'all' || pkg.type === packageType;
-        const matchesPrice = pkg.price >= priceRange[0] && pkg.price <= priceRange[1];
+        const matchesPrice = pkg.price <= maxPrice;
         return matchesSearch && matchesType && matchesPrice;
     });
 
@@ -75,14 +76,14 @@ export default function PackagesPage() {
                         </Select>
                     </div>
                      <div>
-                        <label htmlFor="price" className="block text-sm font-medium mb-2">Max Price: <span className="font-bold text-primary">৳{priceRange[1].toLocaleString()}</span></label>
+                        <label htmlFor="price" className="block text-sm font-medium mb-2">Max Price: <span className="font-bold text-primary">৳{maxPrice.toLocaleString()}</span></label>
                         <Slider
                             id="price"
                             min={0}
                             max={1000000}
                             step={10000}
-                            value={[priceRange[1]]}
-                            onValueChange={(value) => setPriceRange([0, value[0]])}
+                            value={[maxPrice]}
+                            onValueChange={(value) => setMaxPrice(value[0])}
                         />
                     </div>
                 </div>
