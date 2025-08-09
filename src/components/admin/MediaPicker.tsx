@@ -1,26 +1,58 @@
 
 "use client"
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link, Library, Loader2 } from 'lucide-react';
+import { Upload, Link, Library, Loader2, Video, File as FileIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
 import { Label } from "@/components/ui/label";
+import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
+import { Skeleton } from '../ui/skeleton';
 
 // Simplified version of MediaGrid for the picker
 const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void }) => {
-    // In a real app, this would be a fetch call. We'll use localStorage for this demo for now.
-    // A more robust solution would fetch from the `/api/media` endpoint.
     const [files, setFiles] = useState<MediaFile[]>([]);
-    
-    useState(() => {
-        // This is a temporary solution. A real app should fetch this from the server.
-    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchImages = async () => {
+            setLoading(true);
+            const db = getFirestore(getFirebaseApp());
+            const mediaCollection = collection(db, "media");
+            const q = query(
+                mediaCollection, 
+                where("type", "==", "image"), 
+                where("deletedAt", "==", null),
+                orderBy("uploadedAt", "desc")
+            );
+
+            try {
+                const snapshot = await getDocs(q);
+                setFiles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
+            } catch (e) {
+                console.error("Failed to fetch library images:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchImages();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 max-h-[50vh] overflow-y-auto">
+                {Array.from({ length: 10 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-square" />
+                ))}
+            </div>
+        )
+    }
 
     if (files.length === 0) {
         return <div className="text-center text-muted-foreground py-8">No images found in library.</div>
@@ -35,7 +67,7 @@ const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void
                             src={file.url}
                             alt={file.altText || file.name}
                             fill
-                            objectFit="cover"
+                            className="object-cover"
                         />
                     </div>
                 </div>
@@ -70,6 +102,22 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
+  
+  const getFileType = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
+    if (['mp4', 'mov', 'avi', 'webm'].includes(extension || '')) return 'video';
+    if (extension === 'pdf') return 'pdf';
+    return 'file';
+  };
+  
+  const formatFileSize = (bytes: number) => {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,7 +131,6 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     setIsUploading(true);
 
     try {
-        // 1. Get a pre-signed URL from our API route
         const presignResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -95,11 +142,11 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
 
-        const { uploadUrl, finalUrl } = await presignResponse.json();
+        const { uploadUrl, finalUrl, fileId } = await presignResponse.json();
 
-        // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
             method: 'PUT',
+            headers: { 'Content-Type': file.type },
             body: file,
         });
 
@@ -108,7 +155,26 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
 
-        // 3. Update the form with the final, public URL
+        const newFileMetadata = {
+          id: fileId,
+          name: file.name,
+          type: getFileType(file.name),
+          url: finalUrl,
+          size: formatFileSize(file.size),
+          altText: "",
+          dataAiHint: ""
+        };
+
+        const completeResponse = await fetch('/api/upload/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newFileMetadata),
+        });
+        
+        if (!completeResponse.ok) {
+           throw new Error('Failed to save file metadata to database.');
+        }
+
         onImageUrlChange(finalUrl);
         setModalOpen(false);
         toast({ title: "Image Uploaded", description: "The image was successfully uploaded to Cloudflare R2." });
@@ -142,7 +208,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         />
         <div className="flex items-center gap-4">
             <div className="w-24 h-24 bg-muted rounded-md flex-shrink-0 relative overflow-hidden">
-                {imageUrl && <Image src={imageUrl} alt="Preview" fill objectFit="cover" />}
+                {imageUrl && <Image src={imageUrl} alt="Preview" fill className="object-cover" />}
             </div>
             <div className="flex flex-col gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => setModalOpen(true)}>
@@ -158,9 +224,9 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
                     <DialogTitle>Select Media</DialogTitle>
                     <DialogDescription>Choose an image from your library, upload a new one, or enter a URL.</DialogDescription>
                 </DialogHeader>
-                <Tabs defaultValue="upload" className="w-full">
+                <Tabs defaultValue="library" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="library" disabled><Library className="mr-2"/>From Library</TabsTrigger>
+                        <TabsTrigger value="library"><Library className="mr-2"/>From Library</TabsTrigger>
                         <TabsTrigger value="upload"><Upload className="mr-2"/>Upload New</TabsTrigger>
                         <TabsTrigger value="url"><Link className="mr-2"/>From URL</TabsTrigger>
                     </TabsList>
@@ -209,3 +275,4 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     </div>
   );
 }
+

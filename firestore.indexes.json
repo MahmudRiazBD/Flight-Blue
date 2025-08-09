@@ -18,6 +18,38 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "media",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "deletedAt",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "uploadedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "media",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletedAt",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "uploadedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

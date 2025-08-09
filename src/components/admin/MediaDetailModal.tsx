@@ -109,16 +109,28 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
             </div>
 
             {editedFile.type === 'image' && (
-              <div>
-                <Label htmlFor="altText">Alt Text</Label>
-                <Textarea
-                  id="altText"
-                  name="altText"
-                  value={editedFile.altText || ""}
-                  onChange={handleInputChange}
-                  placeholder="Descriptive text for accessibility"
-                />
-              </div>
+              <>
+                <div>
+                  <Label htmlFor="altText">Alt Text</Label>
+                  <Textarea
+                    id="altText"
+                    name="altText"
+                    value={editedFile.altText || ""}
+                    onChange={handleInputChange}
+                    placeholder="Descriptive text for accessibility"
+                  />
+                </div>
+                 <div>
+                    <Label htmlFor="dataAiHint">AI Hint</Label>
+                    <Input
+                        id="dataAiHint"
+                        name="dataAiHint"
+                        value={editedFile.dataAiHint || ""}
+                        onChange={handleInputChange}
+                        placeholder="e.g. tokyo street night"
+                    />
+                </div>
+              </>
             )}
 
             <div>
@@ -141,10 +153,8 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
             <div className="text-xs text-muted-foreground space-y-2 pt-4 border-t">
                <p><strong>File Type:</strong> {editedFile.type}</p>
                <p><strong>File Size:</strong> {editedFile.size}</p>
-               <p><strong>Uploaded:</strong> {format(editedFile.uploadedAt, "PPpp")}</p>
-               {editedFile.modifiedAt && (
-                <p><strong>Last Modified:</strong> {format(editedFile.modifiedAt, "PPpp")}</p>
-               )}
+               {editedFile.uploadedAt && <p><strong>Uploaded:</strong> {format(editedFile.uploadedAt.toDate(), "PPpp")}</p>}
+               {editedFile.modifiedAt && <p><strong>Last Modified:</strong> {format(editedFile.modifiedAt.toDate(), "PPpp")}</p>}
             </div>
           </div>
         </div>
@@ -166,3 +176,4 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
     </>
   );
 }
+

@@ -21,6 +21,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import MediaDetailModal from '@/components/admin/MediaDetailModal';
+import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type MediaType = "image" | "video" | "pdf" | "file";
 
@@ -30,17 +33,12 @@ export type MediaFile = {
   type: MediaType;
   url: string;
   size: string;
-  uploadedAt: Date;
-  modifiedAt?: Date;
+  uploadedAt: Timestamp;
+  modifiedAt?: Timestamp;
   altText?: string;
-  deletedAt?: Date;
+  deletedAt?: Timestamp | null;
   dataAiHint?: string;
 };
-
-// Placeholder data - in a real app, this would be fetched from a database
-// and the 'url' would be the public R2 URL.
-const placeholderMedia: MediaFile[] = [];
-const placeholderTrashedMedia: MediaFile[] = [];
 
 
 const getIconForType = (type: MediaType) => {
@@ -58,7 +56,8 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
 
     useEffect(() => {
         if (isTrashed && file.deletedAt) {
-            const daysInTrash = Math.ceil((Date.now() - new Date(file.deletedAt).getTime()) / (1000 * 60 * 60 * 24));
+            const deletedDate = file.deletedAt.toDate();
+            const daysInTrash = Math.ceil((Date.now() - deletedDate.getTime()) / (1000 * 60 * 60 * 24));
             setDaysLeft(30 - daysInTrash);
         }
     }, [file.deletedAt, isTrashed]);
@@ -153,7 +152,17 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
     )
 }
 
-const MediaGrid = ({ files, selectedFiles, onSelect, onAction, onCardClick, emptyState }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void, emptyState: React.ReactNode }) => {
+const MediaGrid = ({ files, selectedFiles, onSelect, onAction, onCardClick, emptyState, loading }: { files: MediaFile[], selectedFiles: string[], onSelect: (id: string, checked: boolean) => void, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void, emptyState: React.ReactNode, loading: boolean }) => {
+    if (loading) {
+        return (
+             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-square" />
+                ))}
+            </div>
+        )
+    }
+    
     if (files.length === 0) {
         return <>{emptyState}</>;
     }
@@ -177,19 +186,44 @@ export default function AdminMediaPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(placeholderMedia);
-  const [trashedFiles, setTrashedFiles] = useState<MediaFile[]>(placeholderTrashedMedia);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [trashedFiles, setTrashedFiles] = useState<MediaFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedFileForDetail, setSelectedFileForDetail] = useState<MediaFile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // In a real app, you would fetch media library data from your database here.
+  const db = getFirestore(getFirebaseApp());
+  const mediaCollection = collection(db, "media");
+
+  const fetchMedia = async () => {
+    setLoading(true);
+    try {
+        // Fetch active files
+        const activeQuery = query(mediaCollection, where("deletedAt", "==", null), orderBy("uploadedAt", "desc"));
+        const activeSnapshot = await getDocs(activeQuery);
+        setMediaFiles(activeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
+
+        // Fetch trashed files
+        const trashedQuery = query(mediaCollection, where("deletedAt", "!=", null), orderBy("uploadedAt", "desc"));
+        const trashedSnapshot = await getDocs(trashedQuery);
+        setTrashedFiles(trashedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
+
+    } catch (error) {
+        console.error("Error fetching media files:", error);
+        toast({ title: "Error", description: "Could not load media library. Check console for details.", variant: "destructive" });
+    } finally {
+        setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // fetchMediaFiles();
+    fetchMedia();
   }, []);
 
   const currentFileList = activeTab === 'all' ? mediaFiles : trashedFiles;
+  const currentLoadingState = loading;
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -207,7 +241,7 @@ export default function AdminMediaPage() {
     }
   };
 
-  const handleAction = (action: "copy" | "trash" | "restore" | "delete", id: string) => {
+  const handleAction = async (action: "copy" | "trash" | "restore" | "delete", id: string) => {
      switch (action) {
         case "copy":
             const fileToCopy = [...mediaFiles, ...trashedFiles].find(f => f.id === id);
@@ -217,60 +251,67 @@ export default function AdminMediaPage() {
             }
             break;
         case "trash":
-            const fileToTrash = mediaFiles.find(f => f.id === id);
-            if (fileToTrash) {
-                setMediaFiles(prev => prev.filter(f => f.id !== id));
-                setTrashedFiles(prev => [...prev, {...fileToTrash, deletedAt: new Date()}]);
+            try {
+                await updateDoc(doc(db, "media", id), { deletedAt: serverTimestamp() });
                 toast({ title: "File Moved to Trash" });
+                fetchMedia();
+            } catch (e) {
+                toast({ title: "Error", description: "Could not move file to trash.", variant: "destructive" });
             }
             break;
         case "restore":
-            const fileToRestore = trashedFiles.find(f => f.id === id);
-            if (fileToRestore) {
-                setTrashedFiles(prev => prev.filter(f => f.id !== id));
-                const { deletedAt, ...restoredFile } = fileToRestore;
-                setMediaFiles(prev => [...prev, restoredFile]);
+             try {
+                await updateDoc(doc(db, "media", id), { deletedAt: null });
                 toast({ title: "File Restored" });
+                fetchMedia();
+            } catch (e) {
+                toast({ title: "Error", description: "Could not restore file.", variant: "destructive" });
             }
             break;
         case "delete":
             // TODO: Implement actual R2 deletion API call
-            setTrashedFiles(prev => prev.filter(f => f.id !== id));
-            toast({ title: "File Permanently Deleted" });
+            toast({ title: "Permanent Delete Not Implemented", description: "This requires server-side logic to delete from R2."});
             break;
      }
      setSelectedFiles(prev => prev.filter(sf => sf !== id));
   };
   
-  const handleBulkAction = (action: "trash" | "restore" | "delete") => {
+  const handleBulkAction = async (action: "trash" | "restore" | "delete") => {
     if (selectedFiles.length === 0) return;
-
-    if (action === "trash") {
-        const toTrash = mediaFiles.filter(f => selectedFiles.includes(f.id));
-        setMediaFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
-        setTrashedFiles(prev => [...prev, ...toTrash.map(f => ({...f, deletedAt: new Date()}))]);
-        toast({ title: `${selectedFiles.length} file(s) moved to Trash.` });
-    } else if (action === "restore") {
-        const toRestore = trashedFiles.filter(f => selectedFiles.includes(f.id));
-        setTrashedFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
-        setMediaFiles(prev => [...prev, ...toRestore.map(f => {
-            const { deletedAt, ...rest } = f;
-            return rest;
-        })]);
-        toast({ title: `${selectedFiles.length} file(s) restored.` });
-    } else if (action === "delete") {
-        // TODO: Implement actual R2 deletion API call for multiple files
-        setTrashedFiles(prev => prev.filter(f => !selectedFiles.includes(f.id)));
-        toast({ title: `${selectedFiles.length} file(s) permanently deleted.`, variant: "destructive" });
-    }
     
-    setSelectedFiles([]);
+    const batch = writeBatch(db);
+
+    try {
+        if (action === "trash") {
+            selectedFiles.forEach(id => {
+                const docRef = doc(db, "media", id);
+                batch.update(docRef, { deletedAt: serverTimestamp() });
+            });
+            await batch.commit();
+            toast({ title: `${selectedFiles.length} file(s) moved to Trash.` });
+        } else if (action === "restore") {
+            selectedFiles.forEach(id => {
+                const docRef = doc(db, "media", id);
+                batch.update(docRef, { deletedAt: null });
+            });
+            await batch.commit();
+            toast({ title: `${selectedFiles.length} file(s) restored.` });
+        } else if (action === "delete") {
+            // TODO: Implement actual R2 deletion API call for multiple files
+            toast({ title: "Permanent Delete Not Implemented", description: "This requires server-side logic to delete from R2."});
+            return;
+        }
+        
+        fetchMedia(); // Refresh data from Firestore
+        setSelectedFiles([]);
+    } catch(e) {
+        toast({ title: "Error", description: "Could not perform bulk action.", variant: "destructive" });
+    }
   };
 
   const handleEmptyTrash = () => {
     // TODO: Implement actual R2 deletion API call for all trashed files
-    setTrashedFiles([]);
-    toast({ title: "Trash has been emptied.", variant: "destructive" });
+    toast({ title: "Empty Trash Not Implemented", description: "This requires server-side logic to delete from R2."});
     setSelectedFiles([]);
   }
 
@@ -299,11 +340,10 @@ export default function AdminMediaPage() {
     if (!files || files.length === 0) return;
   
     setIsUploading(true);
-    const uploadedFiles: MediaFile[] = [];
+    let uploadSuccessCount = 0;
   
     for (const file of Array.from(files)) {
       try {
-        // 1. Get a pre-signed URL from our API route
         const presignResponse = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -315,11 +355,11 @@ export default function AdminMediaPage() {
           throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
   
-        const { uploadUrl, finalUrl } = await presignResponse.json();
+        const { uploadUrl, finalUrl, fileId } = await presignResponse.json();
   
-        // 2. Upload the file directly to R2 using the pre-signed URL
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
+          headers: { 'Content-Type': file.type },
           body: file,
         });
   
@@ -328,18 +368,28 @@ export default function AdminMediaPage() {
            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
   
-        // 3. Create the new file object to update the UI
-        const newFile: MediaFile = {
-          id: finalUrl, // Use the final URL as a unique ID for simplicity
+        // 3. Confirm the upload with our backend to save metadata
+        const newFileMetadata = {
+          id: fileId,
           name: file.name,
           type: getFileType(file.name),
           url: finalUrl,
           size: formatFileSize(file.size),
-          uploadedAt: new Date(),
+          altText: "",
+          dataAiHint: ""
         };
-        uploadedFiles.push(newFile);
-  
-        // TODO: In a real app, you would also save 'newFile' metadata to your database here.
+
+        const completeResponse = await fetch('/api/upload/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newFileMetadata),
+        });
+
+        if (!completeResponse.ok) {
+           throw new Error('Failed to save file metadata to database.');
+        }
+
+        uploadSuccessCount++;
   
       } catch (error) {
         console.error("Upload error for file " + file.name + ":", error);
@@ -347,16 +397,15 @@ export default function AdminMediaPage() {
       }
     }
   
-    if (uploadedFiles.length > 0) {
-        setMediaFiles(prev => [...uploadedFiles, ...prev]);
+    if (uploadSuccessCount > 0) {
         toast({
             title: "Uploads Complete",
-            description: `${uploadedFiles.length} of ${files.length} file(s) uploaded successfully.`
+            description: `${uploadSuccessCount} of ${files.length} file(s) uploaded successfully.`
         });
+        fetchMedia(); // Refresh the library
     }
     
     setIsUploading(false);
-    // Clear the file input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -367,22 +416,23 @@ export default function AdminMediaPage() {
     setDetailModalOpen(true);
   };
 
-  const handleSaveFileDetails = (updatedFile: MediaFile) => {
-    const fileToSave = { ...updatedFile, modifiedAt: new Date() };
+  const handleSaveFileDetails = async (updatedFile: MediaFile) => {
+     try {
+        const fileToSave = { ...updatedFile, modifiedAt: serverTimestamp() };
+        // We need to remove the id from the object before saving as it's the doc id
+        const { id, ...dataToSave } = fileToSave;
+        
+        await updateDoc(doc(db, "media", id), dataToSave as any);
 
-    // TODO: In a real app, save updatedFile metadata to your database here.
+        setDetailModalOpen(false);
+        fetchMedia();
+        toast({ title: "File details saved!" });
 
-    const isTrashed = !!fileToSave.deletedAt;
-    if (isTrashed) {
-        setTrashedFiles(prev => prev.map(f => f.id === fileToSave.id ? fileToSave : f));
-    } else {
-        setMediaFiles(prev => prev.map(f => f.id === fileToSave.id ? fileToSave : f));
-    }
-    
-    setDetailModalOpen(false);
-    toast({ title: "File details saved!" });
+     } catch (e) {
+        console.error("Failed to save file details", e);
+        toast({ title: "Error", description: "Could not save file details.", variant: "destructive" });
+     }
   };
-
 
   const isAllSelected = selectedFiles.length > 0 && selectedFiles.length === currentFileList.length;
 
@@ -392,7 +442,7 @@ export default function AdminMediaPage() {
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
             <div>
-            <CardTitle>Media Library</CardTitle>
+            <CardTitle>File/Media Library</CardTitle>
             <CardDescription>Manage your uploaded files on Cloudflare R2.</CardDescription>
             </div>
             <div className="flex gap-2">
@@ -427,7 +477,7 @@ export default function AdminMediaPage() {
                         checked={isAllSelected}
                         onCheckedChange={handleSelectAll}
                         id="select-all"
-                        disabled={currentFileList.length === 0}
+                        disabled={currentFileList.length === 0 || loading}
                     />
                     <label htmlFor="select-all" className="text-sm font-medium">
                         Select All
@@ -504,6 +554,7 @@ export default function AdminMediaPage() {
                     onSelect={handleSelectOne}
                     onAction={handleAction}
                     onCardClick={handleCardClick}
+                    loading={currentLoadingState}
                     emptyState={
                         <div className="text-center py-16 text-muted-foreground">
                             <UploadCloud className="mx-auto h-16 w-16 mb-4" />
@@ -526,6 +577,7 @@ export default function AdminMediaPage() {
                     onSelect={handleSelectOne}
                     onAction={handleAction}
                     onCardClick={handleCardClick}
+                    loading={currentLoadingState}
                     emptyState={
                         <div className="text-center py-16 text-muted-foreground">
                             <Trash className="mx-auto h-16 w-16 mb-4" />
@@ -549,3 +601,4 @@ export default function AdminMediaPage() {
     </>
   );
 }
+

@@ -1,5 +1,7 @@
 
 
+import { Timestamp } from 'firebase/firestore';
+
 export type Page = {
   id: string;
   title: string;
@@ -153,6 +155,20 @@ export type ContactMessage = {
   isRead: boolean;
 };
 
+export type MediaType = "image" | "video" | "pdf" | "file";
+
+export type MediaFile = {
+  id: string;
+  name: string;
+  type: MediaType;
+  url: string;
+  size: string;
+  uploadedAt: Timestamp;
+  modifiedAt?: Timestamp;
+  altText?: string;
+  deletedAt?: Timestamp | null;
+  dataAiHint?: string;
+};
 
 export const destinations: Destination[] = [
     { id: "dest-1", name: "Paris, France", imageUrl: "https://placehold.co/600x400.png" },
@@ -466,3 +482,4 @@ export const contactMessages: ContactMessage[] = [
         isRead: true
     }
 ]
+
