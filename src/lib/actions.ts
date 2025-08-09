@@ -32,12 +32,12 @@ export async function deleteUser(uid: string) {
         const adminAuth = getAdminAuth();
         const adminDb = getAdminFirestore();
 
-        const batch = adminDb.batch();
-        const userRef = adminDb.collection('users').doc(uid);
-        batch.delete(userRef);
-        
+        // It's safer to delete from Auth first. If this fails, we don't proceed.
         await adminAuth.deleteUser(uid);
-        await batch.commit();
+        
+        // Then delete from Firestore
+        const userRef = adminDb.collection('users').doc(uid);
+        await userRef.delete();
 
         console.log(`Successfully deleted user ${uid} from Auth and Firestore.`);
         return { success: true, message: `Successfully deleted user ${uid}.`};
@@ -60,73 +60,35 @@ export async function deleteUser(uid: string) {
 }
 
 export async function seedDatabase() {
-  const adminAuth = getAdminAuth();
   const adminDb = getAdminFirestore();
   const batch = adminDb.batch();
 
   try {
-    const superAdminEmail = "hello@riaz.com.bd";
-    const superAdminPassword = "2002##flightblue.MHR";
-    let superAdminUid: string;
-
-    try {
-      // Check if user exists in Auth
-      const userRecord = await adminAuth.getUserByEmail(superAdminEmail);
-      superAdminUid = userRecord.uid;
-      console.log("Super admin already exists in Auth, UID:", superAdminUid);
-    } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        // User does not exist, create them
-        console.log("Super admin not found, creating new user...");
-        const newUserRecord = await adminAuth.createUser({
-          email: superAdminEmail,
-          password: superAdminPassword,
-          displayName: "Super Admin",
-          emailVerified: true,
-        });
-        superAdminUid = newUserRecord.uid;
-        
-        // Also create their profile in Firestore
-        const userDocRef = adminDb.collection("users").doc(superAdminUid);
-        batch.set(userDocRef, {
-          email: superAdminEmail,
-          username: 'hello',
-          firstName: 'Super',
-          lastName: 'Admin',
-          role: 'superadmin',
-          photoURL: '',
-          phone: '',
-          createdAt: new Date().toISOString()
-        });
-         console.log("New super admin created in Auth and user document added to batch.");
-      } else {
-        // For other auth errors, re-throw
-        throw error;
-      }
-    }
-
+    // Note: Superadmin is no longer created here. It's created on first signup.
+    
     packages.forEach((pkg) => {
-      const docRef = adminDb.collection("packages").doc(pkg.id);
+      const docRef = adminDb.collection("packages").doc();
       batch.set(docRef, pkg);
     });
 
     posts.forEach((post) => {
-      const docRef = adminDb.collection("posts").doc(post.id);
-      batch.set(docRef, post);
+      // Find the author dynamically - assuming an admin user exists after seeding
+      const docRef = adminDb.collection("posts").doc();
+      batch.set(docRef, { ...post, authorId: 'initial-admin' }); // Placeholder ID
     });
 
     categories.forEach((cat) => {
-      const docRef = adminDb.collection("categories").doc(cat.id);
+      const docRef = adminDb.collection("categories").doc();
       batch.set(docRef, cat);
     });
 
     destinations.forEach((dest) => {
-      const docRef = adminDb.collection("destinations").doc(dest.id);
+      const docRef = adminDb.collection("destinations").doc();
       batch.set(docRef, dest);
     });
 
     packageTypes.forEach((type) => {
-      const docRef = adminDb.collection("packageTypes").doc(type.id);
+      const docRef = adminDb.collection("packageTypes").doc();
       batch.set(docRef, type);
     });
     

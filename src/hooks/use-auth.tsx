@@ -16,7 +16,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { initializeApp, deleteApp, type FirebaseApp } from 'firebase/app';
 
@@ -39,7 +39,7 @@ interface AuthContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<{isFirstUser: boolean}>;
   logout: () => void;
 }
 
@@ -143,9 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, displayName: string, role: UserRole) => {
+  const signup = useCallback(async (email: string, password: string, displayName: string): Promise<{isFirstUser: boolean}> => {
     const mainApp = getFirebaseApp();
     const db = getFirestore(mainApp);
+
+    // Check if any user exists to determine if this is the first signup
+    const usersQuery = query(collection(db, "users"), limit(1));
+    const usersSnapshot = await getDocs(usersQuery);
+    const isFirstUser = usersSnapshot.empty;
+    const role: UserRole = isFirstUser ? 'superadmin' : 'customer';
 
     // Create a temporary secondary app instance for user creation
     // This prevents the current user from being signed out
@@ -154,11 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const tempAuth = getAuth(tempApp);
     
     try {
-        const superAdminEmail = "hello@riaz.com.bd";
-        if (email === superAdminEmail) {
-            throw new Error("Cannot register with super admin email.");
-        }
-        
         const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
         const firebaseUser = userCredential.user;
 
@@ -174,11 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: extractUsernameFromEmail(email),
             firstName: firstName,
             lastName: lastName,
-            role: role,
+            role: role, // Set role dynamically
             createdAt: serverTimestamp(),
             photoURL: '',
             phone: ''
         });
+
+        return { isFirstUser };
+
     } catch (error) {
         // Re-throw the error so the calling component can handle it
         throw error;

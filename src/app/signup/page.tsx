@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { seedDatabase } from "@/lib/actions";
 
 const signupSchema = z
   .object({
@@ -61,13 +62,26 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setFormLoading(true);
     try {
-      // Public signups should always be 'customer' role.
-      await signup(values.email, values.password, values.name, 'customer');
-      
-      toast({
-        title: "Account Created!",
-        description: "You have successfully created an account. Please log in.",
-      });
+      const { isFirstUser } = await signup(values.email, values.password, values.name);
+
+      if (isFirstUser) {
+          toast({
+            title: "Super Admin Account Created!",
+            description: "Welcome! As the first user, you are now the super admin. Seeding database...",
+          });
+          const seedResult = await seedDatabase();
+          if (seedResult.success) {
+              toast({ title: "Database Seeded", description: "Demo data has been successfully added." });
+          } else {
+              toast({ title: "Seeding Failed", description: seedResult.message, variant: "destructive" });
+          }
+      } else {
+          toast({
+            title: "Account Created!",
+            description: "You have successfully created an account. Please log in.",
+          });
+      }
+
 
       router.push("/login");
 
