@@ -3,15 +3,9 @@
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
-import { getFirestore, collection, writeBatch, getDocs, doc, setDoc, query, where, limit } from "firebase/firestore";
-import { getFirebaseApp } from "./firebase";
-import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
-
-type Message = {
-  role: "user" | "bot";
-  content: string;
-};
+import { packages, posts, categories, destinations, packageTypes } from "./data";
+import { CollectionReference } from "firebase-admin/firestore";
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
   const result = await travelChatbot({ query });
@@ -23,6 +17,12 @@ export async function handleCulturalAdvice(destination: string, query: string): 
   return result.advice;
 }
 
+type Message = {
+  role: "user" | "bot";
+  content: string;
+};
+
+
 export async function deleteUser(uid: string) {
     if (!uid) {
         return { success: false, message: "User ID is required." };
@@ -32,10 +32,8 @@ export async function deleteUser(uid: string) {
         const adminAuth = getAdminAuth();
         const adminDb = getAdminFirestore();
 
-        // It's safer to delete from Auth first. If this fails, we don't proceed.
         await adminAuth.deleteUser(uid);
         
-        // Then delete from Firestore
         const userRef = adminDb.collection('users').doc(uid);
         await userRef.delete();
 
@@ -59,48 +57,55 @@ export async function deleteUser(uid: string) {
     }
 }
 
-export async function seedDatabase() {
-  const adminDb = getAdminFirestore();
-  const batch = adminDb.batch();
-
-  try {
-    // Dynamically find the superadmin to assign as author for posts
-    const usersRef = adminDb.collection('users');
-    const superAdminQuery = query(usersRef, where('role', '==', 'superadmin'), limit(1));
-    const superAdminSnapshot = await getDocs(superAdminQuery);
-
-    let adminAuthorId = 'default-admin-id'; // Fallback ID
-    if (!superAdminSnapshot.empty) {
-        adminAuthorId = superAdminSnapshot.docs[0].id;
-    } else {
-        console.warn("Seeding warning: No superadmin found. Posts will be assigned a default author ID.");
+async function batchCommit(collectionName: string, data: any[], db, batch, transform = (item) => item) {
+    const collectionRef = db.collection(collectionName) as CollectionReference;
+    const snapshot = await collectionRef.limit(1).get();
+    if (!snapshot.empty) {
+        console.log(`Skipping seeding for ${collectionName}: collection is not empty.`);
+        return; // Skip if collection already has data
     }
-    
-    packages.forEach((pkg) => {
-      const docRef = adminDb.collection("packages").doc();
-      batch.set(docRef, pkg);
+    data.forEach(item => {
+        const docRef = collectionRef.doc();
+        batch.set(docRef, transform(item));
     });
+}
 
-    posts.forEach((post) => {
-      const docRef = adminDb.collection("posts").doc();
-      batch.set(docRef, { ...post, authorId: adminAuthorId }); 
-    });
+export async function seedDatabase() {
+  try {
+    const adminDb = getAdminFirestore();
+    const batch = adminDb.batch();
 
-    categories.forEach((cat) => {
-      const docRef = adminDb.collection("categories").doc();
-      batch.set(docRef, cat);
-    });
+    // 1. Find Superadmin
+    const usersRef = adminDb.collection('users');
+    const superAdminQuery = usersRef.where('role', '==', 'superadmin').limit(1);
+    const superAdminSnapshot = await superAdminQuery.get();
 
-    destinations.forEach((dest) => {
-      const docRef = adminDb.collection("destinations").doc();
-      batch.set(docRef, dest);
-    });
+    let adminAuthorId = '';
+    if (superAdminSnapshot.empty) {
+        // This case should not happen if called right after signup, but as a fallback:
+        console.warn("Seeding warning: No superadmin found. This may cause issues. Trying to find any user as a fallback.");
+        const anyUserSnapshot = await usersRef.limit(1).get();
+        if(anyUserSnapshot.empty) {
+            throw new Error("Cannot seed posts because no users exist in the database.");
+        }
+        adminAuthorId = anyUserSnapshot.docs[0].id;
 
-    packageTypes.forEach((type) => {
-      const docRef = adminDb.collection("packageTypes").doc();
-      batch.set(docRef, type);
-    });
-    
+    } else {
+        adminAuthorId = superAdminSnapshot.docs[0].id;
+    }
+
+    // 2. Seed all collections
+    await batchCommit('packages', packages, adminDb, batch);
+    await batchCommit('categories', categories, adminDb, batch);
+    await batchCommit('destinations', destinations, adminDb, batch);
+    await batchCommit('packageTypes', packageTypes, adminDb, batch);
+
+    // Special handling for posts to include authorId
+    const postsWithAuthor = posts.map(post => ({...post, authorId: adminAuthorId}));
+    await batchCommit('posts', postsWithAuthor, adminDb, batch);
+
+
+    // 3. Seed settings
     const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
         siteTitle: "Flight Blu",
@@ -172,10 +177,7 @@ export async function seedDatabase() {
     console.log("Database seeded successfully!");
     return { success: true, message: "Database seeded successfully!" };
   } catch (error) {
-    console.error("Error seeding database:", error);
-    if (error instanceof Error && 'code' in error && (error as any).code === 'permission-denied') {
-        return { success: false, message: "Seeding failed due to Firestore permissions. Please check your security rules." };
-    }
-    return { success: false, message: `An unexpected error occurred during seeding: ${error}` };
+    console.error("Error during database seeding:", error);
+    return { success: false, message: `An unexpected error occurred during seeding: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
