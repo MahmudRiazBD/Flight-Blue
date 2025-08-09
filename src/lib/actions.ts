@@ -6,8 +6,6 @@ import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getFirestore, collection, writeBatch, getDocs, doc, setDoc } from "firebase/firestore";
 import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
-import { getAuth } from "firebase/auth";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 
 type Message = {
@@ -62,35 +60,49 @@ export async function deleteUser(uid: string) {
 }
 
 export async function seedDatabase() {
-  const auth = getAuth(getFirebaseApp());
+  const adminAuth = getAdminAuth();
   const adminDb = getAdminFirestore();
   const batch = adminDb.batch();
 
   try {
     const superAdminEmail = "hello@riaz.com.bd";
     const superAdminPassword = "2002##flightblue.MHR";
+    let superAdminUid: string;
+
     try {
-        await signInWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+      // Check if user exists in Auth
+      const userRecord = await adminAuth.getUserByEmail(superAdminEmail);
+      superAdminUid = userRecord.uid;
+      console.log("Super admin already exists in Auth, UID:", superAdminUid);
     } catch (error: any) {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-            const userCredential = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
-            const userRef = doc(getFirestore(getFirebaseApp()), "users", userCredential.user.uid);
-            await setDoc(userRef, {
-                email: superAdminEmail,
-                username: 'hello',
-                firstName: 'Super',
-                lastName: 'Admin',
-                role: 'superadmin',
-                photoURL: '',
-                phone: ''
-            });
-        } else {
-            throw error;
-        }
-    } finally {
-       if (auth.currentUser) {
-          await signOut(auth);
-       }
+      if (error.code === 'auth/user-not-found') {
+        // User does not exist, create them
+        console.log("Super admin not found, creating new user...");
+        const newUserRecord = await adminAuth.createUser({
+          email: superAdminEmail,
+          password: superAdminPassword,
+          displayName: "Super Admin",
+          emailVerified: true,
+        });
+        superAdminUid = newUserRecord.uid;
+        
+        // Also create their profile in Firestore
+        const userDocRef = adminDb.collection("users").doc(superAdminUid);
+        batch.set(userDocRef, {
+          email: superAdminEmail,
+          username: 'hello',
+          firstName: 'Super',
+          lastName: 'Admin',
+          role: 'superadmin',
+          photoURL: '',
+          phone: '',
+          createdAt: new Date().toISOString()
+        });
+         console.log("New super admin created in Auth and user document added to batch.");
+      } else {
+        // For other auth errors, re-throw
+        throw error;
+      }
     }
 
     packages.forEach((pkg) => {
