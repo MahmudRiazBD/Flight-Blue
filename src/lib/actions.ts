@@ -3,7 +3,7 @@
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
-import { getFirestore, collection, writeBatch, getDocs, doc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, writeBatch, getDocs, doc, setDoc, query, where, limit } from "firebase/firestore";
 import { getFirebaseApp } from "./firebase";
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
@@ -64,7 +64,17 @@ export async function seedDatabase() {
   const batch = adminDb.batch();
 
   try {
-    // Note: Superadmin is no longer created here. It's created on first signup.
+    // Dynamically find the superadmin to assign as author for posts
+    const usersRef = adminDb.collection('users');
+    const superAdminQuery = query(usersRef, where('role', '==', 'superadmin'), limit(1));
+    const superAdminSnapshot = await getDocs(superAdminQuery);
+
+    let adminAuthorId = 'default-admin-id'; // Fallback ID
+    if (!superAdminSnapshot.empty) {
+        adminAuthorId = superAdminSnapshot.docs[0].id;
+    } else {
+        console.warn("Seeding warning: No superadmin found. Posts will be assigned a default author ID.");
+    }
     
     packages.forEach((pkg) => {
       const docRef = adminDb.collection("packages").doc();
@@ -72,9 +82,8 @@ export async function seedDatabase() {
     });
 
     posts.forEach((post) => {
-      // Find the author dynamically - assuming an admin user exists after seeding
       const docRef = adminDb.collection("posts").doc();
-      batch.set(docRef, { ...post, authorId: 'initial-admin' }); // Placeholder ID
+      batch.set(docRef, { ...post, authorId: adminAuthorId }); 
     });
 
     categories.forEach((cat) => {
@@ -120,7 +129,7 @@ export async function seedDatabase() {
             { id: "soc-2", platform: 'twitter', url: 'https://twitter.com' },
             { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' },
         ],
-        googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v162254 Bashundhara City Shopping Complex" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+        googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
     }, { merge: true });
 
     const homePageSettingsRef = adminDb.collection("settings").doc("homePage");
