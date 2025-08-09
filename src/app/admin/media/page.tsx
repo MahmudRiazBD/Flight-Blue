@@ -206,7 +206,7 @@ export default function AdminMediaPage() {
         setMediaFiles(activeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
 
         // Fetch trashed files
-        const trashedQuery = query(mediaCollection, where("deletedAt", "!=", null), orderBy("uploadedAt", "desc"));
+        const trashedQuery = query(mediaCollection, where("deletedAt", "!=", null), orderBy("deletedAt", "desc"));
         const trashedSnapshot = await getDocs(trashedQuery);
         setTrashedFiles(trashedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
 

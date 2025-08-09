@@ -38,6 +38,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "deletedAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "uploadedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "media",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "type",
           "order": "ASCENDING"
         },
