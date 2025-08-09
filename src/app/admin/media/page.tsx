@@ -25,7 +25,7 @@ import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, w
 import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type MediaType = "image" | "video" | "pdf" | "file";
+export type MediaType = "image" | "video" | "pdf" | "file";
 
 export type MediaFile = {
   id: string;
@@ -601,4 +601,3 @@ export default function AdminMediaPage() {
     </>
   );
 }
-

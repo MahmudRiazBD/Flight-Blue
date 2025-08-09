@@ -177,7 +177,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
 
         onImageUrlChange(finalUrl);
         setModalOpen(false);
-        toast({ title: "Image Uploaded", description: "The image was successfully uploaded to Cloudflare R2." });
+        toast({ title: "Image Uploaded", description: "The image was successfully uploaded and saved." });
 
     } catch (error) {
         console.error("Upload error:", error);
@@ -275,4 +275,3 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     </div>
   );
 }
-

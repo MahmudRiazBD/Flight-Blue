@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const fileId = newFileRef.id;
 
     const baseSlug = createSlug(filename);
-    const uniqueSlug = `${baseSlug}-${fileId}`;
+    const uniqueSlug = `${fileId}-${baseSlug}`;
 
 
     const R2 = new S3Client({
