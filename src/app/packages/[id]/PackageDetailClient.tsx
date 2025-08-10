@@ -25,10 +25,10 @@ export default function PackageDetailClient({ pkg }: Props) {
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
   
-  const allImages = [
-      { url: pkg.imageUrl, hint: pkg.imageHint },
-      ...(pkg.galleryImages || [])
-  ];
+  const allImages = pkg.galleryImages ? [
+      { url: pkg.imageUrl, hint: pkg.imageHint || '' },
+      ...pkg.galleryImages
+  ] : [{ url: pkg.imageUrl, hint: pkg.imageHint || '' }];
 
   return (
     <div className="bg-background">
@@ -43,7 +43,7 @@ export default function PackageDetailClient({ pkg }: Props) {
             <CarouselContent>
               {allImages.map((image, index) => (
                  <CarouselItem key={index}>
-                  <div className="relative w-full h-64 md:h-96">
+                  <div className="relative w-full h-64 md:h-96 cursor-grab active:cursor-grabbing">
                     <Image
                       src={image.url}
                       alt={`${pkg.title} gallery image ${index + 1}`}
