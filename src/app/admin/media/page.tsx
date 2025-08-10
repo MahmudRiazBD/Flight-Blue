@@ -98,10 +98,10 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
                             </DropdownMenuItem>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                    <button className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete Permanently
-                                    </DropdownMenuItem>
+                                    </button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
@@ -475,10 +475,10 @@ export default function AdminMediaPage() {
                                 </Button>
                                  <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" size="sm">
+                                        <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete Permanently ({selectedFiles.length})
-                                        </Button>
+                                        </button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>

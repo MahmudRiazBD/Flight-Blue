@@ -16,7 +16,7 @@ import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 
 // Simplified version of MediaGrid for the picker
-const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void }) => {
+const LibraryGrid = ({ onSelectFile, refreshTrigger }: { onSelectFile: (file: MediaFile) => void, refreshTrigger: number }) => {
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,7 +42,7 @@ const LibraryGrid = ({ onSelectFile }: { onSelectFile: (file: MediaFile) => void
             }
         };
         fetchImages();
-    }, []);
+    }, [refreshTrigger]);
 
     if (loading) {
         return (
@@ -88,6 +88,8 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const [libraryRefreshTrigger, setLibraryRefreshTrigger] = useState(0);
+
 
   const handleUrlConfirm = () => {
     if (urlInput && urlInput.startsWith('http')) {
@@ -154,6 +156,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         onImageUrlChange(finalUrl);
         setModalOpen(false);
         toast({ title: "Image Uploaded", description: "The image was successfully uploaded and saved." });
+        setLibraryRefreshTrigger(prev => prev + 1); // Trigger library refresh
 
     } catch (error) {
         console.error("Upload error:", error);
@@ -207,7 +210,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
                         <TabsTrigger value="url"><Link className="mr-2"/>From URL</TabsTrigger>
                     </TabsList>
                     <TabsContent value="library">
-                        <LibraryGrid onSelectFile={handleSelectFromLibrary} />
+                        <LibraryGrid onSelectFile={handleSelectFromLibrary} refreshTrigger={libraryRefreshTrigger} />
                     </TabsContent>
                     <TabsContent value="upload">
                         <div className="py-12 flex flex-col items-center justify-center text-center border-2 border-dashed rounded-md">
