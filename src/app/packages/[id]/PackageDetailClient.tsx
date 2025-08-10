@@ -42,16 +42,16 @@ export default function PackageDetailClient({ pkg }: Props) {
           >
             <CarouselContent>
               {allImages.map((image, index) => (
-                 <CarouselItem key={index}>
-                  <div className="relative w-full h-64 md:h-96 cursor-grab active:cursor-grabbing">
-                    <Image
-                      src={image.url}
-                      alt={`${pkg.title} gallery image ${index + 1}`}
-                      fill
-                      className="object-cover brightness-75"
-                      data-ai-hint={image.hint}
-                    />
-                  </div>
+                <CarouselItem key={index}>
+                    <div className="relative w-full h-64 md:h-96 cursor-grab active:cursor-grabbing">
+                        <Image
+                        src={image.url}
+                        alt={`${pkg.title} gallery image ${index + 1}`}
+                        fill
+                        className="object-cover brightness-75"
+                        data-ai-hint={image.hint}
+                        />
+                    </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
