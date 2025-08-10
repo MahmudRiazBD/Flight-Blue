@@ -1,33 +1,36 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
 
 let isSetupComplete: boolean | null = null;
 
-async function checkSetupStatus() {
-    // If we've already checked, don't check again to avoid unnecessary Firestore reads on every request
+async function checkSetupStatus(request: NextRequest) {
+    // If we've already checked, don't check again to avoid unnecessary API calls on every request
     if (isSetupComplete !== null) {
         return isSetupComplete;
     }
 
     try {
-        const adminDb = getAdminFirestore();
-        const usersRef = adminDb.collection('users');
-        const snapshot = await usersRef.limit(1).get();
-        isSetupComplete = !snapshot.empty;
-        return isSetupComplete;
-    } catch (error: any) {
-        // This can happen if the admin credentials aren't set up yet.
-        // In this case, we can't check the database, so we'll assume setup is needed.
-        if (error.message.includes("Credential")) {
-            console.warn("Middleware couldn't connect to Firestore to check setup status. This is expected on first run. Assuming setup is required.");
-            isSetupComplete = false;
+        // Use an absolute URL for the fetch request
+        const url = new URL('/api/setup-check', request.url);
+        const response = await fetch(url.toString());
+
+        if (!response.ok) {
+            console.error(`Middleware setup check failed with status: ${response.status}`);
+            // In case of error, assume setup is complete to avoid locking out the user
+            isSetupComplete = true;
             return isSetupComplete;
         }
-        // For other errors, log them and let the app proceed to avoid blocking it.
-        console.error("Middleware error checking setup status:", error);
-        isSetupComplete = true; // Assume setup is complete to avoid locking out the user
+
+        const data = await response.json();
+        isSetupComplete = data.isSetupComplete;
+        return isSetupComplete;
+
+    } catch (error: any) {
+        // This can happen on the very first run if the server isn't fully ready.
+        console.error("Middleware error fetching setup status:", error);
+        // Assume setup is complete to avoid locking out the user in case of a network or other error.
+        isSetupComplete = true; 
         return isSetupComplete;
     }
 }
@@ -40,7 +43,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
     
-    const setupNeeded = !(await checkSetupStatus());
+    const setupNeeded = !(await checkSetupStatus(request));
     
     // If setup is needed and the user is not on the setup page, redirect them
     if (setupNeeded && pathname !== '/setup') {
