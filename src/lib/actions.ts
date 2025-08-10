@@ -58,7 +58,7 @@ export async function deleteUser(uid: string) {
     }
 }
 
-async function batchCommit(collectionName: string, data: any[], db, batch, transform = (item) => item) {
+async function batchCommit(collectionName: string, data: any[], db: FirebaseFirestore.Firestore, batch: FirebaseFirestore.WriteBatch, transform = (item: any) => item) {
     const collectionRef = db.collection(collectionName) as CollectionReference;
     const snapshot = await collectionRef.limit(1).get();
     if (!snapshot.empty) {
@@ -83,11 +83,9 @@ export async function seedDatabase() {
 
     let adminAuthorId = '';
     if (superAdminSnapshot.empty) {
-        // This case should not happen if called right after signup, but as a fallback:
         const errorMessage = "Cannot seed posts because no superadmin user exists in the database. Please ensure the first user was created correctly.";
         console.error(errorMessage);
         return { success: false, message: errorMessage };
-
     } else {
         adminAuthorId = superAdminSnapshot.docs[0].id;
     }
