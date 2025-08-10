@@ -1,16 +1,18 @@
 
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Post } from '@/lib/data';
+import { Post, Category } from '@/lib/data';
 import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ArrowRight, Calendar, User, Loader2 } from 'lucide-react';
+import { ArrowRight, Calendar, User as UserIcon, Loader2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function PostCard({ post, author }: { post: Post, author?: UserData }) {
   const getAuthorName = () => {
@@ -41,7 +43,7 @@ function PostCard({ post, author }: { post: Post, author?: UserData }) {
       <CardContent className="p-6">
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
           <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
+            <UserIcon className="h-4 w-4" />
             <span className="truncate">{getAuthorName()}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -66,39 +68,129 @@ function PostCard({ post, author }: { post: Post, author?: UserData }) {
 }
 
 export default function BlogPage() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [allUsers, setAllUsers] = useState<UserData[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedAuthor, setSelectedAuthor] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const db = getFirestore(getFirebaseApp());
-      
-      const postsCollection = collection(db, 'posts');
-      const postsQuery = query(postsCollection, orderBy("publishedAt", "desc"));
-      const postsSnapshot = await getDocs(postsQuery);
-      const postsList = postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post));
-      setPosts(postsList);
-      
-      const usersCollection = collection(db, 'users');
-      const usersSnapshot = await getDocs(usersCollection);
-      const usersList = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserData));
-      setUsers(usersList);
+      try {
+        const postsCollection = collection(db, 'posts');
+        const postsQuery = query(postsCollection, orderBy("publishedAt", "desc"));
+        const postsSnapshot = await getDocs(postsQuery);
+        const postsList = postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post));
+        setAllPosts(postsList);
+        
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersList = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserData));
+        setAllUsers(usersList);
 
-      setLoading(false);
+        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+        const categoriesList = categoriesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
+        setAllCategories(categoriesList);
+
+      } catch (error) {
+        console.error("Error fetching blog data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
-  
-  const findAuthor = (authorId?: string) => users.find(user => user.uid === authorId);
+
+  const filteredAndSortedPosts = useMemo(() => {
+    let filtered = allPosts.filter(post => {
+      const matchesSearch = searchTerm.trim() === '' || post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || post.categoryId === selectedCategory;
+      const matchesAuthor = selectedAuthor === 'all' || post.authorId === selectedAuthor;
+      return matchesSearch && matchesCategory && matchesAuthor;
+    });
+
+    switch (sortBy) {
+        case 'newest':
+            filtered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+            break;
+        case 'oldest':
+            filtered.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
+            break;
+        case 'title-asc':
+            filtered.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+        case 'title-desc':
+            filtered.sort((a, b) => b.title.localeCompare(a.title));
+            break;
+    }
+    
+    return filtered;
+  }, [allPosts, searchTerm, selectedCategory, selectedAuthor, sortBy]);
+
+  const findAuthor = (authorId?: string) => allUsers.find(user => user.uid === authorId);
 
   return (
     <div className="container mx-auto px-4 py-12">
       <header className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-headline font-bold">Our Blog</h1>
-        <p className="text-lg text-muted-foreground mt-2">Travel stories, tips, and insights from the Flight Blu team.</p>
+        <p className="text-lg text-muted-foreground mt-2">Travel stories, tips, and insights from our team.</p>
       </header>
+
+      <aside className="mb-12 p-4 md:p-6 bg-secondary rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div className="md:col-span-2 lg:col-span-1">
+                <label className="block text-sm font-medium mb-2">Search Posts</label>
+                <div className="relative">
+                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                   <Input
+                        type="text"
+                        placeholder="e.g., Paris, Tips..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+            </div>
+             <div>
+                <label className="block text-sm font-medium mb-2">Category</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {allCategories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div>
+                <label className="block text-sm font-medium mb-2">Author</label>
+                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                    <SelectTrigger><SelectValue placeholder="All Authors" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Authors</SelectItem>
+                        {allUsers.map(user => <SelectItem key={user.uid} value={user.uid}>{user.firstName} {user.lastName}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div>
+                <label className="block text-sm font-medium mb-2">Sort By</label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger><SelectValue placeholder="Sort..." /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                        <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+      </aside>
       
       <main>
         {loading ? (
@@ -106,16 +198,16 @@ export default function BlogPage() {
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
             <p className="mt-4 text-muted-foreground">Loading posts...</p>
           </div>
-        ) : posts.length > 0 ? (
+        ) : filteredAndSortedPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map(post => (
+            {filteredAndSortedPosts.map(post => (
               <PostCard key={post.id} post={post} author={findAuthor(post.authorId)} />
             ))}
           </div>
         ) : (
           <div className="text-center py-16">
-            <h2 className="text-2xl font-headline font-semibold">No Posts Yet</h2>
-            <p className="text-muted-foreground mt-2">Check back soon for our latest articles.</p>
+            <h2 className="text-2xl font-headline font-semibold">No Posts Found</h2>
+            <p className="text-muted-foreground mt-2">Try adjusting your filters or check back later.</p>
           </div>
         )}
       </main>
