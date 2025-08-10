@@ -30,7 +30,7 @@ function getAdminApp(): App {
   const serviceAccountBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
 
   if (!serviceAccountBase64) {
-    throw new Error('Seeding failed: Firebase Admin credentials are not configured correctly on the server. The GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set. Please encode your service account JSON to Base64 and add it to your .env file.');
+    throw new Error('Firebase Admin initialization failed: The GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set. Please encode your service account JSON key to Base64 and add it to your environment variables.');
   }
 
   try {

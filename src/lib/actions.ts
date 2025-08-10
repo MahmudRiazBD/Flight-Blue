@@ -104,7 +104,7 @@ export async function emptyTrash(collectionName: string) {
     }
 }
 
-export async function seedDatabase(adminId: string) {
+async function seedDatabase(adminId: string) {
   try {
     const adminDb = getAdminFirestore();
 
