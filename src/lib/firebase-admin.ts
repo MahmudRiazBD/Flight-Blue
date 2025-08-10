@@ -25,8 +25,6 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  // This is the recommended and most robust way to handle credentials in various environments.
-  // It relies on a single environment variable containing the entire service account JSON.
   const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   if (!serviceAccountJson) {
@@ -34,7 +32,8 @@ function getAdminApp(): App {
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    // Robustly parse the JSON, handling potential newline issues from .env files.
+    const serviceAccount = JSON.parse(serviceAccountJson.replace(/\\n/g, '\n'));
     
     return initializeApp(
       {
