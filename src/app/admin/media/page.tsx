@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import MediaDetailModal from '@/components/admin/MediaDetailModal';
-import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, orderBy, serverTimestamp, Timestamp, addDoc } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -336,14 +336,13 @@ export default function AdminMediaPage() {
   
     for (const file of Array.from(files)) {
       try {
-        // 1. Get pre-signed URL and save metadata in one go
+        // 1. Get pre-signed URL
         const presignResponse = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
               filename: file.name, 
-              contentType: file.type,
-              size: formatFileSize(file.size),
+              contentType: file.type
           }),
         });
   
@@ -352,7 +351,7 @@ export default function AdminMediaPage() {
           throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
   
-        const { uploadUrl } = await presignResponse.json();
+        const { uploadUrl, finalUrl } = await presignResponse.json();
   
         // 2. Upload the file to R2
         const uploadResponse = await fetch(uploadUrl, {
@@ -365,6 +364,20 @@ export default function AdminMediaPage() {
            const errorBody = await uploadResponse.text();
            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
+
+        // 3. Save metadata to Firestore
+        const fileType = file.type.split('/')[0] || 'file';
+        await addDoc(collection(db, "media"), {
+            name: file.name,
+            type: fileType as MediaType,
+            url: finalUrl,
+            size: formatFileSize(file.size),
+            altText: "",
+            dataAiHint: "",
+            uploadedAt: serverTimestamp(),
+            modifiedAt: serverTimestamp(),
+            deletedAt: null,
+        });
 
         uploadSuccessCount++;
   

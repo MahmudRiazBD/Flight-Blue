@@ -11,7 +11,7 @@ import { Upload, Link, Library, Loader2, Video, File as FileIcon } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import type { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
 import { Label } from "@/components/ui/label";
-import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 
@@ -131,7 +131,6 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             body: JSON.stringify({ 
                 filename: file.name, 
                 contentType: file.type,
-                size: formatFileSize(file.size)
             }),
         });
 
@@ -152,6 +151,19 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             const errorBody = await uploadResponse.text();
             throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
+
+        const db = getFirestore(getFirebaseApp());
+        await addDoc(collection(db, "media"), {
+            name: file.name,
+            type: "image",
+            url: finalUrl,
+            size: formatFileSize(file.size),
+            altText: "",
+            dataAiHint: "",
+            uploadedAt: serverTimestamp(),
+            modifiedAt: serverTimestamp(),
+            deletedAt: null,
+        });
 
         onImageUrlChange(finalUrl);
         setModalOpen(false);
