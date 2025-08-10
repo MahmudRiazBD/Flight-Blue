@@ -84,12 +84,9 @@ export async function seedDatabase() {
     let adminAuthorId = '';
     if (superAdminSnapshot.empty) {
         // This case should not happen if called right after signup, but as a fallback:
-        console.warn("Seeding warning: No superadmin found. This may cause issues. Trying to find any user as a fallback.");
-        const anyUserSnapshot = await usersRef.limit(1).get();
-        if(anyUserSnapshot.empty) {
-            throw new Error("Cannot seed posts because no users exist in the database.");
-        }
-        adminAuthorId = anyUserSnapshot.docs[0].id;
+        const errorMessage = "Cannot seed posts because no superadmin user exists in the database. Please ensure the first user was created correctly.";
+        console.error(errorMessage);
+        return { success: false, message: errorMessage };
 
     } else {
         adminAuthorId = superAdminSnapshot.docs[0].id;
@@ -180,7 +177,7 @@ export async function seedDatabase() {
   } catch (error) {
     console.error("Error during database seeding:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('Credential')) {
+    if (errorMessage.includes('Credential') || errorMessage.includes('environment variable')) {
         return { success: false, message: `Seeding failed: Firebase Admin credentials are not configured correctly on the server. ${errorMessage}` };
     }
     return { success: false, message: `An unexpected error occurred during seeding: ${errorMessage}` };

@@ -12,11 +12,12 @@ import { getFirestore as getAdminFirestoreSDK, Firestore } from 'firebase-admin/
 const ADMIN_APP_NAME = 'firebase-admin-app-singleton';
 
 /**
- * Initializes and returns the Firebase Admin App instance using service account credentials
- * from environment variables.
+ * Initializes and returns the Firebase Admin App instance using a Base64 encoded
+ * service account credential from environment variables.
+ * This method is robust against formatting issues in .env files.
  * Ensures that the app is initialized only once (Singleton pattern).
  * @returns {App} The Firebase Admin App instance.
- * @throws {Error} If the required environment variables are not set or invalid.
+ * @throws {Error} If the required environment variable is not set or invalid.
  */
 function getAdminApp(): App {
   const apps = getApps();
@@ -25,15 +26,18 @@ function getAdminApp(): App {
     return existingApp;
   }
 
-  const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  // Use a Base64 encoded credential to avoid parsing issues with .env files.
+  const serviceAccountBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
 
-  if (!serviceAccountJson) {
-    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set. Please provide the full service account JSON in this variable.');
+  if (!serviceAccountBase64) {
+    throw new Error('The GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set. Please encode your service account JSON to Base64 and add it to your .env file.');
   }
 
   try {
-    // Robustly parse the JSON, handling potential newline issues from .env files.
-    const serviceAccount = JSON.parse(serviceAccountJson.replace(/\\n/g, '\n'));
+    // Decode the Base64 string to get the original JSON string.
+    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+    // Parse the decoded JSON string.
+    const serviceAccount = JSON.parse(serviceAccountJson);
     
     return initializeApp(
       {
@@ -42,7 +46,7 @@ function getAdminApp(): App {
       ADMIN_APP_NAME
     );
   } catch (error: any) {
-     throw new Error(`Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON. Please ensure it's a valid, single-line JSON string. Error: ${error.message}`);
+     throw new Error(`Failed to parse the Base64 encoded service account credentials. Please ensure it's a valid Base64 string from your JSON key file. Error: ${error.message}`);
   }
 }
 
