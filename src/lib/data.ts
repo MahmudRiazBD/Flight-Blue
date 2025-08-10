@@ -395,6 +395,7 @@ export const posts: Post[] = [
     ],
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-15T10:00:00Z',
+    videoUrl: 'https://www.youtube.com/watch?v=wv2-t-1g5w4',
     categoryId: 'cat-1'
   },
   {
@@ -430,6 +431,7 @@ export const posts: Post[] = [
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-01T08:00:00Z',
+    videoUrl: "https://www.youtube.com/watch?v=deoY-m_3sI8",
     categoryId: 'cat-3'
   },
   {
@@ -447,6 +449,7 @@ export const posts: Post[] = [
     ],
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-06-10T09:00:00Z',
+    videoUrl: 'https://www.youtube.com/watch?v=0GOK5a7L9m0',
     categoryId: 'cat-3',
   },
   {
@@ -460,9 +463,11 @@ export const posts: Post[] = [
         { url: 'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'cappuccino art' },
         { url: 'https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'colosseum view' },
         { url: 'https://images.pexels.com/photos/531649/pexels-photo-531649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'italian pastries' },
+        { url: 'https://images.pexels.com/photos/97906/italian-breakfast-coffee-brioche-97906.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'coffee breakfast' },
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-18T15:00:00Z',
+    videoUrl: 'https://www.youtube.com/watch?v=E73v2hAqsL8',
     categoryId: 'cat-4',
   },
 ];
@@ -514,6 +519,7 @@ export const contactMessages: ContactMessage[] = [
         isRead: true
     }
 ]
+
 
 
 
