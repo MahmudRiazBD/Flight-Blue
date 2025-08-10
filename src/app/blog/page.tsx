@@ -8,7 +8,7 @@ import { Post, Category } from '@/lib/data';
 import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowRight, Calendar, User as UserIcon, Loader2, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays, isAfter } from 'date-fns';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
@@ -77,6 +77,7 @@ export default function BlogPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAuthor, setSelectedAuthor] = useState('all');
+  const [selectedRange, setSelectedRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
@@ -112,7 +113,19 @@ export default function BlogPage() {
       const matchesSearch = searchTerm.trim() === '' || post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || post.categoryId === selectedCategory;
       const matchesAuthor = selectedAuthor === 'all' || post.authorId === selectedAuthor;
-      return matchesSearch && matchesCategory && matchesAuthor;
+      
+      const now = new Date();
+      let matchesRange = true;
+      if (selectedRange !== 'all') {
+        let daysToSubtract = 0;
+        if(selectedRange === 'week') daysToSubtract = 7;
+        if(selectedRange === 'month') daysToSubtract = 30;
+        if(selectedRange === 'year') daysToSubtract = 365;
+        const cutoffDate = subDays(now, daysToSubtract);
+        matchesRange = isAfter(new Date(post.publishedAt), cutoffDate);
+      }
+
+      return matchesSearch && matchesCategory && matchesAuthor && matchesRange;
     });
 
     switch (sortBy) {
@@ -131,7 +144,7 @@ export default function BlogPage() {
     }
     
     return filtered;
-  }, [allPosts, searchTerm, selectedCategory, selectedAuthor, sortBy]);
+  }, [allPosts, searchTerm, selectedCategory, selectedAuthor, selectedRange, sortBy]);
 
   const findAuthor = (authorId?: string) => allUsers.find(user => user.uid === authorId);
 
@@ -143,7 +156,7 @@ export default function BlogPage() {
       </header>
 
       <aside className="mb-12 p-4 md:p-6 bg-secondary rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             <div className="md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium mb-2">Search Posts</label>
                 <div className="relative">
@@ -174,6 +187,18 @@ export default function BlogPage() {
                     <SelectContent>
                         <SelectItem value="all">All Authors</SelectItem>
                         {allUsers.map(user => <SelectItem key={user.uid} value={user.uid}>{user.firstName} {user.lastName}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                <label className="block text-sm font-medium mb-2">Filter by Date</label>
+                <Select value={selectedRange} onValueChange={setSelectedRange}>
+                    <SelectTrigger><SelectValue placeholder="All Time" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="week">Last 7 Days</SelectItem>
+                        <SelectItem value="month">Last 30 Days</SelectItem>
+                        <SelectItem value="year">Last Year</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
