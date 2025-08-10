@@ -427,7 +427,8 @@ export const posts: Post[] = [
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-15T10:00:00Z',
     videoUrl: 'https://www.youtube.com/watch?v=wv2-t-1g5w4',
-    categoryId: 'cat-1'
+    categoryId: 'cat-1',
+    deletedAt: null,
   },
   {
     id: 'post-2',
@@ -446,6 +447,7 @@ export const posts: Post[] = [
     publishedAt: '2024-05-20T12:30:00Z',
     categoryId: 'cat-2',
     videoUrl: 'https://www.youtube.com/watch?v=sB4hRA_t_ao',
+    deletedAt: null,
   },
    {
     id: 'post-3',
@@ -463,7 +465,8 @@ export const posts: Post[] = [
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-01T08:00:00Z',
     videoUrl: "https://www.youtube.com/watch?v=deoY-m_3sI8",
-    categoryId: 'cat-3'
+    categoryId: 'cat-3',
+    deletedAt: null,
   },
   {
     id: 'post-4',
@@ -482,6 +485,7 @@ export const posts: Post[] = [
     publishedAt: '2024-06-10T09:00:00Z',
     videoUrl: 'https://www.youtube.com/watch?v=0GOK5a7L9m0',
     categoryId: 'cat-3',
+    deletedAt: null,
   },
   {
     id: 'post-5',
@@ -500,6 +504,7 @@ export const posts: Post[] = [
     publishedAt: '2024-06-18T15:00:00Z',
     videoUrl: 'https://www.youtube.com/watch?v=E73v2hAqsL8',
     categoryId: 'cat-4',
+    deletedAt: null,
   },
 ];
 
