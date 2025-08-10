@@ -7,12 +7,16 @@ import Image from 'next/image';
 import { Post, Category } from '@/lib/data';
 import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ArrowRight, Calendar, User as UserIcon, Loader2, Search } from 'lucide-react';
-import { format, subDays, isAfter } from 'date-fns';
+import { ArrowRight, Calendar, User as UserIcon, Loader2, Search, CalendarIcon } from 'lucide-react';
+import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 function PostCard({ post, author }: { post: Post, author?: UserData }) {
   const getAuthorName = () => {
@@ -79,6 +83,8 @@ export default function BlogPage() {
   const [selectedAuthor, setSelectedAuthor] = useState('all');
   const [selectedRange, setSelectedRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,19 +116,23 @@ export default function BlogPage() {
 
   const filteredAndSortedPosts = useMemo(() => {
     let filtered = allPosts.filter(post => {
+      const postDate = new Date(post.publishedAt);
       const matchesSearch = searchTerm.trim() === '' || post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || post.categoryId === selectedCategory;
       const matchesAuthor = selectedAuthor === 'all' || post.authorId === selectedAuthor;
       
-      const now = new Date();
       let matchesRange = true;
-      if (selectedRange !== 'all') {
+      if (selectedRange !== 'all' && selectedRange !== 'custom') {
         let daysToSubtract = 0;
         if(selectedRange === 'week') daysToSubtract = 7;
         if(selectedRange === 'month') daysToSubtract = 30;
         if(selectedRange === 'year') daysToSubtract = 365;
-        const cutoffDate = subDays(now, daysToSubtract);
-        matchesRange = isAfter(new Date(post.publishedAt), cutoffDate);
+        const cutoffDate = subDays(new Date(), daysToSubtract);
+        matchesRange = isAfter(postDate, cutoffDate);
+      } else if (selectedRange === 'custom') {
+         matchesRange = 
+            (!startDate || isAfter(postDate, startOfDay(startDate))) &&
+            (!endDate || isBefore(postDate, endOfDay(endDate)));
       }
 
       return matchesSearch && matchesCategory && matchesAuthor && matchesRange;
@@ -144,7 +154,7 @@ export default function BlogPage() {
     }
     
     return filtered;
-  }, [allPosts, searchTerm, selectedCategory, selectedAuthor, selectedRange, sortBy]);
+  }, [allPosts, searchTerm, selectedCategory, selectedAuthor, selectedRange, sortBy, startDate, endDate]);
 
   const findAuthor = (authorId?: string) => allUsers.find(user => user.uid === authorId);
 
@@ -156,8 +166,8 @@ export default function BlogPage() {
       </header>
 
       <aside className="mb-12 p-4 md:p-6 bg-secondary rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-            <div className="md:col-span-2 lg:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+            <div className="sm:col-span-2 lg:col-span-4 xl:col-span-1">
                 <label className="block text-sm font-medium mb-2">Search Posts</label>
                 <div className="relative">
                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -199,6 +209,7 @@ export default function BlogPage() {
                         <SelectItem value="week">Last 7 Days</SelectItem>
                         <SelectItem value="month">Last 30 Days</SelectItem>
                         <SelectItem value="year">Last Year</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -215,6 +226,38 @@ export default function BlogPage() {
                 </Select>
             </div>
         </div>
+         {selectedRange === 'custom' && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                     <label className="block text-sm font-medium mb-2">Start Date</label>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {startDate ? format(startDate, 'PPP') : <span>Pick a start date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <CalendarPicker mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                 <div>
+                     <label className="block text-sm font-medium mb-2">End Date</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {endDate ? format(endDate, 'PPP') : <span>Pick an end date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <CalendarPicker mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </div>
+        )}
       </aside>
       
       <main>
