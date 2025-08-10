@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Post, Category } from '@/lib/data';
 import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ArrowRight, Calendar, User as UserIcon, Loader2, Search, CalendarIcon } from 'lucide-react';
+import { ArrowRight, Calendar, User as UserIcon, Loader2, Search, CalendarIcon, Filter } from 'lucide-react';
 import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
@@ -16,7 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 function PostCard({ post, author }: { post: Post, author?: UserData }) {
   const getAuthorName = () => {
@@ -85,6 +88,15 @@ export default function BlogPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const isMobile = useIsMobile();
+  
+  // Open filters by default on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setIsFilterOpen(true);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -165,99 +177,109 @@ export default function BlogPage() {
         <p className="text-lg text-muted-foreground mt-2">Travel stories, tips, and insights from our team.</p>
       </header>
 
-      <aside className="mb-12 p-4 md:p-6 bg-secondary rounded-lg shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
-            <div className="sm:col-span-2 lg:col-span-4 xl:col-span-1">
-                <label className="block text-sm font-medium mb-2">Search Posts</label>
-                <div className="relative">
-                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                   <Input
-                        type="text"
-                        placeholder="e.g., Paris, Tips..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                    />
+      <aside className="mb-12">
+        <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen} className="p-4 md:p-6 bg-secondary rounded-lg shadow-sm">
+            <CollapsibleTrigger asChild>
+                <button className="flex md:hidden w-full items-center justify-between">
+                    <h3 className="text-lg font-semibold">Filter & Sort</h3>
+                    <Filter className="h-5 w-5" />
+                </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+                <div className="mt-4 md:mt-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+                    <div className="sm:col-span-2 lg:col-span-4 xl:col-span-1">
+                        <label className="block text-sm font-medium mb-2">Search Posts</label>
+                        <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                                type="text"
+                                placeholder="e.g., Paris, Tips..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {allCategories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Author</label>
+                        <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                            <SelectTrigger><SelectValue placeholder="All Authors" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Authors</SelectItem>
+                                {allUsers.map(user => <SelectItem key={user.uid} value={user.uid}>{user.firstName} {user.lastName}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Filter by Date</label>
+                        <Select value={selectedRange} onValueChange={setSelectedRange}>
+                            <SelectTrigger><SelectValue placeholder="All Time" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Time</SelectItem>
+                                <SelectItem value="week">Last 7 Days</SelectItem>
+                                <SelectItem value="month">Last 30 Days</SelectItem>
+                                <SelectItem value="year">Last Year</SelectItem>
+                                <SelectItem value="custom">Custom Range</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2">Sort By</label>
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger><SelectValue placeholder="Sort..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="newest">Newest First</SelectItem>
+                                <SelectItem value="oldest">Oldest First</SelectItem>
+                                <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                                <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-            </div>
-             <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {allCategories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </div>
-             <div>
-                <label className="block text-sm font-medium mb-2">Author</label>
-                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
-                    <SelectTrigger><SelectValue placeholder="All Authors" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Authors</SelectItem>
-                        {allUsers.map(user => <SelectItem key={user.uid} value={user.uid}>{user.firstName} {user.lastName}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-2">Filter by Date</label>
-                <Select value={selectedRange} onValueChange={setSelectedRange}>
-                    <SelectTrigger><SelectValue placeholder="All Time" /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="week">Last 7 Days</SelectItem>
-                        <SelectItem value="month">Last 30 Days</SelectItem>
-                        <SelectItem value="year">Last Year</SelectItem>
-                        <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-             <div>
-                <label className="block text-sm font-medium mb-2">Sort By</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger><SelectValue placeholder="Sort..." /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="newest">Newest First</SelectItem>
-                        <SelectItem value="oldest">Oldest First</SelectItem>
-                        <SelectItem value="title-asc">Title (A-Z)</SelectItem>
-                        <SelectItem value="title-desc">Title (Z-A)</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
-         {selectedRange === 'custom' && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                     <label className="block text-sm font-medium mb-2">Start Date</label>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {startDate ? format(startDate, 'PPP') : <span>Pick a start date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <CalendarPicker mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-                 <div>
-                     <label className="block text-sm font-medium mb-2">End Date</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {endDate ? format(endDate, 'PPP') : <span>Pick an end date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <CalendarPicker mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            </div>
-        )}
+                {selectedRange === 'custom' && (
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Start Date</label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {startDate ? format(startDate, 'PPP') : <span>Pick a start date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <CalendarPicker mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2">End Date</label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {endDate ? format(endDate, 'PPP') : <span>Pick an end date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <CalendarPicker mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                )}
+            </CollapsibleContent>
+        </Collapsible>
       </aside>
       
       <main>
