@@ -1,6 +1,8 @@
+
 "use client"
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,6 +34,7 @@ export default function AdminAllPackagesPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
   const db = getFirestore(getFirebaseApp());
+  const router = useRouter();
 
   const loadPackages = async () => {
     setLoading(true);
@@ -83,10 +86,7 @@ export default function AdminAllPackagesPage() {
   }
   
   const handleEdit = (pkg: Package) => {
-     toast({
-        title: "Coming Soon!",
-        description: "Editing functionality will be implemented in a future update.",
-    });
+     router.push(`/admin/packages/edit/${pkg.id}`);
   }
 
   return (
