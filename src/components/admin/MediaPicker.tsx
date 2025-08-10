@@ -103,14 +103,6 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
     fileInputRef.current?.click();
   };
   
-  const getFileType = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
-    if (['mp4', 'mov', 'avi', 'webm'].includes(extension || '')) return 'video';
-    if (extension === 'pdf') return 'pdf';
-    return 'file';
-  };
-  
   const formatFileSize = (bytes: number) => {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -134,7 +126,11 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         const presignResponse = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+            body: JSON.stringify({ 
+                filename: file.name, 
+                contentType: file.type,
+                size: formatFileSize(file.size)
+            }),
         });
 
         if (!presignResponse.ok) {
@@ -142,7 +138,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
 
-        const { uploadUrl, finalUrl, fileId } = await presignResponse.json();
+        const { uploadUrl, finalUrl } = await presignResponse.json();
 
         const uploadResponse = await fetch(uploadUrl, {
             method: 'PUT',
@@ -153,26 +149,6 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
         if (!uploadResponse.ok) {
             const errorBody = await uploadResponse.text();
             throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
-        }
-
-        const newFileMetadata = {
-          id: fileId,
-          name: file.name,
-          type: getFileType(file.name),
-          url: finalUrl,
-          size: formatFileSize(file.size),
-          altText: "",
-          dataAiHint: ""
-        };
-
-        const completeResponse = await fetch('/api/upload/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newFileMetadata),
-        });
-        
-        if (!completeResponse.ok) {
-           throw new Error('Failed to save file metadata to database.');
         }
 
         onImageUrlChange(finalUrl);

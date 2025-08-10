@@ -200,17 +200,15 @@ export default function AdminMediaPage() {
   const fetchMedia = async () => {
     setLoading(true);
     try {
-        // Fetch all files ordered by upload date. This query does not need a composite index.
         const allFilesQuery = query(mediaCollection, orderBy("uploadedAt", "desc"));
         const snapshot = await getDocs(allFilesQuery);
         const allFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile));
         
-        // Filter into active and trashed files on the client-side
         const active = allFiles.filter(file => !file.deletedAt);
         const trashed = allFiles.filter(file => !!file.deletedAt);
         
         setMediaFiles(active);
-        setTrashedFiles(trashed.sort((a, b) => b.deletedAt!.toMillis() - a.deletedAt!.toMillis()));
+        setTrashedFiles(trashed);
 
     } catch (error) {
         console.error("Error fetching media files:", error);
@@ -320,14 +318,6 @@ export default function AdminMediaPage() {
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
-
-  const getFileType = (fileName: string): MediaType => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
-    if (['mp4', 'mov', 'avi', 'webm'].includes(extension || '')) return 'video';
-    if (extension === 'pdf') return 'pdf';
-    return 'file';
-  };
   
   const formatFileSize = (bytes: number): string => {
       if (bytes === 0) return '0 Bytes';
@@ -346,10 +336,15 @@ export default function AdminMediaPage() {
   
     for (const file of Array.from(files)) {
       try {
+        // 1. Get pre-signed URL and save metadata in one go
         const presignResponse = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: file.name, contentType: file.type }),
+          body: JSON.stringify({ 
+              filename: file.name, 
+              contentType: file.type,
+              size: formatFileSize(file.size),
+          }),
         });
   
         if (!presignResponse.ok) {
@@ -357,8 +352,9 @@ export default function AdminMediaPage() {
           throw new Error(`Failed to get pre-signed URL: ${errorBody.error || presignResponse.statusText}`);
         }
   
-        const { uploadUrl, finalUrl, fileId } = await presignResponse.json();
+        const { uploadUrl } = await presignResponse.json();
   
+        // 2. Upload the file to R2
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': file.type },
@@ -368,27 +364,6 @@ export default function AdminMediaPage() {
         if (!uploadResponse.ok) {
            const errorBody = await uploadResponse.text();
            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
-        }
-  
-        // 3. Confirm the upload with our backend to save metadata
-        const newFileMetadata = {
-          id: fileId,
-          name: file.name,
-          type: getFileType(file.name),
-          url: finalUrl,
-          size: formatFileSize(file.size),
-          altText: "",
-          dataAiHint: ""
-        };
-
-        const completeResponse = await fetch('/api/upload/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newFileMetadata),
-        });
-
-        if (!completeResponse.ok) {
-           throw new Error('Failed to save file metadata to database.');
         }
 
         uploadSuccessCount++;
@@ -603,4 +578,3 @@ export default function AdminMediaPage() {
     </>
   );
 }
-

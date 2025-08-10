@@ -3,6 +3,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { getAdminFirestore } from '@/lib/firebase-admin';
+import { FieldValue } from "firebase-admin/firestore";
 
 // This function generates a URL-friendly slug from a filename
 const createSlug = (fileName: string): string => {
@@ -22,10 +23,10 @@ const createSlug = (fileName: string): string => {
 
 // This handles the main POST request to get a pre-signed URL
 export async function POST(request: Request) {
-  const { filename, contentType } = await request.json();
+  const { filename, contentType, size, altText, dataAiHint } = await request.json();
 
-  if (!filename || !contentType) {
-    return NextResponse.json({ error: "Filename and contentType are required." }, { status: 400 });
+  if (!filename || !contentType || !size) {
+    return NextResponse.json({ error: "Filename, contentType, and size are required." }, { status: 400 });
   }
 
   // --- R2 Client Initialization ---
@@ -67,13 +68,26 @@ export async function POST(request: Request) {
 
     const uploadUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
     const finalUrl = `${publicUrl}/${uniqueSlug}`;
+    
+    // Save metadata to Firestore immediately
+     await newFileRef.set({
+      name: filename,
+      type: contentType.split('/')[0] || 'file',
+      url: finalUrl,
+      size: size,
+      altText: altText || '',
+      dataAiHint: dataAiHint || '',
+      uploadedAt: FieldValue.serverTimestamp(),
+      modifiedAt: FieldValue.serverTimestamp(),
+      deletedAt: null,
+    });
 
     // Return the URLs and the unique ID for the client to use
     return NextResponse.json({ uploadUrl, finalUrl, fileId });
 
   } catch (error) {
-    console.error("Error creating signed URL:", error);
-    return NextResponse.json({ error: "Could not create upload URL. Check server logs." }, { status: 500 });
+    console.error("Error creating signed URL or saving metadata:", error);
+    return NextResponse.json({ error: "Could not create upload URL or save metadata. Check server logs." }, { status: 500 });
   }
 }
 
