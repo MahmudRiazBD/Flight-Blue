@@ -39,8 +39,8 @@ const packageSchema = z.object({
     title: z.string().min(3, "Itinerary title is required."),
     details: z.string().min(10, "Itinerary details are required."),
   })).optional(),
-  inclusions: z.array(z.string()).optional(),
-  exclusions: z.array(z.string()).optional(),
+  inclusions: z.array(z.object({ value: z.string().min(1, "Inclusion text cannot be empty.") })).optional(),
+  exclusions: z.array(z.object({ value: z.string().min(1, "Exclusion text cannot be empty.") })).optional(),
 });
 
 export default function EditPackagePage() {
@@ -66,6 +66,16 @@ export default function EditPackagePage() {
   const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
     control: form.control,
     name: "galleryImages"
+  });
+
+  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
+    control: form.control,
+    name: "inclusions",
+  });
+
+  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
+    control: form.control,
+    name: "exclusions",
   });
   
   useEffect(() => {
@@ -103,8 +113,8 @@ export default function EditPackagePage() {
           ...packageData,
           galleryImages: allImages,
           itinerary: packageData.itinerary || [],
-          inclusions: packageData.inclusions || [],
-          exclusions: packageData.exclusions || [],
+          inclusions: packageData.inclusions?.map(v => ({ value: v })) || [],
+          exclusions: packageData.exclusions?.map(v => ({ value: v })) || [],
         });
       } else {
         setPkg(null);
@@ -118,12 +128,14 @@ export default function EditPackagePage() {
 
     try {
       const packageRef = doc(db, "packages", pkg.id);
-      const { galleryImages, ...rest } = data;
+      const { galleryImages, inclusions, exclusions, ...rest } = data;
       const finalData = {
           ...rest,
           imageUrl: galleryImages[0].url,
           imageHint: galleryImages[0].hint,
           galleryImages: galleryImages.slice(1),
+          inclusions: inclusions?.map(i => i.value),
+          exclusions: exclusions?.map(e => e.value),
       };
 
       await updateDoc(packageRef, finalData);
@@ -133,6 +145,7 @@ export default function EditPackagePage() {
       });
       router.push("/admin/packages/all");
     } catch (e) {
+      console.error(e)
       toast({ title: "Error", description: "Failed to update package.", variant: "destructive" });
     }
   };
@@ -319,8 +332,42 @@ export default function EditPackagePage() {
               Add Itinerary Day
             </Button>
           </div>
+          
+          <Separator />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <Label>Inclusions</Label>
+              {inclusionFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                   <Input {...form.register(`inclusions.${index}.value`)} placeholder="e.g., Airport transfers" />
+                   <Button type="button" variant="ghost" size="icon" onClick={() => removeInclusion(index)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                   </Button>
+                </div>
+              ))}
+               <Button type="button" variant="outline" size="sm" onClick={() => appendInclusion({ value: '' })}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Inclusion
+               </Button>
+            </div>
+             <div className="space-y-4">
+              <Label>Exclusions</Label>
+              {exclusionFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                   <Input {...form.register(`exclusions.${index}.value`)} placeholder="e.g., International flights" />
+                   <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(index)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                   </Button>
+                </div>
+              ))}
+               <Button type="button" variant="outline" size="sm" onClick={() => appendExclusion({ value: '' })}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Exclusion
+               </Button>
+            </div>
+          </div>
 
-          <div className="flex justify-end gap-2">
+
+          <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => router.push('/admin/packages/all')}>
               Cancel
             </Button>
