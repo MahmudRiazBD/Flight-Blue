@@ -24,7 +24,7 @@ export default function PackageDetailClient({ pkg }: Props) {
   return (
     <div className="bg-background">
       <section className="relative h-64 md:h-96 bg-black">
-        {embedUrl ? (
+        {pkg.videoUrl ? (
           <Carousel className="w-full h-full">
             <CarouselContent>
               <CarouselItem>
@@ -39,18 +39,20 @@ export default function PackageDetailClient({ pkg }: Props) {
                   />
                 </div>
               </CarouselItem>
-              <CarouselItem>
-                <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
-                  <iframe
-                    className="w-full h-full"
-                    src={embedUrl}
-                    title="Package Video"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </CarouselItem>
+              {embedUrl && (
+                <CarouselItem>
+                  <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
+                    <iframe
+                      className="w-full h-full"
+                      src={embedUrl}
+                      title="Package Video"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </CarouselItem>
+              )}
             </CarouselContent>
             <CarouselPrevious className="left-4" />
             <CarouselNext className="right-4" />
