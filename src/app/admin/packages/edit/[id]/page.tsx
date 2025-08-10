@@ -104,6 +104,7 @@ export default function EditPackagePage() {
         const packageData = { id: docSnap.id, ...docSnap.data() } as Package;
         setPkg(packageData);
         
+        // Correctly combine imageUrl and galleryImages for the form
         const allImages: GalleryImage[] = [
             { url: packageData.imageUrl, hint: packageData.imageHint },
             ...(packageData.galleryImages || [])
@@ -111,10 +112,10 @@ export default function EditPackagePage() {
 
         form.reset({
           ...packageData,
-          galleryImages: allImages,
+          galleryImages: allImages, // Use the combined array
           itinerary: packageData.itinerary || [],
           inclusions: packageData.inclusions?.map(v => ({ value: v })) || [],
-          exclusions: packageData.exclusions?.map(v => ({ value: v })) || [],
+          exclusions: packageData.exclusions?.map(e => ({ value: e })) || [],
         });
       } else {
         setPkg(null);
@@ -129,11 +130,12 @@ export default function EditPackagePage() {
     try {
       const packageRef = doc(db, "packages", pkg.id);
       const { galleryImages, inclusions, exclusions, ...rest } = data;
+      
       const finalData = {
           ...rest,
-          imageUrl: galleryImages[0].url,
+          imageUrl: galleryImages[0].url, // First image is the main one
           imageHint: galleryImages[0].hint,
-          galleryImages: galleryImages.slice(1),
+          galleryImages: galleryImages.slice(1), // The rest are gallery images
           inclusions: inclusions?.map(i => i.value),
           exclusions: exclusions?.map(e => e.value),
       };
@@ -378,3 +380,5 @@ export default function EditPackagePage() {
     </Card>
   );
 }
+
+    
