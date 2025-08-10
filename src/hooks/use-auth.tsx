@@ -39,7 +39,7 @@ interface AuthContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (userData: Omit<User, 'uid'>) => Promise<{isFirstUser: boolean}>;
+  signup: (userData: Omit<User, 'uid'>) => Promise<FirebaseUser>;
   logout: () => void;
 }
 
@@ -143,15 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   }, []);
 
-  const signup = useCallback(async (userData: Omit<User, 'uid'>): Promise<{isFirstUser: boolean}> => {
+  const signup = useCallback(async (userData: Omit<User, 'uid'>): Promise<FirebaseUser> => {
     const mainApp = getFirebaseApp();
     const db = getFirestore(mainApp);
-
-    // Check if any user exists to determine if this is the first signup
-    const usersQuery = query(collection(db, "users"), limit(1));
-    const usersSnapshot = await getDocs(usersQuery);
-    const isFirstUser = usersSnapshot.empty;
-    const role: UserRole = isFirstUser ? 'superadmin' : userData.role;
 
     // Create a temporary secondary app instance for user creation
     // This prevents the current user from being signed out
@@ -173,14 +167,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await setDoc(userRef, {
             ...firestoreData,
-            role: role, // Set role dynamically
             username: userData.username || extractUsernameFromEmail(userData.email!),
             createdAt: serverTimestamp(),
             photoURL: userData.photoURL || '',
             phone: userData.phone || ''
         });
-
-        return { isFirstUser };
+        
+        return firebaseUser;
 
     } catch (error) {
         // Re-throw the error so the calling component can handle it

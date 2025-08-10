@@ -7,6 +7,8 @@ import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 import { packages, posts, categories, destinations, packageTypes } from "./data";
 import { CollectionReference, writeBatch } from "firebase-admin/firestore";
+import type { User } from "@/hooks/use-auth";
+
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
   const result = await travelChatbot({ query });
@@ -102,36 +104,28 @@ export async function emptyTrash(collectionName: string) {
     }
 }
 
-export async function seedDatabase() {
+export async function seedDatabase(adminId: string) {
   try {
     const adminDb = getAdminFirestore();
 
-    // 1. Find Superadmin
-    const usersRef = adminDb.collection('users');
-    const superAdminQuery = usersRef.where('role', '==', 'superadmin').limit(1);
-    const superAdminSnapshot = await superAdminQuery.get();
-
-    let adminAuthorId = '';
-    if (superAdminSnapshot.empty) {
-        const errorMessage = "Cannot seed posts because no superadmin user exists in the database. Please ensure the first user was created correctly.";
+    if (!adminId) {
+        const errorMessage = "Cannot seed posts because no superadmin user ID was provided.";
         console.error(errorMessage);
         return { success: false, message: errorMessage };
-    } else {
-        adminAuthorId = superAdminSnapshot.docs[0].id;
     }
 
-    // 2. Seed all collections
+    // Seed all collections
     await seedCollection('packages', packages, adminDb);
     await seedCollection('categories', categories, adminDb);
     await seedCollection('destinations', destinations, adminDb);
     await seedCollection('packageTypes', packageTypes, adminDb);
 
     // Special handling for posts to include authorId
-    const postsWithAuthor = posts.map(post => ({...post, authorId: adminAuthorId}));
+    const postsWithAuthor = posts.map(post => ({...post, authorId: adminId}));
     await seedCollection('posts', postsWithAuthor, adminDb);
 
 
-    // 3. Seed settings
+    // Seed settings
     const batch = adminDb.batch();
     const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
@@ -211,4 +205,43 @@ export async function seedDatabase() {
     }
     return { success: false, message: `An unexpected error occurred during seeding: ${errorMessage}` };
   }
+}
+
+export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
+    try {
+        const adminAuth = getAdminAuth();
+        const adminDb = getAdminFirestore();
+
+        // Check if a superadmin already exists
+        const superAdminQuery = adminDb.collection('users').where('role', '==', 'superadmin').limit(1);
+        const superAdminSnapshot = await superAdminQuery.get();
+        if (!superAdminSnapshot.empty) {
+            return { success: false, message: "Setup has already been completed. A superadmin exists." };
+        }
+
+        // Create user in Firebase Auth
+        const userRecord = await adminAuth.createUser({
+            email: adminData.email,
+            password: adminData.password,
+            displayName: `${adminData.firstName} ${adminData.lastName}`,
+            photoURL: adminData.photoURL || undefined,
+        });
+
+        // Save user details in Firestore
+        const { password, ...firestoreData } = adminData;
+        const userRef = adminDb.collection('users').doc(userRecord.uid);
+        await userRef.set({
+            ...firestoreData,
+            role: 'superadmin',
+            createdAt: new Date().toISOString(),
+        });
+        
+        // Seed the database
+        await seedDatabase(userRecord.uid);
+
+        return { success: true, message: "Superadmin created and database seeded successfully." };
+    } catch (error: any) {
+        console.error("Error during setup:", error);
+        return { success: false, message: `An unexpected error occurred during setup: ${error.message}` };
+    }
 }
