@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link, Library, Loader2, Video, File as FileIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
+import type { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
 import { Label } from "@/components/ui/label";
 import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';

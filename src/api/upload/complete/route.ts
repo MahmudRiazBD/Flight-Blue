@@ -1,7 +1,7 @@
 
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
-import { serverTimestamp } from 'firebase/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(request: Request) {
   try {
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
       size,
       altText: altText || '',
       dataAiHint: dataAiHint || '',
-      uploadedAt: serverTimestamp(),
-      modifiedAt: serverTimestamp(),
+      uploadedAt: FieldValue.serverTimestamp(),
+      modifiedAt: FieldValue.serverTimestamp(),
       deletedAt: null,
     });
 
