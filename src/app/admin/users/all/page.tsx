@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
-import { getInitials } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
