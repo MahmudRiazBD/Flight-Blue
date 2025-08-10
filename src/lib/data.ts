@@ -147,6 +147,7 @@ export type Booking = {
     departureDate: string; // ISO date string
     bookingDate: string; // ISO date string
     status: 'Pending' | 'Confirmed' | 'Cancelled';
+    deletedAt?: Timestamp | null;
 };
 
 export type ContactMessage = {
@@ -157,6 +158,7 @@ export type ContactMessage = {
   message: string;
   submittedAt: string; // ISO date string
   isRead: boolean;
+  deletedAt?: Timestamp | null;
 };
 
 export type MediaType = "image" | "video" | "pdf" | "file";

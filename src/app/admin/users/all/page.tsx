@@ -17,6 +17,7 @@ import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, writeBatc
 import { getFirebaseApp } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteUser } from "@/lib/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const roleColors: Record<UserRole, "default" | "secondary" | "destructive"> = {
   customer: "secondary",
@@ -223,10 +224,29 @@ export default function AdminAllUsersPage() {
                                             </DropdownMenuRadioGroup>
                                         </DropdownMenuSubContent>
                                     </DropdownMenuSub>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)} disabled={user.role === 'superadmin'}>
-                                        <Trash2 className="mr-2 h-4 w-4"/>
-                                        Delete User
-                                    </DropdownMenuItem>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <button className={cn("relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive", user.role === 'superadmin' && "opacity-50 cursor-not-allowed")}
+                                             disabled={user.role === 'superadmin'}>
+                                                <Trash2 className="mr-2 h-4 w-4"/>
+                                                Delete User
+                                            </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will permanently delete the user account and all associated data. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteUser(user.uid)} className="bg-destructive hover:bg-destructive/90">
+                                                Delete
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>

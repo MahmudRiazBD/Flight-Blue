@@ -6,7 +6,7 @@ import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 import { packages, posts, categories, destinations, packageTypes } from "./data";
-import { CollectionReference } from "firebase-admin/firestore";
+import { CollectionReference, writeBatch } from "firebase-admin/firestore";
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
   const result = await travelChatbot({ query });
@@ -58,23 +58,53 @@ export async function deleteUser(uid: string) {
     }
 }
 
-async function batchCommit(collectionName: string, data: any[], db: FirebaseFirestore.Firestore, batch: FirebaseFirestore.WriteBatch, transform = (item: any) => item) {
+async function seedCollection(collectionName: string, data: any[], db: FirebaseFirestore.Firestore, transform = (item: any) => item) {
     const collectionRef = db.collection(collectionName) as CollectionReference;
     const snapshot = await collectionRef.limit(1).get();
     if (!snapshot.empty) {
         console.log(`Skipping seeding for ${collectionName}: collection is not empty.`);
         return; // Skip if collection already has data
     }
+    const batch = db.batch();
     data.forEach(item => {
         const docRef = collectionRef.doc();
         batch.set(docRef, transform(item));
     });
+    await batch.commit();
+}
+
+
+export async function emptyTrash(collectionName: string) {
+    if (!collectionName) {
+        return { success: false, message: "Collection name is required." };
+    }
+    try {
+        const adminDb = getAdminFirestore();
+        const collectionRef = adminDb.collection(collectionName);
+        const trashQuery = collectionRef.where('deletedAt', '!=', null);
+        const snapshot = await trashQuery.get();
+        
+        if (snapshot.empty) {
+            return { success: true, message: "Trash is already empty." };
+        }
+
+        const batch = adminDb.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        
+        return { success: true, message: `Successfully emptied trash for ${collectionName}.` };
+    } catch (error: any) {
+        console.error(`Failed to empty trash for ${collectionName}:`, error);
+        return { success: false, message: `An error occurred: ${error.message}` };
+    }
 }
 
 export async function seedDatabase() {
   try {
     const adminDb = getAdminFirestore();
-    const batch = adminDb.batch();
 
     // 1. Find Superadmin
     const usersRef = adminDb.collection('users');
@@ -91,17 +121,18 @@ export async function seedDatabase() {
     }
 
     // 2. Seed all collections
-    await batchCommit('packages', packages, adminDb, batch);
-    await batchCommit('categories', categories, adminDb, batch);
-    await batchCommit('destinations', destinations, adminDb, batch);
-    await batchCommit('packageTypes', packageTypes, adminDb, batch);
+    await seedCollection('packages', packages, adminDb);
+    await seedCollection('categories', categories, adminDb);
+    await seedCollection('destinations', destinations, adminDb);
+    await seedCollection('packageTypes', packageTypes, adminDb);
 
     // Special handling for posts to include authorId
     const postsWithAuthor = posts.map(post => ({...post, authorId: adminAuthorId}));
-    await batchCommit('posts', postsWithAuthor, adminDb, batch);
+    await seedCollection('posts', postsWithAuthor, adminDb);
 
 
     // 3. Seed settings
+    const batch = adminDb.batch();
     const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
         siteTitle: "Flight Blu",
