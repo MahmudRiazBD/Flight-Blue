@@ -12,7 +12,8 @@ const getIsMobile = () => {
 }
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(getIsMobile());
+  // Lazily initialize state to prevent unnecessary re-renders on the server
+  const [isMobile, setIsMobile] = React.useState(() => getIsMobile());
 
   React.useEffect(() => {
     const checkDevice = () => {
