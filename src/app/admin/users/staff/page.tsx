@@ -69,9 +69,9 @@ export default function AdminStaffPage() {
     }
   }
 
-  const handleAddUser = async (newUser: Omit<User, 'uid' | 'photoURL'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'uid'>) => {
     try {
-      await signup(newUser.email!, newUser.password as string, `${newUser.firstName} ${newUser.lastName}`, newUser.role);
+      await signup(newUser);
       toast({
         title: "Staff Member Added",
         description: `User ${newUser.firstName} has been created.`

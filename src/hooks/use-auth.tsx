@@ -39,7 +39,7 @@ interface AuthContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (email: string, password: string, name: string) => Promise<{isFirstUser: boolean}>;
+  signup: (userData: Omit<User, 'uid'>) => Promise<{isFirstUser: boolean}>;
   logout: () => void;
 }
 
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, displayName: string): Promise<{isFirstUser: boolean}> => {
+  const signup = useCallback(async (userData: Omit<User, 'uid'>): Promise<{isFirstUser: boolean}> => {
     const mainApp = getFirebaseApp();
     const db = getFirestore(mainApp);
 
@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const usersQuery = query(collection(db, "users"), limit(1));
     const usersSnapshot = await getDocs(usersQuery);
     const isFirstUser = usersSnapshot.empty;
-    const role: UserRole = isFirstUser ? 'superadmin' : 'customer';
+    const role: UserRole = isFirstUser ? 'superadmin' : userData.role;
 
     // Create a temporary secondary app instance for user creation
     // This prevents the current user from being signed out
@@ -160,25 +160,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const tempAuth = getAuth(tempApp);
     
     try {
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, userData.email!, userData.password!);
         const firebaseUser = userCredential.user;
+        const displayName = `${userData.firstName} ${userData.lastName}`;
 
-        await updateProfile(firebaseUser, { displayName });
-
-        const nameParts = displayName.split(' ');
-        const firstName = nameParts[0] || displayName;
-        const lastName = nameParts.slice(1).join(' ') || '';
+        await updateProfile(firebaseUser, { displayName, photoURL: userData.photoURL || null });
 
         const userRef = doc(db, 'users', firebaseUser.uid);
+        
+        // Don't save password in firestore
+        const { password, ...firestoreData } = userData;
+
         await setDoc(userRef, {
-            email,
-            username: extractUsernameFromEmail(email),
-            firstName: firstName,
-            lastName: lastName,
+            ...firestoreData,
             role: role, // Set role dynamically
+            username: userData.username || extractUsernameFromEmail(userData.email!),
             createdAt: serverTimestamp(),
-            photoURL: '',
-            phone: ''
+            photoURL: userData.photoURL || '',
+            phone: userData.phone || ''
         });
 
         return { isFirstUser };

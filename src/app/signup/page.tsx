@@ -26,7 +26,7 @@ import Link from "next/link";
 import Logo from "@/components/icons/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth.tsx";
+import { useAuth, User } from "@/hooks/use-auth.tsx";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { seedDatabase } from "@/lib/actions";
@@ -62,7 +62,19 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setFormLoading(true);
     try {
-      const { isFirstUser } = await signup(values.email, values.password, values.name);
+      const nameParts = values.name.split(' ');
+      const firstName = nameParts[0] || values.name;
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const userData: Omit<User, 'uid'> = {
+        email: values.email,
+        password: values.password,
+        firstName,
+        lastName,
+        role: 'customer', // Default role for public signup
+      };
+      
+      const { isFirstUser } = await signup(userData);
 
       if (isFirstUser) {
           toast({
