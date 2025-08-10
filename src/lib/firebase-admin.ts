@@ -16,7 +16,7 @@ const ADMIN_APP_NAME = 'firebase-admin-app-singleton';
  * from environment variables.
  * Ensures that the app is initialized only once (Singleton pattern).
  * @returns {App} The Firebase Admin App instance.
- * @throws {Error} If the required environment variables are not set.
+ * @throws {Error} If the required environment variables are not set or invalid.
  */
 function getAdminApp(): App {
   const apps = getApps();
@@ -43,7 +43,7 @@ function getAdminApp(): App {
       ADMIN_APP_NAME
     );
   } catch (error: any) {
-     throw new Error(`Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON: ${error.message}. Please ensure it's a valid, single-line JSON string.`);
+     throw new Error(`Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON. Please ensure it's a valid, single-line JSON string. Error: ${error.message}`);
   }
 }
 
