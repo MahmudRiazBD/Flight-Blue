@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Package } from "@/lib/data";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import BookingForm from "@/components/BookingForm";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { getEmbedUrl } from "@/lib/utils";
+import Autoplay from "embla-carousel-autoplay";
+
 
 type Props = {
   pkg: Package;
@@ -20,12 +22,20 @@ type Props = {
 export default function PackageDetailClient({ pkg }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const embedUrl = pkg.videoUrl ? getEmbedUrl(pkg.videoUrl) : null;
+  const plugin = useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: true })
+  );
 
   return (
     <div className="bg-background">
       <section className="relative h-64 md:h-96 bg-black">
-        {pkg.videoUrl ? (
-          <Carousel className="w-full h-full">
+        {pkg.videoUrl && embedUrl ? (
+          <Carousel 
+            className="w-full h-full"
+            plugins={[plugin.current]}
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+          >
             <CarouselContent>
               <CarouselItem>
                 <div className="relative w-full h-64 md:h-96">
@@ -39,8 +49,7 @@ export default function PackageDetailClient({ pkg }: Props) {
                   />
                 </div>
               </CarouselItem>
-              {embedUrl && (
-                <CarouselItem>
+              <CarouselItem>
                   <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
                     <iframe
                       className="w-full h-full"
@@ -52,10 +61,9 @@ export default function PackageDetailClient({ pkg }: Props) {
                     ></iframe>
                   </div>
                 </CarouselItem>
-              )}
             </CarouselContent>
-            <CarouselPrevious className="left-4" />
-            <CarouselNext className="right-4" />
+            <CarouselPrevious className="absolute left-4 z-10" />
+            <CarouselNext className="absolute right-4 z-10" />
           </Carousel>
         ) : (
           <Image
