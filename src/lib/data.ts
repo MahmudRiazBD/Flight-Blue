@@ -12,6 +12,7 @@ export type Page = {
   menuOrder: number;
   seoTitle?: string;
   seoDescription?: string;
+  deletedAt?: Timestamp | null;
 };
 
 export type HomePageSettings = {
@@ -96,6 +97,7 @@ export type Post = {
   publishedAt: string; // ISO date string
   videoUrl?: string;
   categoryId?: string;
+  deletedAt?: Timestamp | null;
 };
 
 export type Category = {
@@ -119,6 +121,7 @@ export type Package = {
   itinerary: { day: string; title: string; details: string }[];
   inclusions: string[];
   exclusions: string[];
+  deletedAt?: Timestamp | null;
 };
 
 export type Destination = {
@@ -545,5 +548,3 @@ export const contactMessages: ContactMessage[] = [
         isRead: true
     }
 ]
-
-    

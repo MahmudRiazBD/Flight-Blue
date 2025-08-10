@@ -2,12 +2,13 @@
 "use client"
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Booking } from "@/lib/data";
 import { format } from "date-fns";
@@ -20,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
@@ -37,6 +37,7 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const db = getFirestore(getFirebaseApp());
+  const router = useRouter();
 
   const loadBookings = async () => {
     setLoading(true);
@@ -85,6 +86,10 @@ export default function AdminBookingsPage() {
         toast({ title: "Error", description: "Failed to delete booking.", variant: "destructive" });
     }
   }
+  
+  const handleEdit = (bookingId: string) => {
+    router.push(`/admin/bookings/edit/${bookingId}`);
+  };
 
   return (
     <Card>
@@ -138,6 +143,10 @@ export default function AdminBookingsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => handleEdit(booking.id)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
                       <DropdownMenuSub>
                           <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
                           <DropdownMenuSubContent>
@@ -151,7 +160,10 @@ export default function AdminBookingsPage() {
                       <DropdownMenuItem className="text-destructive" asChild>
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <button className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
+                                 <button
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive"
+                                >
                                     <Trash2 className="mr-2 h-4 w-4"/>
                                     Delete Booking
                                 </button>

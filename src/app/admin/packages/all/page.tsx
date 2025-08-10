@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Package } from "@/lib/data";
-import { PlusCircle, MoreHorizontal, Trash2, Pencil } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Trash2, Pencil, Trash, RotateCw, AlertTriangle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import AddPackageForm from "@/components/admin/AddPackageForm";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp, query, where, orderBy } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,13 +25,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 export default function AdminAllPackagesPage() {
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [allPackages, setAllPackages] = useState<Package[]>([]);
+  const [trashedPackages, setTrashedPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
   const db = getFirestore(getFirebaseApp());
   const router = useRouter();
@@ -40,9 +43,11 @@ export default function AdminAllPackagesPage() {
     setLoading(true);
     try {
       const packagesCollection = collection(db, "packages");
-      const packagesSnapshot = await getDocs(packagesCollection);
+      const packagesSnapshot = await getDocs(query(packagesCollection, orderBy("title")));
       const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
-      setPackages(packagesList);
+      
+      setAllPackages(packagesList.filter(p => !p.deletedAt));
+      setTrashedPackages(packagesList.filter(p => !!p.deletedAt));
     } catch (error) {
       console.error("Error fetching packages:", error);
       toast({ title: "Error", description: "Could not fetch packages.", variant: "destructive" });
@@ -71,23 +76,25 @@ export default function AdminAllPackagesPage() {
     }
   };
   
-  const handleDelete = async (packageId: string) => {
-    try {
-        await deleteDoc(doc(db, "packages", packageId));
-        toast({
-            title: "Package Deleted",
-            description: "The package has been successfully deleted.",
-            variant: "destructive"
-        });
-        loadPackages();
-    } catch (e) {
-        toast({ title: "Error", description: "Could not delete package.", variant: "destructive"});
+  const handleAction = async (action: "trash" | "restore" | "delete", pkg: Package) => {
+    if (action === "trash") {
+        await updateDoc(doc(db, "packages", pkg.id), { deletedAt: serverTimestamp() });
+        toast({ title: "Package moved to trash." });
+    } else if (action === "restore") {
+        await updateDoc(doc(db, "packages", pkg.id), { deletedAt: null });
+        toast({ title: "Package restored." });
+    } else if (action === "delete") {
+        await deleteDoc(doc(db, "packages", pkg.id));
+        toast({ title: "Package permanently deleted.", variant: "destructive" });
     }
-  }
+    loadPackages();
+  };
   
   const handleEdit = (pkg: Package) => {
      router.push(`/admin/packages/edit/${pkg.id}`);
   }
+
+  const currentList = activeTab === 'all' ? allPackages : trashedPackages;
 
   return (
     <Card>
@@ -115,6 +122,47 @@ export default function AdminAllPackagesPage() {
         </Dialog>
       </CardHeader>
       <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="all">All Packages ({allPackages.length})</TabsTrigger>
+                <TabsTrigger value="trash">Trash ({trashedPackages.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="mt-4">
+                <PackageTable packages={currentList} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={false} />
+            </TabsContent>
+            <TabsContent value="trash" className="mt-4">
+                <PackageTable packages={currentList} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={true} />
+            </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+const PackageTable = ({ packages, loading, onAction, onEdit, isTrash }: { packages: Package[], loading: boolean, onAction: any, onEdit: any, isTrash: boolean }) => {
+    if (loading) {
+        return (
+            <div className="space-y-2 mt-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="flex items-center p-2">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-6 w-20 ml-auto" />
+                        <Skeleton className="h-8 w-8 ml-4" />
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    if (packages.length === 0) {
+        return (
+            <div className="text-center h-24 flex items-center justify-center">
+                <p>{isTrash ? "Trash is empty." : "No packages found."}</p>
+            </div>
+        )
+    }
+
+    return (
         <Table>
           <TableHeader>
             <TableRow>
@@ -126,18 +174,7 @@ export default function AdminAllPackagesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-6 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                </TableRow>
-              ))
-            ) : (
-              packages.map((pkg) => (
+            {packages.map((pkg) => (
                 <TableRow key={pkg.id}>
                   <TableCell className="font-medium">{pkg.title}</TableCell>
                   <TableCell>
@@ -157,51 +194,44 @@ export default function AdminAllPackagesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(pkg)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                 <DropdownMenuItem
-                                    onSelect={(e) => e.preventDefault()}
-                                    className="text-destructive"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
+                        {!isTrash && (
+                            <DropdownMenuItem onClick={() => onEdit(pkg)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                        )}
+                        {isTrash ? (
+                            <>
+                                <DropdownMenuItem onClick={() => onAction("restore", pkg)}>
+                                    <RotateCw className="mr-2 h-4 w-4" /> Restore
                                 </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete the package "{pkg.title}". This action cannot be undone.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(pkg.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Delete
-                                </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <button className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                                        </button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogDescription>This will permanently delete the package "{pkg.title}". This cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onAction("delete", pkg)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </>
+                        ) : (
+                             <DropdownMenuItem className="text-destructive" onClick={() => onAction("trash", pkg)}>
+                                <Trash className="mr-2 h-4 w-4" /> Move to Trash
+                            </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-            {!loading && packages.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">
-                        No packages found. Seed the database from the dashboard or add a new package.
-                    </TableCell>
-                </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
-  );
+    )
 }
