@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,8 @@ import { useState, useEffect } from "react";
 import MediaPicker from "./MediaPicker";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters."),
@@ -31,6 +33,10 @@ const formSchema = z.object({
   rating: z.coerce.number().min(0).max(5).default(4.5),
   imageUrl: z.string().url("Must be a valid URL.").default("https://placehold.co/600x400.png"),
   imageHint: z.string().optional(),
+  galleryImages: z.array(z.object({
+    url: z.string().url("A valid gallery image URL is required."),
+    hint: z.string().optional(),
+  })).optional(),
   videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   description: z.string().min(20, "Description must be at least 20 characters."),
 });
@@ -71,10 +77,17 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
       rating: 4.5,
       imageUrl: "https://placehold.co/600x400.png",
       imageHint: "",
+      galleryImages: [],
       videoUrl: "",
       description: "",
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "galleryImages",
+  });
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const newPackage: Omit<Package, 'id'> = {
@@ -215,7 +228,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
             name="imageUrl"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Package Image</FormLabel>
+                <FormLabel>Featured Image</FormLabel>
                 <FormControl>
                     <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
                 </FormControl>
@@ -229,7 +242,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
             name="imageHint"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Image Hint (for AI)</FormLabel>
+                <FormLabel>Featured Image Hint (for AI)</FormLabel>
                 <FormControl>
                     <Input placeholder="e.g. paris eiffel tower" {...field} />
                 </FormControl>
@@ -237,6 +250,51 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
                 </FormItem>
             )}
         />
+
+        <Separator />
+          
+          <div className="space-y-4">
+            <Label>Image Gallery</Label>
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md">
+                <div className="flex-grow space-y-4">
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.url`}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Image {index + 1}</Label>
+                        <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
+                      </div>
+                    )}
+                  />
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.hint`}
+                    render={({ field }) => (
+                       <div className="space-y-2">
+                        <Label>Image Hint {index + 1} (for AI)</Label>
+                        <Input {...field} value={field.value ?? ''} onChange={field.onChange} placeholder="e.g. cherry blossom" />
+                       </div>
+                    )}
+                  />
+                </div>
+                 <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => append({ url: 'https://placehold.co/1200x800.png', hint: '' })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Gallery Image
+            </Button>
+          </div>
+
+        <Separator />
 
         <FormField
             control={form.control}
@@ -259,3 +317,5 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
     </Form>
   );
 }
+
+    

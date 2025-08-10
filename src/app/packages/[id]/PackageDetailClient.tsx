@@ -14,7 +14,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { getEmbedUrl } from "@/lib/utils";
 import Autoplay from "embla-carousel-autoplay";
 
-
 type Props = {
   pkg: Package;
 };
@@ -25,11 +24,13 @@ export default function PackageDetailClient({ pkg }: Props) {
   const plugin = useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
+  
+  const allImages = [pkg.imageUrl, ...(pkg.galleryImages?.map(img => img.url) || [])];
 
   return (
     <div className="bg-background">
       <section className="relative h-64 md:h-96 bg-black">
-        {pkg.videoUrl && embedUrl ? (
+        {allImages.length > 1 ? (
           <Carousel 
             className="w-full h-full"
             plugins={[plugin.current]}
@@ -37,30 +38,19 @@ export default function PackageDetailClient({ pkg }: Props) {
             onMouseLeave={plugin.current.reset}
           >
             <CarouselContent>
-              <CarouselItem>
-                <div className="relative w-full h-64 md:h-96">
-                  <Image
-                    src={pkg.imageUrl}
-                    alt={pkg.title}
-                    layout="fill"
-                    objectFit="cover"
-                    className="brightness-75"
-                    data-ai-hint={pkg.imageHint}
-                  />
-                </div>
-              </CarouselItem>
-              <CarouselItem>
-                  <div className="w-full h-64 md:h-96 flex items-center justify-center bg-black">
-                    <iframe
-                      className="w-full h-full"
-                      src={embedUrl}
-                      title="Package Video"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
+              {allImages.map((image, index) => (
+                 <CarouselItem key={index}>
+                  <div className="relative w-full h-64 md:h-96">
+                    <Image
+                      src={image}
+                      alt={`${pkg.title} gallery image ${index + 1}`}
+                      layout="fill"
+                      objectFit="cover"
+                      className="brightness-75"
+                    />
                   </div>
                 </CarouselItem>
+              ))}
             </CarouselContent>
             <CarouselPrevious className="absolute left-4 z-10" />
             <CarouselNext className="absolute right-4 z-10" />
@@ -113,6 +103,21 @@ export default function PackageDetailClient({ pkg }: Props) {
                 </AccordionItem>
               ))}
             </Accordion>
+             {embedUrl && (
+                <div className="mt-12">
+                  <h2 className="text-3xl font-headline font-semibold mb-4">Tour Video</h2>
+                  <div className="aspect-video w-full rounded-lg overflow-hidden shadow-lg">
+                    <iframe
+                        className="w-full h-full"
+                        src={embedUrl}
+                        title="Package Video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
           </div>
 
           <aside className="lg:col-span-1">
@@ -176,3 +181,5 @@ export default function PackageDetailClient({ pkg }: Props) {
     </div>
   );
 }
+
+    

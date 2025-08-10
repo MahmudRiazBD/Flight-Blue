@@ -26,6 +26,10 @@ const packageSchema = z.object({
   description: z.string().min(20, "Description must be at least 20 characters long."),
   imageUrl: z.string().url("A valid featured image URL is required."),
   imageHint: z.string().optional(),
+  galleryImages: z.array(z.object({
+    url: z.string().url("A valid gallery image URL is required."),
+    hint: z.string().optional(),
+  })).optional(),
   videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   type: z.string().min(1, "Package type is required."),
   destination: z.string().min(1, "Destination is required."),
@@ -61,6 +65,11 @@ export default function EditPackagePage() {
     name: "itinerary",
   });
   
+  const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
+    control: form.control,
+    name: "galleryImages"
+  });
+  
   useEffect(() => {
     const loadDropdownData = async () => {
         try {
@@ -88,6 +97,7 @@ export default function EditPackagePage() {
         setPkg(packageData);
         form.reset({
           ...packageData,
+          galleryImages: packageData.galleryImages || [],
           itinerary: packageData.itinerary || [],
           inclusions: packageData.inclusions || [],
           exclusions: packageData.exclusions || [],
@@ -223,6 +233,52 @@ export default function EditPackagePage() {
             <Label htmlFor="imageHint">Image Hint (for AI)</Label>
             <Input id="imageHint" {...form.register("imageHint")} />
           </div>
+          
+          <Separator />
+          
+          <div className="space-y-4">
+            <Label>Image Gallery</Label>
+            {galleryFields.map((field, index) => (
+              <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md">
+                <div className="flex-grow space-y-4">
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.url`}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Image {index + 1}</Label>
+                        <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
+                      </div>
+                    )}
+                  />
+                   <Controller
+                    control={form.control}
+                    name={`galleryImages.${index}.hint`}
+                    render={({ field }) => (
+                       <div className="space-y-2">
+                        <Label>Image Hint {index + 1} (for AI)</Label>
+                        <Input {...field} value={field.value ?? ''} onChange={field.onChange} placeholder="e.g. cherry blossom" />
+                       </div>
+                    )}
+                  />
+                </div>
+                 <Button type="button" variant="destructive" size="icon" onClick={() => removeGallery(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => appendGallery({ url: 'https://placehold.co/1200x800.png', hint: '' })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Gallery Image
+            </Button>
+          </div>
+
+          <Separator />
+
 
            <div className="space-y-2">
             <Label htmlFor="videoUrl">Video URL (Optional)</Label>
@@ -279,3 +335,5 @@ export default function EditPackagePage() {
     </Card>
   );
 }
+
+    

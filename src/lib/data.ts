@@ -112,7 +112,8 @@ export type Package = {
   price: number;
   rating: number;
   imageUrl: string;
-  imageHint: string;
+  imageHint?: string;
+  galleryImages?: GalleryImage[];
   videoUrl?: string; // Optional video URL
   description: string;
   itinerary: { day: string; title: string; details: string }[];
@@ -198,6 +199,11 @@ export const packages: Package[] = [
     rating: 4.8,
     imageUrl: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "paris eiffel tower",
+    galleryImages: [
+        { url: 'https://images.pexels.com/photos/1850619/pexels-photo-1850619.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'paris street cafe' },
+        { url: 'https://images.pexels.com/photos/2082101/pexels-photo-2082101.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'louvre museum exterior' },
+        { url: 'https://images.pexels.com/photos/2363/mont-saint-michel-france-normandy-europe.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'mont saint michel' }
+    ],
     videoUrl: "https://www.youtube.com/watch?v=g3284iK2_gA",
     description: "Experience the magic of Paris, from the Eiffel Tower to the charming streets of Montmartre. This tour is a perfect blend of art, culture, and romance, offering an unforgettable journey through the City of Lights. Walk along the Seine, indulge in delicious pastries, and create memories that will last a lifetime.",
     itinerary: [
@@ -222,6 +228,11 @@ export const packages: Package[] = [
     rating: 5.0,
     imageUrl: "https://images.pexels.com/photos/8947610/pexels-photo-8947610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "Kaaba Mecca",
+    galleryImages: [
+        { url: 'https://images.pexels.com/photos/10787728/pexels-photo-10787728.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'prophet mosque Madinah' },
+        { url: 'https://images.pexels.com/photos/5436662/pexels-photo-5436662.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'pilgrims praying' },
+        { url: 'https://images.pexels.com/photos/14493979/pexels-photo-14493979.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'madinah mosque interior' },
+    ],
     videoUrl: "https://www.youtube.com/watch?v=a_gI8L5JAtA",
     description: "Perform the sacred pilgrimage of Hajj with utmost comfort and peace of mind. Our premium package includes 5-star hotels near the Haramain, dedicated scholarly guidance, and private transportation to ensure a focused and spiritually uplifting journey.",
     itinerary: [
@@ -241,8 +252,8 @@ export const packages: Package[] = [
     duration: 10,
     price: 120000,
     rating: 4.5,
-    imageUrl: "https://images.pexels.com/photos/10787728/pexels-photo-10787728.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    imageHint: "prophet mosque Madinah",
+    imageUrl: "https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    imageHint: "kaaba mecca pilgrimage",
     videoUrl: "https://www.youtube.com/watch?v=F4qfu8sE-go",
     description: "An affordable, well-organized package to fulfill your spiritual journey of Umrah. This package includes clean, comfortable hotels and reliable group ground transportation, allowing you to focus on your prayers and supplications.",
     itinerary: [
@@ -263,6 +274,11 @@ export const packages: Package[] = [
     rating: 4.9,
     imageUrl: "https://images.pexels.com/photos/1684933/pexels-photo-1684933.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "Tokyo sensoji temple",
+    galleryImages: [
+        { url: 'https://images.pexels.com/photos/402028/pexels-photo-402028.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'fushimi inari shrine' },
+        { url: 'https://images.pexels.com/photos/236111/pexels-photo-236111.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'shibuya crossing' },
+        { url: 'https://images.pexels.com/photos/672358/pexels-photo-672358.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'bamboo forest arashiyama' },
+    ],
     videoUrl: "https://www.youtube.com/watch?v=Flq-IHSv5jA",
     description: "Explore the vibrant contrast of Tokyo, from ancient temples to futuristic skyscrapers. This journey through Japan's dynamic capital offers a deep dive into its culture, cuisine, and cutting-edge technology.",
     itinerary: [
@@ -288,6 +304,11 @@ export const packages: Package[] = [
     rating: 4.7,
     imageUrl: "https://images.pexels.com/photos/208723/pexels-photo-208723.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "Rome Colosseum",
+    galleryImages: [
+        { url: 'https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'colosseum interior' },
+        { url: 'https://images.pexels.com/photos/753639/pexels-photo-753639.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'trevi fountain' },
+        { url: 'https://images.pexels.com/photos/2249959/pexels-photo-2249959.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'vatican city square' }
+    ],
     videoUrl: "https://www.youtube.com/watch?v=T4zU-3jL9bA",
     description: "Step back in time and walk in the footsteps of emperors and gladiators. Discover the ancient wonders, Renaissance art, and vibrant culture of the Eternal City, Rome. This short, immersive trip is perfect for first-time visitors.",
     itinerary: [
@@ -310,6 +331,11 @@ export const packages: Package[] = [
     rating: 4.6,
     imageUrl: "https://images.pexels.com/photos/3978518/pexels-photo-3978518.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "Istanbul hagia sophia",
+    galleryImages: [
+        { url: 'https://images.pexels.com/photos/1549326/pexels-photo-1549326.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'blue mosque' },
+        { url: 'https://images.pexels.com/photos/2245436/pexels-photo-2245436.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'turkish lanterns bazaar' },
+        { url: 'https://images.pexels.com/photos/262963/pexels-photo-262963.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'turkish tea' }
+    ],
     videoUrl: "https://www.youtube.com/watch?v=CqM2cGY-p2M",
     description: "Discover the city where East meets West. Explore historic mosques, bustling bazaars, magnificent palaces, and savor delicious Turkish cuisine. This tour immerses you in the vibrant culture and rich history of Istanbul.",
     itinerary: [
@@ -520,6 +546,4 @@ export const contactMessages: ContactMessage[] = [
     }
 ]
 
-
-
-
+    
