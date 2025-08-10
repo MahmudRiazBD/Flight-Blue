@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import MediaDetailModal from '@/components/admin/MediaDetailModal';
-import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -200,20 +200,17 @@ export default function AdminMediaPage() {
   const fetchMedia = async () => {
     setLoading(true);
     try {
-        // Fetch active files. The query now includes an orderBy for 'deletedAt'.
-        // This allows Firestore to use default indexes efficiently without needing a custom composite index.
-        const activeQuery = query(
-            mediaCollection, 
-            where("deletedAt", "==", null), 
-            orderBy("uploadedAt", "desc")
-        );
-        const activeSnapshot = await getDocs(activeQuery);
-        setMediaFiles(activeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
-
-        // Fetch trashed files
-        const trashedQuery = query(mediaCollection, where("deletedAt", "!=", null), orderBy("deletedAt", "desc"));
-        const trashedSnapshot = await getDocs(trashedQuery);
-        setTrashedFiles(trashedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
+        // Fetch all files ordered by upload date. This query does not need a composite index.
+        const allFilesQuery = query(mediaCollection, orderBy("uploadedAt", "desc"));
+        const snapshot = await getDocs(allFilesQuery);
+        const allFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile));
+        
+        // Filter into active and trashed files on the client-side
+        const active = allFiles.filter(file => !file.deletedAt);
+        const trashed = allFiles.filter(file => !!file.deletedAt);
+        
+        setMediaFiles(active);
+        setTrashedFiles(trashed.sort((a, b) => b.deletedAt!.toMillis() - a.deletedAt!.toMillis()));
 
     } catch (error) {
         console.error("Error fetching media files:", error);
@@ -606,3 +603,4 @@ export default function AdminMediaPage() {
     </>
   );
 }
+
