@@ -1,84 +1,87 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isUser(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isSuperAdmin() {
-        return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-
-    function isStaff() {
-        return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
-    }
-
-    function isAdminOrSuperAdmin() {
-      return isAdmin() || isSuperAdmin();
-    }
-    
-    function isStaffOrAdminOrSuperAdmin() {
-      return isStaff() || isAdmin() || isSuperAdmin();
-    }
-
+  
+    // USER MANAGEMENT
+    // Allow anyone to create their own user document upon signup.
+    // Allow users to read their own data.
+    // Allow users to update their own data.
+    // Allow admins/superadmins to read/write any user document.
     match /users/{userId} {
-      allow read: if true;
-      allow create: if isUser(userId) || isAdminOrSuperAdmin();
-      allow update: if isUser(userId) || isAdminOrSuperAdmin();
-      allow delete: if isAdminOrSuperAdmin();
+      allow read, update: if request.auth.uid == userId 
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow create: if request.auth.uid == userId;
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
 
-    match /packages/{packageId} {
+    // PACKAGES & RELATED DATA (Destinations, Types)
+    // Anyone can read packages, destinations, and types.
+    // Only admins/superadmins can create, update, or delete them.
+    match /packages/{docId} {
       allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
-
-    match /destinations/{destinationId} {
+     match /destinations/{docId} {
       allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
-
-    match /packageTypes/{typeId} {
+     match /packageTypes/{docId} {
       allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
-    }
-
-    match /posts/{postId} {
-      allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
-    }
-
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
     
-    match /pages/{pageId} {
+    // BOOKINGS
+    // Only admins/superadmins can view all bookings.
+    // Any authenticated user can create a booking.
+    match /bookings/{docId} {
+      allow read, list, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      allow create: if request.auth != null;
+    }
+
+    // BLOG & CATEGORIES
+    // Anyone can read posts and categories.
+    // Only staff, admins, or superadmins can create/update/delete them.
+    function isContentCreator() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['staff', 'admin', 'superadmin'];
+    }
+    match /posts/{docId} {
       allow read: if true;
-      allow create, update, delete: if isStaffOrAdminOrSuperAdmin();
+      allow write: if isContentCreator();
     }
-
-    match /bookings/{bookingId} {
-      allow read: if request.auth != null; // Only logged-in users can see their bookings
-      allow create: if request.auth != null; // Only logged-in users can create bookings
-      allow update, delete: if isStaffOrAdminOrSuperAdmin();
-    }
-
-    match /contactMessages/{messageId} {
-      allow read, update, delete: if isStaffOrAdminOrSuperAdmin();
-      allow create: if true; // Anyone can send a message
+    match /categories/{docId} {
+      allow read: if true;
+      allow write: if isContentCreator();
     }
     
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdminOrSuperAdmin();
+    // MESSAGES
+    // Only admins/superadmins can read/write messages.
+    // Anyone can create a message (submit contact form).
+    match /contactMessages/{docId} {
+        allow read, list, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+        allow create: if true;
+    }
+    
+    // MEDIA
+    // Admins/superadmins have full access.
+    // We assume media URLs are public, but metadata management is restricted.
+    match /media/{docId} {
+        allow read, list, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+    
+    // SETTINGS & PAGES
+    // Anyone can read settings and published pages.
+    // Only admins/superadmins can write settings or pages.
+    match /settings/{docId} {
+        allow read: if true;
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+     match /pages/{docId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+      // Allow admins to read non-published pages too
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
     }
   }
 }
