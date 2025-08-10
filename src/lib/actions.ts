@@ -1,5 +1,6 @@
 
 'use server';
+import 'dotenv/config';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
@@ -178,6 +179,10 @@ export async function seedDatabase() {
     return { success: true, message: "Database seeded successfully!" };
   } catch (error) {
     console.error("Error during database seeding:", error);
-    return { success: false, message: `An unexpected error occurred during seeding: ${error instanceof Error ? error.message : String(error)}` };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Credential')) {
+        return { success: false, message: `Seeding failed: Firebase Admin credentials are not configured correctly on the server. ${errorMessage}` };
+    }
+    return { success: false, message: `An unexpected error occurred during seeding: ${errorMessage}` };
   }
 }
