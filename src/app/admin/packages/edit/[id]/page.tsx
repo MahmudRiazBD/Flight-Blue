@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Destination, PackageType } from "@/lib/data";
+import { Package, Destination, PackageType, GalleryImage } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,12 +24,10 @@ import { Separator } from "@/components/ui/separator";
 const packageSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   description: z.string().min(20, "Description must be at least 20 characters long."),
-  imageUrl: z.string().url("A valid featured image URL is required."),
-  imageHint: z.string().optional(),
   galleryImages: z.array(z.object({
     url: z.string().url("A valid gallery image URL is required."),
     hint: z.string().optional(),
-  })).optional(),
+  })).min(1, "At least one gallery image is required."),
   videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   type: z.string().min(1, "Package type is required."),
   destination: z.string().min(1, "Destination is required."),
@@ -95,9 +93,15 @@ export default function EditPackagePage() {
       if (docSnap.exists()) {
         const packageData = { id: docSnap.id, ...docSnap.data() } as Package;
         setPkg(packageData);
+        
+        const allImages: GalleryImage[] = [
+            { url: packageData.imageUrl, hint: packageData.imageHint },
+            ...(packageData.galleryImages || [])
+        ];
+
         form.reset({
           ...packageData,
-          galleryImages: packageData.galleryImages || [],
+          galleryImages: allImages,
           itinerary: packageData.itinerary || [],
           inclusions: packageData.inclusions || [],
           exclusions: packageData.exclusions || [],
@@ -114,7 +118,15 @@ export default function EditPackagePage() {
 
     try {
       const packageRef = doc(db, "packages", pkg.id);
-      await updateDoc(packageRef, { ...data });
+      const { galleryImages, ...rest } = data;
+      const finalData = {
+          ...rest,
+          imageUrl: galleryImages[0].url,
+          imageHint: galleryImages[0].hint,
+          galleryImages: galleryImages.slice(1),
+      };
+
+      await updateDoc(packageRef, finalData);
       toast({
         title: "Package Updated!",
         description: "The package has been successfully updated.",
@@ -217,27 +229,11 @@ export default function EditPackagePage() {
             </div>
           </div>
           
-           <div className="space-y-2">
-            <Label>Featured Image</Label>
-            <Controller
-              name="imageUrl"
-              control={form.control}
-              render={({ field }) => (
-                <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
-              )}
-            />
-            {form.formState.errors.imageUrl && <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="imageHint">Image Hint (for AI)</Label>
-            <Input id="imageHint" {...form.register("imageHint")} />
-          </div>
-          
           <Separator />
           
           <div className="space-y-4">
             <Label>Image Gallery</Label>
+            <p className="text-sm text-muted-foreground">The first image will be used as the main featured image.</p>
             {galleryFields.map((field, index) => (
               <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md">
                 <div className="flex-grow space-y-4">
@@ -275,10 +271,10 @@ export default function EditPackagePage() {
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Gallery Image
             </Button>
+            {form.formState.errors.galleryImages && <p className="text-sm text-destructive">{form.formState.errors.galleryImages.message}</p>}
           </div>
 
           <Separator />
-
 
            <div className="space-y-2">
             <Label htmlFor="videoUrl">Video URL (Optional)</Label>
@@ -335,5 +331,3 @@ export default function EditPackagePage() {
     </Card>
   );
 }
-
-    

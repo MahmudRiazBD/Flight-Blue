@@ -25,7 +25,10 @@ export default function PackageDetailClient({ pkg }: Props) {
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
   
-  const allImages = [pkg.imageUrl, ...(pkg.galleryImages?.map(img => img.url) || [])];
+  const allImages = [
+      { url: pkg.imageUrl, hint: pkg.imageHint },
+      ...(pkg.galleryImages || [])
+  ];
 
   return (
     <div className="bg-background">
@@ -42,11 +45,11 @@ export default function PackageDetailClient({ pkg }: Props) {
                  <CarouselItem key={index}>
                   <div className="relative w-full h-64 md:h-96">
                     <Image
-                      src={image}
+                      src={image.url}
                       alt={`${pkg.title} gallery image ${index + 1}`}
-                      layout="fill"
-                      objectFit="cover"
-                      className="brightness-75"
+                      fill
+                      className="object-cover brightness-75"
+                      data-ai-hint={image.hint}
                     />
                   </div>
                 </CarouselItem>
@@ -59,9 +62,8 @@ export default function PackageDetailClient({ pkg }: Props) {
           <Image
             src={pkg.imageUrl}
             alt={pkg.title}
-            layout="fill"
-            objectFit="cover"
-            className="brightness-75"
+            fill
+            className="object-cover brightness-75"
             data-ai-hint={pkg.imageHint}
           />
         )}
@@ -181,5 +183,3 @@ export default function PackageDetailClient({ pkg }: Props) {
     </div>
   );
 }
-
-    
