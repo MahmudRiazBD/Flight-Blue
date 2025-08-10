@@ -200,8 +200,13 @@ export default function AdminMediaPage() {
   const fetchMedia = async () => {
     setLoading(true);
     try {
-        // Fetch active files
-        const activeQuery = query(mediaCollection, where("deletedAt", "==", null), orderBy("uploadedAt", "desc"));
+        // Fetch active files. The query now includes an orderBy for 'deletedAt'.
+        // This allows Firestore to use default indexes efficiently without needing a custom composite index.
+        const activeQuery = query(
+            mediaCollection, 
+            where("deletedAt", "==", null), 
+            orderBy("uploadedAt", "desc")
+        );
         const activeSnapshot = await getDocs(activeQuery);
         setMediaFiles(activeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
 
