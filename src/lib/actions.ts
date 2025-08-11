@@ -1,11 +1,12 @@
 
+
 'use server';
 import 'dotenv/config';
 
 import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
-import { packages, posts, categories, destinations, packageTypes } from "./data";
+import { packages, posts, categories, destinations, packageTypes, bookings, contactMessages } from "./data";
 import { CollectionReference, WriteBatch } from "firebase-admin/firestore";
 import type { User } from "@/hooks/use-auth";
 
@@ -127,6 +128,8 @@ async function seedDatabase(adminId: string) {
     await seedCollection('categories', categories, adminDb);
     await seedCollection('destinations', destinations, adminDb);
     await seedCollection('packageTypes', packageTypes, adminDb);
+    await seedCollection('bookings', bookings, adminDb);
+    await seedCollection('contactMessages', contactMessages, adminDb);
 
     // Special handling for posts to include authorId
     const postsWithAuthor = posts.map(post => ({...post, authorId: adminId}));

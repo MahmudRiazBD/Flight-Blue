@@ -422,8 +422,8 @@ export const categories: Category[] = [
 export const posts: Omit<Post, 'deletedAt'>[] = [
   {
     id: 'post-1',
-    title: '10 Essential Tips for Your First Trip to Japan',
     slug: '10-essential-tips-for-your-first-trip-to-japan',
+    title: '10 Essential Tips for Your First Trip to Japan',
     content: 'Japan is a country of amazing contrasts, blending ancient traditions with futuristic technology. To help you navigate your first adventure in the Land of the Rising Sun, we\'ve compiled 10 essential tips. From mastering the incredibly efficient railway system (and why a JR Pass is a must-have) to understanding basic etiquette like bowing and handling money, we\'ve got you covered. Don\'t forget to try the authentic ramen from a local shop - it\'s an experience in itself! We also touch on navigating the bustling cities, finding tranquility in temples, and the convenience of 7-Eleven stores for everything from snacks to ATM withdrawals that accept foreign cards.',
     featuredImageUrl: 'https://images.pexels.com/photos/364096/pexels-photo-364096.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'tokyo street night',
@@ -440,8 +440,8 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
   },
   {
     id: 'post-2',
-    title: 'A Pilgrim\'s Guide: Preparing for a Meaningful Umrah',
     slug: 'a-pilgrims-guide-preparing-for-umrah',
+    title: 'A Pilgrim\'s Guide: Preparing for a Meaningful Umrah',
     content: 'Performing Umrah is a profound spiritual experience for Muslims worldwide. This guide covers the essential rituals, preparations, and practical advice for a meaningful pilgrimage to the holy cities of Makkah and Madinah. We explain the spiritual significance and practical steps of entering the state of Ihram, performing the Tawaf around the Kaaba, and completing the Sa\'i between Safa and Marwah. Learn about the best times to go, what to pack (hint: less is more), and how to maintain focus and devotion throughout your journey to make it a spiritually fulfilling and accepted act of worship.',
     featuredImageUrl: 'https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'kaaba mecca pilgrimage',
@@ -458,8 +458,8 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
   },
    {
     id: 'post-3',
-    title: 'The Art of the Parisian Café: An Ultimate Guide',
     slug: 'the-ultimate-guide-to-parisian-cafes',
+    title: 'The Art of the Parisian Café: An Ultimate Guide',
     content: 'No trip to Paris is complete without whiling away an afternoon at a classic sidewalk cafe. It\'s an essential part of the city\'s culture. From historical literary haunts where Hemingway and Sartre once wrote, to modern specialty coffee shops pushing the boundaries of brewing, this guide will help you discover the best places to sip an espresso and watch the world go by. We\'ll teach you how to order like a local, explaining the difference between a "café crème", a "noisette", and an "allongé". Find your perfect spot to soak in the Parisian atmosphere and enjoy the simple pleasure of a good coffee.',
     featuredImageUrl: 'https://images.pexels.com/photos/1578332/pexels-photo-1578332.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'paris cafe street',
@@ -476,8 +476,8 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
   },
   {
     id: 'post-4',
-    title: 'Exploring the Grand Bazaar of Istanbul',
     slug: 'exploring-the-grand-bazaar-of-istanbul',
+    title: 'Exploring the Grand Bazaar of Istanbul',
     content: 'The Grand Bazaar in Istanbul is one of the oldest and largest covered markets in the world, with 61 covered streets and over 4,000 shops. This guide provides tips on how to navigate its labyrinthine alleys, what to buy (from beautiful carpets and intricate lanterns to spices and Turkish delight), and how to bargain like a local. Discover hidden courtyards (hans), traditional workshops, and the best places to stop for a cup of strong Turkish tea. Prepare to get lost in a sensory overload of sights, sounds, and smells in this historic marketplace that has been the heart of Istanbul\'s commerce for centuries.',
     featuredImageUrl: 'https://images.pexels.com/photos/10181373/pexels-photo-10181373.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'istanbul grand bazaar',
@@ -494,8 +494,8 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
   },
   {
     id: 'post-5',
-    title: 'How to Enjoy Coffee Like an Italian in Rome',
     slug: 'how-to-enjoy-coffee-like-an-italian-in-rome',
+    title: 'How to Enjoy Coffee Like an Italian in Rome',
     content: 'Coffee in Italy is a culture, not just a beverage. It\'s a ritual with unwritten rules. This post explores how to drink coffee in Rome like a true local. Learn why you should only order your cappuccino in the morning, how to order an espresso "al banco" (at the counter) for a quick and cheap caffeine hit, and the different types of coffee you can find. From a simple "caffè" (an espresso) to a "macchiato" or "corretto" (with a shot of grappa), we will guide you through the rich and delicious coffee traditions of the Eternal City.',
     featuredImageUrl: 'https://images.pexels.com/photos/1684223/pexels-photo-1684223.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'rome coffee shop',
@@ -512,9 +512,8 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
   },
 ];
 
-export const bookings: Booking[] = [
+export const bookings: Omit<Booking, 'id' | 'deletedAt'>[] = [
     {
-        id: "booking-1",
         packageId: "paris-dream-tour",
         packageName: "Parisian Dream Tour",
         customerName: "Alice Johnson",
@@ -526,7 +525,6 @@ export const bookings: Booking[] = [
         status: "Confirmed"
     },
     {
-        id: "booking-2",
         packageId: "economy-umrah-package",
         packageName: "Economy Umrah Package",
         customerName: "Bob Williams",
@@ -536,26 +534,54 @@ export const bookings: Booking[] = [
         departureDate: "2024-07-20T00:00:00.000Z",
         bookingDate: "2024-06-12T10:00:00.000Z",
         status: "Pending"
+    },
+    {
+        packageId: "tokyo-tech-tradition",
+        packageName: "Tokyo: Tech & Tradition",
+        customerName: "Diana Prince",
+        customerEmail: "diana@example.com",
+        customerPhone: "777-888-9999",
+        travelers: 3,
+        departureDate: "2024-09-05T00:00:00.000Z",
+        bookingDate: "2024-06-20T11:00:00.000Z",
+        status: "Confirmed"
+    },
+     {
+        packageId: "istanbul-crossroads",
+        packageName: "Istanbul: Crossroads of Continents",
+        customerName: "Charlie Brown",
+        customerEmail: "charlie@example.com",
+        customerPhone: "123-456-7890",
+        travelers: 4,
+        departureDate: "2024-10-01T00:00:00.000Z",
+        bookingDate: "2024-06-22T18:45:00.000Z",
+        status: "Cancelled"
     }
 ];
 
-export const contactMessages: ContactMessage[] = [
+export const contactMessages: Omit<ContactMessage, 'id' | 'deletedAt'>[] = [
     {
-        id: "msg-1",
-        name: "Charlie Brown",
-        email: "charlie@example.com",
+        name: "Eve Adams",
+        email: "eve@example.com",
         subject: "Inquiry about Tokyo tour",
         message: "Hi, I'd like to know if there are any discounts available for the Tokyo: Tech & Tradition tour for a group of 4. Thanks!",
         submittedAt: "2024-06-15T09:00:00.000Z",
         isRead: false
     },
     {
-        id: "msg-2",
-        name: "Diana Prince",
-        email: "diana@example.com",
+        name: "Frank Miller",
+        email: "frank@example.com",
         subject: "Feedback on Parisian Dream Tour",
         message: "Just got back from the Paris tour, it was absolutely wonderful! Our guide was fantastic. Thank you for an unforgettable experience.",
         submittedAt: "2024-06-14T18:30:00.000Z",
         isRead: true
+    },
+    {
+        name: "Grace Lee",
+        email: "grace@example.com",
+        subject: "Question about Hajj package",
+        message: "I am interested in the Premium Hajj package. Could you provide more details about the visa process and the expected fees for next year?",
+        submittedAt: "2024-06-21T14:00:00.000Z",
+        isRead: false
     }
-]
+];
