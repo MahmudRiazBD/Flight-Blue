@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 
 export default function PackagesPage() {
@@ -25,8 +25,10 @@ export default function PackagesPage() {
             setLoading(true);
             try {
                 const db = getFirestore(getFirebaseApp());
-                const packagesSnapshot = await getDocs(collection(db, 'packages'));
-                const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
+                const packagesCollection = collection(db, 'packages');
+                const packagesQuery = query(packagesCollection, where("deletedAt", "==", null));
+                const packagesSnapshot = await getDocs(packagesQuery);
+                const packagesList = packagesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, slug: doc.data().slug } as Package));
                 setAllPackages(packagesList);
 
                 if (packagesList.length > 0) {
