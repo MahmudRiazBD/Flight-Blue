@@ -234,7 +234,7 @@ export default function AdminSettingsPage() {
         )
     }
 
-  return (
+    return (
     <div className="space-y-6">
         <Card>
         <CardHeader>
@@ -452,5 +452,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-
-    
