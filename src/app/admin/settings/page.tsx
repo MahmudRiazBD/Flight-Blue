@@ -29,6 +29,7 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'youtube', label: 'YouTube' },
 ];
 
+
 function ResetApplicationZone() {
     const { toast } = useToast();
     const { logout } = useAuth();
@@ -183,7 +184,7 @@ export default function AdminSettingsPage() {
         if (!settings) return;
         const newLinks = settings.socialLinks.filter((_, i) => i !== index);
         handleSettingsChange('socialLinks', newLinks);
-    };
+    }
 
 
     const handleSaveChanges = async () => {
