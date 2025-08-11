@@ -6,10 +6,7 @@ async function checkSetupStatus(request: NextRequest): Promise<boolean> {
     try {
         // Use an absolute URL for the fetch request to ensure it works correctly.
         const url = new URL('/api/setup-check', request.url);
-        const response = await fetch(url.toString(), {
-            // Smartly cache the result for 30 seconds to balance performance and responsiveness.
-            next: { revalidate: 30 },
-        });
+        const response = await fetch(url.toString());
 
         if (!response.ok) {
             console.error(`Middleware setup check failed with status: ${response.status}`);

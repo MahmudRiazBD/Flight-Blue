@@ -7,9 +7,10 @@ export const dynamic = 'force-dynamic'; // Ensures this route is not statically 
 export async function GET(request: Request) {
     try {
         const adminDb = getAdminFirestore();
-        const usersRef = adminDb.collection('users');
-        const snapshot = await usersRef.limit(1).get();
-        const isSetupComplete = !snapshot.empty;
+        const statusRef = adminDb.collection('settings').doc('siteStatus');
+        const statusDoc = await statusRef.get();
+        
+        const isSetupComplete = statusDoc.exists && statusDoc.data()?.isSetupComplete === true;
         
         return NextResponse.json({ isSetupComplete });
 
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ isSetupComplete: false });
         }
         
-        // For other errors, we default to true to avoid locking out the site.
-        return NextResponse.json({ isSetupComplete: true }, { status: 500 });
+        // For other errors, we default to assuming setup is not complete to be safe.
+        return NextResponse.json({ isSetupComplete: false });
     }
 }

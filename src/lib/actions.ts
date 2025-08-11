@@ -238,6 +238,10 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
         
         // Seed the database
         await seedDatabase(userRecord.uid);
+        
+        // Set the setup status flag
+        const statusRef = adminDb.collection('settings').doc('siteStatus');
+        await statusRef.set({ isSetupComplete: true });
 
         return { success: true, message: "Superadmin created and database seeded successfully." };
     } catch (error: any) {
