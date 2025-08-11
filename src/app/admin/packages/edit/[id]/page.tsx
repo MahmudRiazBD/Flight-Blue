@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 
 const packageSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
+  slug: z.string().min(1, "Slug is required."),
   description: z.string().min(20, "Description must be at least 20 characters long."),
   galleryImages: z.array(z.object({
     url: z.string().url("A valid gallery image URL is required."),
@@ -185,6 +186,13 @@ export default function EditPackagePage() {
             <Label htmlFor="title">Package Title</Label>
             <Input id="title" {...form.register("title")} />
             {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug</Label>
+            <Input id="slug" {...form.register("slug")} />
+             <p className="text-sm text-muted-foreground">The unique URL-friendly identifier for the package.</p>
+            {form.formState.errors.slug && <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>}
           </div>
           
            <div className="space-y-2">
@@ -380,5 +388,3 @@ export default function EditPackagePage() {
     </Card>
   );
 }
-
-    

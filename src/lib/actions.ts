@@ -73,9 +73,11 @@ async function seedCollection(collectionName: string, data: any[], db: FirebaseF
     data.forEach(item => {
         // Use the item's own ID if it exists, otherwise let Firestore generate one.
         const docRef = item.id ? collectionRef.doc(item.id) : collectionRef.doc();
+        // The transform function can be used to modify the item before saving
+        const itemData = transform(item);
         // Remove the id from the data object itself before setting
-        const { id, ...itemData } = item;
-        batch.set(docRef, transform(itemData));
+        const { id, ...finalItemData } = itemData;
+        batch.set(docRef, finalItemData);
     });
 
     await batch.commit();
@@ -128,7 +130,10 @@ async function seedDatabase(adminId: string) {
 
     // Special handling for posts to include authorId
     const postsWithAuthor = posts.map(post => ({...post, authorId: adminId}));
-    await seedCollection('posts', postsWithAuthor, adminDb);
+    await seedCollection('posts', postsWithAuthor, adminDb, item => {
+        const { id, ...rest } = item; // Use the transform function to strip the ID from the object being written
+        return rest;
+    });
 
 
     // Seed settings
