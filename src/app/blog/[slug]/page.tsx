@@ -13,6 +13,7 @@ import { getEmbedUrl } from "@/lib/utils";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
 import Head from 'next/head';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
@@ -35,6 +36,11 @@ export default function BlogPostPage() {
   const [author, setAuthor] = useState<UserData | null>(null);
   
   const embedUrl = post?.videoUrl ? getEmbedUrl(post.videoUrl) : null;
+  
+  const galleryImages = post ? [
+    { url: post.featuredImageUrl, hint: post.featuredImageHint || '' },
+    ...(post.galleryImages || [])
+  ] : [];
 
   useEffect(() => {
     const fetchPostAndAuthor = async () => {
@@ -127,41 +133,27 @@ export default function BlogPostPage() {
           </div>
         </header>
         
-         <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden shadow-lg mb-8">
-              <Image
-                src={post.featuredImageUrl}
-                alt={post.title}
-                fill
-                className="object-cover"
-                data-ai-hint={post.featuredImageHint}
-              />
-         </div>
-
-        {post.galleryImages && post.galleryImages.length > 0 && (
-            <div className="my-12">
-                 <div className="flex flex-wrap -mx-2">
-                    {post.galleryImages.map((image, index) => (
-                        <div key={index} 
-                          className={
-                            post.galleryImages && post.galleryImages.length === 1 ? 'w-full p-2' :
-                            post.galleryImages && post.galleryImages.length === 2 ? 'w-1/2 p-2' :
-                            'w-full sm:w-1/2 md:w-1/3 p-2'
-                          }
-                        >
-                            <div className="relative aspect-video rounded-lg overflow-hidden shadow-lg">
-                                <Image
-                                    src={image.url}
-                                    alt={`Gallery image ${index + 1}`}
-                                    fill
-                                    className="object-cover"
-                                    data-ai-hint={image.hint}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
+         <div className="mb-8">
+           <Carousel className="w-full">
+              <CarouselContent>
+                {galleryImages.map((image, index) => (
+                  <CarouselItem key={index}>
+                    <div className="relative aspect-video rounded-lg overflow-hidden shadow-lg">
+                      <Image
+                        src={image.url}
+                        alt={`${post.title} gallery image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={image.hint}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="absolute left-4 z-10" />
+              <CarouselNext className="absolute right-4 z-10" />
+            </Carousel>
+        </div>
 
 
         <div className="prose prose-lg max-w-none mx-auto text-foreground/80">
