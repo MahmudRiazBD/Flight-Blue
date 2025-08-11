@@ -48,9 +48,9 @@ function DangerZone() {
                     description: "The application has been reset to its initial state. You will now be logged out.",
                 });
                 // Logout the user and redirect to allow the setup process to restart
-                logout();
-                router.push('/');
-                router.refresh();
+                await logout();
+                // A full page reload is necessary to ensure the middleware re-evaluates the setup state
+                window.location.href = '/';
             } else {
                 throw new Error(result.message);
             }
@@ -436,7 +436,7 @@ export default function AdminSettingsPage() {
                                     rows={4}
                                 />
                                 <p className="text-sm text-muted-foreground mt-2">
-                                    Paste the full `&lt;iframe...&gt;` code from Google Maps here.
+                                    Paste the full `<iframe...>` code from Google Maps here.
                                 </p>
                             </div>
                         </div>

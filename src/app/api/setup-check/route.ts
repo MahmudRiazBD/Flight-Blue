@@ -2,7 +2,9 @@
 import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 
-export const dynamic = 'force-dynamic'; // Ensures this route is not statically cached
+// This forces the route to be dynamically rendered and not cached.
+// It ensures we always get the latest status from the database.
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     try {
@@ -18,11 +20,11 @@ export async function GET(request: Request) {
         console.error("API error checking setup status:", error.message);
         // This can happen if credentials are not set up.
         // In this case, setup is definitely not complete.
-        if (error.message.includes('Credential') || error.message.includes('GOOGLE_APPLICATION_CREDENTIALS')) {
+        if (error.code === 'app/no-app' || error.message.includes('Credential') || error.message.includes('GOOGLE_APPLICATION_CREDENTIALS')) {
             return NextResponse.json({ isSetupComplete: false });
         }
         
         // For other errors, we default to assuming setup is not complete to be safe.
-        return NextResponse.json({ isSetupComplete: false });
+        return NextResponse.json({ isSetupComplete: false, error: error.message });
     }
 }

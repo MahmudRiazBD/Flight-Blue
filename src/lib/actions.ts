@@ -155,7 +155,7 @@ async function seedDatabase(adminId: string) {
             { id: "soc-2", platform: 'twitter', url: 'https://twitter.com' },
             { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' },
         ],
-        googleMapEmbedCode: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+        googleMapEmbedCode: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`
     }, { merge: true });
 
     const homePageSettingsRef = adminDb.collection("settings").doc("homePage");
@@ -212,10 +212,9 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
         const adminAuth = getAdminAuth();
         const adminDb = getAdminFirestore();
 
-        // Check if a superadmin already exists
-        const superAdminQuery = adminDb.collection('users').where('role', '==', 'superadmin').limit(1);
-        const superAdminSnapshot = await superAdminQuery.get();
-        if (!superAdminSnapshot.empty) {
+        const statusRef = adminDb.collection('settings').doc('siteStatus');
+        const statusDoc = await statusRef.get();
+        if (statusDoc.exists && statusDoc.data()?.isSetupComplete === true) {
             return { success: false, message: "Setup has already been completed. A superadmin exists." };
         }
 
@@ -240,7 +239,6 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
         await seedDatabase(userRecord.uid);
         
         // Set the setup status flag
-        const statusRef = adminDb.collection('settings').doc('siteStatus');
         await statusRef.set({ isSetupComplete: true });
 
         return { success: true, message: "Superadmin created and database seeded successfully." };
@@ -250,18 +248,33 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
     }
 }
 
-async function deleteCollection(db: FirebaseFirestore.Firestore, collectionPath: string, batch: WriteBatch) {
+async function deleteCollection(db: FirebaseFirestore.Firestore, collectionPath: string, batchSize: number) {
     const collectionRef = db.collection(collectionPath);
-    const snapshot = await collectionRef.get();
+    const query = collectionRef.orderBy('__name__').limit(batchSize);
 
-    if (snapshot.size === 0) {
-        return;
-    }
-
-    snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(db, query, resolve).catch(reject);
     });
 }
+
+async function deleteQueryBatch(db: FirebaseFirestore.Firestore, query: FirebaseFirestore.Query, resolve: (value: unknown) => void) {
+    const snapshot = await query.get();
+
+    if (snapshot.size === 0) {
+        return resolve(0);
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    process.nextTick(() => {
+        deleteQueryBatch(db, query, resolve);
+    });
+}
+
 
 export async function resetApplication() {
     try {
@@ -270,24 +283,24 @@ export async function resetApplication() {
         const collectionsToDelete = ['users', 'packages', 'posts', 'categories', 'destinations', 'packageTypes', 'bookings', 'contactMessages', 'media'];
 
         // Batch delete all documents in specified collections
-        const batch = adminDb.batch();
         for (const collectionName of collectionsToDelete) {
-            await deleteCollection(adminDb, collectionName, batch);
+             await deleteCollection(adminDb, collectionName, 50);
         }
         
-        // Delete the settings documents
-        batch.delete(adminDb.collection('settings').doc('global'));
-        batch.delete(adminDb.collection('settings').doc('homePage'));
-        batch.delete(adminDb.collection('settings').doc('sitePages'));
-        batch.delete(adminDb.collection('settings').doc('siteStatus'));
+        // Delete the settings documents in a final batch
+        const settingsBatch = adminDb.batch();
+        settingsBatch.delete(adminDb.collection('settings').doc('global'));
+        settingsBatch.delete(adminDb.collection('settings').doc('homePage'));
+        settingsBatch.delete(adminDb.collection('settings').doc('sitePages'));
+        settingsBatch.delete(adminDb.collection('settings').doc('siteStatus'));
+        await settingsBatch.commit();
 
-        await batch.commit();
 
         // Delete all users from Firebase Auth
         const listUsersResult = await adminAuth.listUsers(1000);
-        const uidsToDelete = listUsersResult.users.map(user => user.uid);
-        if (uidsToDelete.length > 0) {
-            await adminAuth.deleteUsers(uidsToDelete);
+        if (listUsersResult.users.length > 0) {
+          const uidsToDelete = listUsersResult.users.map(user => user.uid);
+          await adminAuth.deleteUsers(uidsToDelete);
         }
 
         console.log("Application has been successfully reset.");
