@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -8,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, AlertTriangle } from "lucide-react";
+import { TextCursorInput, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
@@ -21,13 +20,6 @@ import { resetApplication } from "@/lib/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 
-const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
-    { value: 'twitter', label: 'Twitter' },
-    { value: 'facebook', label: 'Facebook' },
-    { value: 'instagram', label: 'Instagram' },
-    { value: 'linkedin', label: 'LinkedIn' },
-    { value: 'youtube', label: 'YouTube' },
-];
 
 function ResetApplicationZone() {
     const { toast } = useToast();
@@ -43,8 +35,9 @@ function ResetApplicationZone() {
                     title: "Application Reset Successful",
                     description: "The application has been reset to its initial state. You will now be logged out.",
                 });
+                // Logout and redirect.
                 await logout();
-                window.location.href = '/';
+                window.location.href = '/'; 
             } else {
                 throw new Error(result.message);
             }
@@ -54,8 +47,7 @@ function ResetApplicationZone() {
                 description: error.message || "An unexpected error occurred.",
                 variant: "destructive",
             });
-        } finally {
-            setIsResetting(false);
+             setIsResetting(false);
         }
     };
 
@@ -105,6 +97,15 @@ function ResetApplicationZone() {
         </Card>
     );
 }
+
+const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
+    { value: 'twitter', label: 'Twitter' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'linkedin', label: 'LinkedIn' },
+    { value: 'youtube', label: 'YouTube' },
+];
+
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
