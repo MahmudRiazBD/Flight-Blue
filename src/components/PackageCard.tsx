@@ -14,7 +14,7 @@ export default function PackageCard({ pkg }: PackageCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="p-0 relative">
-        <Link href={`/packages/${pkg.id}`} className="block">
+        <Link href={`/packages/${pkg.slug}`} className="block">
           <Badge className="absolute top-4 right-4 z-10" variant={pkg.type === "Hajj" || pkg.type === "Umrah" ? "default" : "secondary"}>
             {pkg.type}
           </Badge>
@@ -30,7 +30,7 @@ export default function PackageCard({ pkg }: PackageCardProps) {
       </CardHeader>
       <CardContent className="flex-grow p-6">
         <CardTitle className="font-headline text-2xl mb-2">
-            <Link href={`/packages/${pkg.id}`} className="hover:text-primary transition-colors">
+            <Link href={`/packages/${pkg.slug}`} className="hover:text-primary transition-colors">
                 {pkg.title}
             </Link>
         </CardTitle>
@@ -45,7 +45,7 @@ export default function PackageCard({ pkg }: PackageCardProps) {
            <span className="text-xs text-muted-foreground">per person</span>
         </div>
         <Button asChild>
-          <Link href={`/packages/${pkg.id}`}>View Details</Link>
+          <Link href={`/packages/${pkg.slug}`}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>

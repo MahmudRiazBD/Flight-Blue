@@ -4,24 +4,26 @@ import { useState, useEffect } from 'react';
 import { Package } from "@/lib/data";
 import { notFound, useParams } from "next/navigation";
 import PackageDetailClient from "./PackageDetailClient";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { getFirebaseApp } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PackageDetailPage() {
   const [pkg, setPkg] = useState<Package | null | undefined>(undefined); // undefined: loading, null: not found
   const params = useParams();
-  const packageId = params.id as string;
+  const slug = params.slug as string;
 
   useEffect(() => {
     const fetchPackage = async () => {
-        if (!packageId) return;
+        if (!slug) return;
         const db = getFirestore(getFirebaseApp());
-        const packageRef = doc(db, 'packages', packageId);
-        const packageSnap = await getDoc(packageRef);
+        const packagesRef = collection(db, 'packages');
+        const q = query(packagesRef, where("slug", "==", slug));
+        const querySnapshot = await getDocs(q);
 
-        if (packageSnap.exists()) {
-            setPkg({ id: packageSnap.id, ...packageSnap.data() } as Package);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            setPkg({ id: doc.id, ...doc.data() } as Package);
         } else {
             setPkg(null);
         }
@@ -29,7 +31,7 @@ export default function PackageDetailPage() {
     
     fetchPackage();
     
-  }, [packageId]);
+  }, [slug]);
 
   if (pkg === undefined) {
     return (

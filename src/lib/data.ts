@@ -107,6 +107,7 @@ export type Category = {
 
 export type Package = {
   id: string;
+  slug: string;
   title: string;
   type: string;
   destination: string;
@@ -196,6 +197,7 @@ export const packageTypes: PackageType[] = [
 export const packages: Package[] = [
   {
     id: "paris-dream-tour",
+    slug: "paris-dream-tour",
     title: "Parisian Dream Tour",
     type: "Tour",
     destination: "Paris, France",
@@ -225,6 +227,7 @@ export const packages: Package[] = [
   },
   {
     id: "premium-hajj-package",
+    slug: "premium-hajj-package",
     title: "Premium Hajj Package",
     type: "Hajj",
     destination: "Makkah & Madinah, Saudi Arabia",
@@ -251,6 +254,7 @@ export const packages: Package[] = [
   },
   {
     id: "economy-umrah-package",
+    slug: "economy-umrah-package",
     title: "Economy Umrah Package",
     type: "Umrah",
     destination: "Makkah & Madinah, Saudi Arabia",
@@ -271,6 +275,7 @@ export const packages: Package[] = [
   },
    {
     id: "tokyo-tech-tradition",
+    slug: "tokyo-tech-tradition",
     title: "Tokyo: Tech & Tradition",
     type: "Tour",
     destination: "Tokyo, Japan",
@@ -301,6 +306,7 @@ export const packages: Package[] = [
   },
    {
     id: "roman-holiday",
+    slug: "roman-holiday",
     title: "The Roman Holiday",
     type: "Tour",
     destination: "Rome, Italy",
@@ -328,6 +334,7 @@ export const packages: Package[] = [
   },
   {
     id: "istanbul-crossroads",
+    slug: "istanbul-crossroads",
     title: "Istanbul: Crossroads of Continents",
     type: "Tour",
     destination: "Istanbul, Turkey",
@@ -356,6 +363,7 @@ export const packages: Package[] = [
   },
   {
     id: "swiss-alps-adventure",
+    slug: "swiss-alps-adventure",
     title: "Swiss Alps Adventure",
     type: "Tour",
     destination: "Switzerland",
@@ -381,6 +389,7 @@ export const packages: Package[] = [
   },
   {
     id: "maldives-getaway",
+    slug: "maldives-getaway",
     title: "Maldives Luxury Getaway",
     type: "Tour",
     destination: "Maldives",
