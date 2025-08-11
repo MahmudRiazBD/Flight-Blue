@@ -6,7 +6,7 @@ import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 import { packages, posts, categories, destinations, packageTypes } from "./data";
-import { CollectionReference, writeBatch } from "firebase-admin/firestore";
+import { CollectionReference, WriteBatch } from "firebase-admin/firestore";
 import type { User } from "@/hooks/use-auth";
 
 
@@ -247,5 +247,53 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
     } catch (error: any) {
         console.error("Error during setup:", error);
         return { success: false, message: `An unexpected error occurred during setup: ${error.message}` };
+    }
+}
+
+async function deleteCollection(db: FirebaseFirestore.Firestore, collectionPath: string, batch: WriteBatch) {
+    const collectionRef = db.collection(collectionPath);
+    const snapshot = await collectionRef.get();
+
+    if (snapshot.size === 0) {
+        return;
+    }
+
+    snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+}
+
+export async function resetApplication() {
+    try {
+        const adminDb = getAdminFirestore();
+        const adminAuth = getAdminAuth();
+        const collectionsToDelete = ['users', 'packages', 'posts', 'categories', 'destinations', 'packageTypes', 'bookings', 'contactMessages', 'media'];
+
+        // Batch delete all documents in specified collections
+        const batch = adminDb.batch();
+        for (const collectionName of collectionsToDelete) {
+            await deleteCollection(adminDb, collectionName, batch);
+        }
+        
+        // Delete the settings documents
+        batch.delete(adminDb.collection('settings').doc('global'));
+        batch.delete(adminDb.collection('settings').doc('homePage'));
+        batch.delete(adminDb.collection('settings').doc('sitePages'));
+        batch.delete(adminDb.collection('settings').doc('siteStatus'));
+
+        await batch.commit();
+
+        // Delete all users from Firebase Auth
+        const listUsersResult = await adminAuth.listUsers(1000);
+        const uidsToDelete = listUsersResult.users.map(user => user.uid);
+        if (uidsToDelete.length > 0) {
+            await adminAuth.deleteUsers(uidsToDelete);
+        }
+
+        console.log("Application has been successfully reset.");
+        return { success: true, message: "Application has been successfully reset. You will be logged out." };
+    } catch (error: any) {
+        console.error("Error resetting application:", error);
+        return { success: false, message: `Failed to reset application: ${error.message}` };
     }
 }

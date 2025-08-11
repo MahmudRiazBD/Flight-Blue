@@ -18,7 +18,10 @@ import { useAppContext } from "@/context/AppContext";
 import type { GlobalSettings, SocialLinkPlatform, SocialLink, FooterLink } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { seedDatabase } from "@/lib/actions";
+import { resetApplication } from "@/lib/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
 
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
@@ -31,25 +34,34 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
 
 function DangerZone() {
     const { toast } = useToast();
-    const [isSeeding, setIsSeeding] = useState(false);
+    const { logout } = useAuth();
+    const router = useRouter();
+    const [isResetting, setIsResetting] = useState(false);
 
-    const handleSeedDatabase = async () => {
-        setIsSeeding(true);
+    const handleReset = async () => {
+        setIsResetting(true);
         try {
-        const result = await seedDatabase();
-        toast({
-            title: result.success ? "Database Seeded" : "Seeding Failed",
-            description: result.message,
-            variant: result.success ? "default" : "destructive",
-        });
-        } catch (error) {
-        toast({
-            title: "Error",
-            description: "An unexpected error occurred while seeding.",
-            variant: "destructive",
-        });
+            const result = await resetApplication();
+            if (result.success) {
+                toast({
+                    title: "Application Reset Successful",
+                    description: "The application has been reset to its initial state. You will now be logged out.",
+                });
+                // Logout the user and redirect to allow the setup process to restart
+                logout();
+                router.push('/');
+                router.refresh();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+            toast({
+                title: "Error Resetting Application",
+                description: error.message || "An unexpected error occurred.",
+                variant: "destructive",
+            });
         } finally {
-        setIsSeeding(false);
+            setIsResetting(false);
         }
     };
 
@@ -60,22 +72,40 @@ function DangerZone() {
                     <AlertTriangle className="h-8 w-8 text-destructive" />
                     <div>
                         <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                        <CardDescription>These actions are irreversible. Please proceed with caution.</CardDescription>
+                        <CardDescription>This action is irreversible and will delete all data.</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col md:flex-row items-center justify-between rounded-lg border border-destructive/50 p-4">
                     <div>
-                        <h4 className="font-semibold">Seed Database</h4>
+                        <h4 className="font-semibold">Reset Application</h4>
                         <p className="text-sm text-muted-foreground">
-                            Populate the database with initial demo data. This should only be done on a fresh install or for development purposes.
+                            This will permanently delete all data, including users, packages, posts, and settings, and reset the application to its initial setup state.
                         </p>
                     </div>
-                    <Button variant="destructive" onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4 md:mt-0 md:ml-4">
-                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                        {isSeeding ? "Seeding..." : "Seed Database"}
-                    </Button>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="destructive" className="mt-4 md:mt-0 md:ml-4" disabled={isResetting}>
+                                {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                {isResetting ? "Resetting..." : "Reset Application"}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all data and require you to go through the setup process again.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90">
+                                    I understand, reset the application
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </CardContent>
         </Card>
