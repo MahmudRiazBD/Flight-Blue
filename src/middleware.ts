@@ -2,25 +2,40 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// In-memory cache for the setup status.
+// `null` means we haven't checked yet.
+// `true` or `false` is the cached status.
+let isSetupComplete: boolean | null = null;
+
 async function checkSetupStatus(request: NextRequest): Promise<boolean> {
+    // If we have a cached status, return it immediately to avoid a network call.
+    // We only re-check if the status is `false` or `null` on a new request.
+    if (isSetupComplete === true) {
+        return true;
+    }
+
     try {
         // Use an absolute URL for the fetch request to ensure it works correctly.
         const url = new URL('/api/setup-check', request.url);
-        const response = await fetch(url.toString());
+        const response = await fetch(url.toString(), {
+            // Use 'no-store' to ensure we always get the latest status from the server
+            // when we do decide to make a check.
+            cache: 'no-store',
+        });
 
         if (!response.ok) {
             console.error(`Middleware setup check failed with status: ${response.status}`);
-            // In case of error, assume setup is complete to avoid locking out the user
             return true;
         }
 
         const data = await response.json();
-        return data.isSetupComplete;
+        
+        // Cache the result in memory
+        isSetupComplete = data.isSetupComplete;
+        return isSetupComplete!;
 
     } catch (error: any) {
-        // This can happen on the very first run if the server isn't fully ready.
         console.error("Middleware error fetching setup status:", error);
-        // Assume setup is complete to avoid locking out the user in case of a network or other error.
         return true; 
     }
 }
@@ -28,36 +43,25 @@ async function checkSetupStatus(request: NextRequest): Promise<boolean> {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Allow static files, _next/static, and API routes to pass through without checks
     if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|css|js)$/)) {
         return NextResponse.next();
     }
     
-    const isSetupComplete = await checkSetupStatus(request);
+    const setupNeeded = !(await checkSetupStatus(request));
     
-    // If setup is needed and the user is not on the setup page, redirect them
-    if (!isSetupComplete && pathname !== '/setup') {
+    if (setupNeeded && pathname !== '/setup') {
         return NextResponse.redirect(new URL('/setup', request.url));
     }
 
-    // If setup is already complete and the user tries to access the setup page, redirect to home
-    if (isSetupComplete && pathname === '/setup') {
+    if (!setupNeeded && pathname === '/setup') {
         return NextResponse.redirect(new URL('/', request.url));
     }
 
     return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
