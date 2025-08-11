@@ -429,7 +429,7 @@ export default function AdminSettingsPage() {
                                     rows={4}
                                 />
                                 <p className="text-sm text-muted-foreground mt-2">
-                                    Paste the full `<iframe...>` code from Google Maps here.
+                                    {'Paste the full `<iframe...>` code from Google Maps here.'}
                                 </p>
                             </div>
                         </div>

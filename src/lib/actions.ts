@@ -61,17 +61,23 @@ export async function deleteUser(uid: string) {
 }
 
 async function seedCollection(collectionName: string, data: any[], db: FirebaseFirestore.Firestore, transform = (item: any) => item) {
-    const collectionRef = db.collection(collectionName) as CollectionReference;
+    const collectionRef = db.collection(collectionName);
     const snapshot = await collectionRef.limit(1).get();
+    
     if (!snapshot.empty) {
         console.log(`Skipping seeding for ${collectionName}: collection is not empty.`);
-        return; // Skip if collection already has data
+        return;
     }
+
     const batch = db.batch();
     data.forEach(item => {
-        const docRef = collectionRef.doc();
-        batch.set(docRef, transform(item));
+        // Use the item's own ID if it exists, otherwise let Firestore generate one.
+        const docRef = item.id ? collectionRef.doc(item.id) : collectionRef.doc();
+        // Remove the id from the data object itself before setting
+        const { id, ...itemData } = item;
+        batch.set(docRef, transform(itemData));
     });
+
     await batch.commit();
 }
 
