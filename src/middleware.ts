@@ -7,8 +7,8 @@ async function checkSetupStatus(request: NextRequest): Promise<boolean> {
         // Use an absolute URL for the fetch request to ensure it works correctly.
         const url = new URL('/api/setup-check', request.url);
         const response = await fetch(url.toString(), {
-            // Prevent caching of this fetch request
-            cache: 'no-store',
+            // Smartly cache the result for 30 seconds to balance performance and responsiveness.
+            next: { revalidate: 30 },
         });
 
         if (!response.ok) {
