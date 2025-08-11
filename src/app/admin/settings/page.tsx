@@ -20,8 +20,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { resetApplication } from "@/lib/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
-
 
 const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'twitter', label: 'Twitter' },
@@ -446,5 +444,5 @@ export default function AdminSettingsPage() {
         </Card>
         <ResetApplicationZone />
     </div>
-  )
+    );
 }
