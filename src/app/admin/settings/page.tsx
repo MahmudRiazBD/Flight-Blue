@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, Database, AlertTriangle } from "lucide-react";
+import { TextCursorInput, Link as LinkIcon, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
@@ -31,11 +31,9 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'youtube', label: 'YouTube' },
 ];
 
-
-function DangerZone() {
+function ResetApplicationZone() {
     const { toast } = useToast();
     const { logout } = useAuth();
-    const router = useRouter();
     const [isResetting, setIsResetting] = useState(false);
 
     const handleReset = async () => {
@@ -47,9 +45,7 @@ function DangerZone() {
                     title: "Application Reset Successful",
                     description: "The application has been reset to its initial state. You will now be logged out.",
                 });
-                // Logout the user and redirect to allow the setup process to restart
                 await logout();
-                // A full page reload is necessary to ensure the middleware re-evaluates the setup state
                 window.location.href = '/';
             } else {
                 throw new Error(result.message);
@@ -117,7 +113,6 @@ export default function AdminSettingsPage() {
     const { settings: contextSettings, setSettings: setContextSettings, loading: contextLoading } = useAppContext();
     const [settings, setSettings] = useState<GlobalSettings | null>(contextSettings);
 
-    // Sync local state with context state
     useEffect(() => {
         setSettings(contextSettings);
     }, [contextSettings]);
@@ -199,7 +194,7 @@ export default function AdminSettingsPage() {
         const settingsRef = doc(db, "settings", "global");
         try {
             await setDoc(settingsRef, settings, { merge: true });
-            setContextSettings(settings); // Update global context immediately
+            setContextSettings(settings); 
             toast({
                 title: "Settings Saved!",
                 description: "Your changes have been saved to the database.",
@@ -449,7 +444,7 @@ export default function AdminSettingsPage() {
             </div>
         </CardContent>
         </Card>
-        <DangerZone />
+        <ResetApplicationZone />
     </div>
   )
 }
