@@ -28,7 +28,7 @@ export default function PackagesPage() {
                 const packagesCollection = collection(db, 'packages');
                 const packagesQuery = query(packagesCollection, where("deletedAt", "==", null));
                 const packagesSnapshot = await getDocs(packagesQuery);
-                const packagesList = packagesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, slug: doc.data().slug } as Package));
+                const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
                 setAllPackages(packagesList);
 
                 if (packagesList.length > 0) {
