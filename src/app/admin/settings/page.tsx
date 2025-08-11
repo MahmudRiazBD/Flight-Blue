@@ -29,7 +29,6 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'youtube', label: 'YouTube' },
 ];
 
-
 function ResetApplicationZone() {
     const { toast } = useToast();
     const { logout } = useAuth();
@@ -141,8 +140,8 @@ export default function AdminSettingsPage() {
             return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            };
-        });
+            }
+        })
     }
 
     const addFooterLink = (columnKey: 'quickLinks' | 'supportLinks') => {
@@ -152,8 +151,8 @@ export default function AdminSettingsPage() {
             return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            };
-        });
+            }
+        })
     }
 
     const removeFooterLink = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number) => {
@@ -163,8 +162,8 @@ export default function AdminSettingsPage() {
              return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            };
-        });
+            }
+        })
     }
 
     const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
