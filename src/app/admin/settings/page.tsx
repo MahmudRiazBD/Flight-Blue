@@ -103,7 +103,7 @@ function ResetApplicationZone() {
                 </div>
             </CardContent>
         </Card>
-    )
+    );
 }
 
 export default function AdminSettingsPage() {
@@ -117,7 +117,7 @@ export default function AdminSettingsPage() {
 
     const handleSettingsChange = (field: keyof GlobalSettings, value: any) => {
         setSettings(prev => prev ? ({...prev, [field]: value}) : null);
-    }
+    };
     
     const handleLinkColumnChange = (field: 'quickLinks' | 'supportLinks', subField: 'title' | 'links', value: any) => {
         setSettings(prev => {
@@ -129,8 +129,8 @@ export default function AdminSettingsPage() {
                     [subField]: value,
                 }
             }
-        })
-    }
+        });
+    };
     
     const handleFooterLinkChange = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number, field: 'label' | 'url', value: string) => {
         setSettings(prev => {
@@ -140,9 +140,9 @@ export default function AdminSettingsPage() {
             return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            }
-        })
-    }
+            };
+        });
+    };
 
     const addFooterLink = (columnKey: 'quickLinks' | 'supportLinks') => {
         setSettings(prev => {
@@ -151,9 +151,9 @@ export default function AdminSettingsPage() {
             return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            }
-        })
-    }
+            };
+        });
+    };
 
     const removeFooterLink = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number) => {
         setSettings(prev => {
@@ -162,9 +162,9 @@ export default function AdminSettingsPage() {
              return {
                 ...prev,
                 [columnKey]: { ...prev[columnKey], links: newLinks }
-            }
-        })
-    }
+            };
+        });
+    };
 
     const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
         if (!settings) return;
@@ -183,8 +183,7 @@ export default function AdminSettingsPage() {
         if (!settings) return;
         const newLinks = settings.socialLinks.filter((_, i) => i !== index);
         handleSettingsChange('socialLinks', newLinks);
-    }
-
+    };
 
     const handleSaveChanges = async () => {
         if (!settings) return;
@@ -214,7 +213,7 @@ export default function AdminSettingsPage() {
                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 </CardContent>
             </Card>
-        )
+        );
     }
     
     if (!settings) {
@@ -225,7 +224,7 @@ export default function AdminSettingsPage() {
                     <CardDescription>Could not load site settings. Please try seeding the database or check console for errors.</CardDescription>
                 </CardHeader>
             </Card>
-        )
+        );
     }
 
     return (
