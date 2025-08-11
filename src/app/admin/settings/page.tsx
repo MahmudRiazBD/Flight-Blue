@@ -31,6 +31,7 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
     { value: 'youtube', label: 'YouTube' },
 ];
 
+
 function DangerZone() {
     const { toast } = useToast();
     const { logout } = useAuth();
@@ -450,5 +451,5 @@ export default function AdminSettingsPage() {
         </Card>
         <DangerZone />
     </div>
-  );
+  )
 }
