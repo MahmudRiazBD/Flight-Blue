@@ -172,7 +172,7 @@ export default function AdminSettingsPage() {
         const newLinks = [...settings.socialLinks];
         newLinks[index] = { ...newLinks[index], [field]: value as any };
         handleSettingsChange('socialLinks', newLinks);
-    };
+    }
 
     const addSocialLink = () => {
         if (!settings) return;
