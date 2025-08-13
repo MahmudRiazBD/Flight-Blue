@@ -6,9 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   onAuthStateChanged,
   signOut,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile,
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
@@ -18,7 +16,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, type Firestore, getFirestore, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
-import { initializeApp, deleteApp, type FirebaseApp } from 'firebase/app';
+import { signupUser } from '@/lib/actions';
 
 export type UserRole = 'customer' | 'staff' | 'admin' | 'superadmin';
 
@@ -39,7 +37,7 @@ interface AuthContextType {
   setUser: Dispatch<SetStateAction<User | null>>;
   loading: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<User>;
-  signup: (userData: Omit<User, 'uid'>) => Promise<FirebaseUser>;
+  signup: (userData: Omit<User, 'uid'>) => Promise<any>;
   logout: () => void;
 }
 
@@ -143,44 +141,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return appUser;
   }, []);
 
-  const signup = useCallback(async (userData: Omit<User, 'uid'>): Promise<FirebaseUser> => {
-    const mainApp = getFirebaseApp();
-    const db = getFirestore(mainApp);
-
-    // Create a temporary secondary app instance for user creation
-    // This prevents the current user from being signed out
-    const tempAppName = `temp-signup-${Date.now()}`;
-    const tempApp = initializeApp(mainApp.options, tempAppName);
-    const tempAuth = getAuth(tempApp);
-    
+  const signup = useCallback(async (userData: Omit<User, 'uid'>) => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, userData.email!, userData.password!);
-        const firebaseUser = userCredential.user;
-        const displayName = `${userData.firstName} ${userData.lastName}`;
-
-        await updateProfile(firebaseUser, { displayName, photoURL: userData.photoURL || null });
-
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        
-        // Don't save password in firestore
-        const { password, ...firestoreData } = userData;
-
-        await setDoc(userRef, {
-            ...firestoreData,
-            username: userData.username || extractUsernameFromEmail(userData.email!),
-            createdAt: serverTimestamp(),
-            photoURL: userData.photoURL || '',
-            phone: userData.phone || ''
-        });
-        
-        return firebaseUser;
-
+      // We now call the server action to handle user creation securely.
+      const result = await signupUser(userData);
+      if (result.success) {
+        return result.user; // Return the user object on success
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
-        // Re-throw the error so the calling component can handle it
-        throw error;
-    } finally {
-        // Clean up the temporary app instance
-        await deleteApp(tempApp);
+      // Re-throw the error so the calling component can handle it
+      throw error;
     }
   }, []);
 

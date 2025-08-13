@@ -9,6 +9,7 @@ import { getAdminAuth, getAdminFirestore } from './firebase-admin';
 import { packages, posts, categories, destinations, packageTypes, bookings, contactMessages } from "./data";
 import { CollectionReference, WriteBatch } from "firebase-admin/firestore";
 import type { User } from "@/hooks/use-auth";
+import type { UserRecord } from "firebase-admin/auth";
 
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
@@ -143,7 +144,7 @@ async function seedDatabase(adminId: string) {
     const batch = adminDb.batch();
     const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
-        siteTitle: "Flight Blu",
+        siteTitle: "TripMate",
         logoUrl: "/logo.svg",
         faviconUrl: "/favicon.ico",
         searchEngineVisibility: true,
@@ -176,7 +177,7 @@ async function seedDatabase(adminId: string) {
     batch.set(homePageSettingsRef, {
       heroImageUrl: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
       heroTitle: "Your Adventure Awaits",
-      heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+      heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with TripMate.",
       heroButtonLabel: "Explore Packages",
       heroButtonLink: "/packages",
     }, { merge: true });
@@ -184,8 +185,8 @@ async function seedDatabase(adminId: string) {
     const sitePagesSettingsRef = adminDb.collection("settings").doc("sitePages");
     batch.set(sitePagesSettingsRef, {
         aboutUs: {
-            title: "About Flight Blu",
-            content: "Founded in 2024, Flight Blu was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\\n\\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
+            title: "About TripMate",
+            content: "Founded in 2024, TripMate was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\\n\\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
         },
         faq: {
             title: "Frequently Asked Questions",
@@ -198,11 +199,11 @@ async function seedDatabase(adminId: string) {
         },
         terms: {
             title: "Terms of Service",
-            content: "By accessing and using the Flight Blu website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \\n\\nCancellations made within 30 days of departure are subject to cancellation fees. Flight Blu acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
+            content: "By accessing and using the TripMate website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \\n\\nCancellations made within 30 days of departure are subject to cancellation fees. TripMate acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
         },
         privacy: {
             title: "Privacy Policy",
-            content: "Flight Blu is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \\n\\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
+            content: "TripMate is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \\n\\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
         }
     }, { merge: true });
 
@@ -221,9 +222,45 @@ async function seedDatabase(adminId: string) {
   }
 }
 
+// Helper function to create user in Auth. Extracted for reuse.
+async function createUserInAuth(adminData: Omit<User, 'uid'>): Promise<UserRecord> {
+  const adminAuth = getAdminAuth();
+  return await adminAuth.createUser({
+    email: adminData.email,
+    password: adminData.password,
+    displayName: `${adminData.firstName} ${adminData.lastName}`,
+    photoURL: adminData.photoURL || undefined,
+  });
+}
+
+export async function signupUser(userData: Omit<User, 'uid'>) {
+    try {
+        const userRecord = await createUserInAuth(userData);
+
+        const adminDb = getAdminFirestore();
+        const userRef = adminDb.collection('users').doc(userRecord.uid);
+        
+        const { password, ...firestoreData } = userData;
+        
+        await userRef.set({
+            ...firestoreData,
+            createdAt: new Date().toISOString(),
+        });
+
+        return { success: true, user: { uid: userRecord.uid, ...firestoreData } };
+    } catch (error: any) {
+        console.error("Error during signup:", error);
+        // Provide more specific error messages to the client
+        if (error.code === 'auth/email-already-exists') {
+            return { success: false, message: "This email is already registered. Please login or use a different email." };
+        }
+        return { success: false, message: `An unexpected error occurred during signup: ${error.message}` };
+    }
+}
+
+
 export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
     try {
-        const adminAuth = getAdminAuth();
         const adminDb = getAdminFirestore();
 
         const statusRef = adminDb.collection('settings').doc('siteStatus');
@@ -232,27 +269,17 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'uid'>) {
             return { success: false, message: "Setup has already been completed. A superadmin exists." };
         }
 
-        // Create user in Firebase Auth
-        const userRecord = await adminAuth.createUser({
-            email: adminData.email,
-            password: adminData.password,
-            displayName: `${adminData.firstName} ${adminData.lastName}`,
-            photoURL: adminData.photoURL || undefined,
-        });
-
-        // Save user details in Firestore
-        const { password, ...firestoreData } = adminData;
+        const userRecord = await createUserInAuth(adminData);
+        
         const userRef = adminDb.collection('users').doc(userRecord.uid);
         await userRef.set({
-            ...firestoreData,
+            ...adminData,
             role: 'superadmin',
             createdAt: new Date().toISOString(),
         });
         
-        // Seed the database
         await seedDatabase(userRecord.uid);
         
-        // Set the setup status flag
         await statusRef.set({ isSetupComplete: true });
 
         return { success: true, message: "Superadmin created and database seeded successfully." };
