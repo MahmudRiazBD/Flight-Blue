@@ -1,4 +1,5 @@
 
+
 "use client"
 import {
   SidebarProvider,
@@ -231,7 +232,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-2 p-2">
             <Logo className="size-8 text-sidebar-primary" />
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
-              {settings?.siteTitle || "Flight Blu"}
+              {settings?.siteTitle || "TripMate"}
             </span>
           </div>
         </SidebarHeader>

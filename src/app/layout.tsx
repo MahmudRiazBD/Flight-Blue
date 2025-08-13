@@ -24,7 +24,7 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!loading && settings) {
-      document.title = settings.siteTitle || "Flight Blu";
+      document.title = settings.siteTitle || "TripMate";
     }
   }, [settings, loading]);
 

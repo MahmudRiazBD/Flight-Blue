@@ -111,7 +111,7 @@ export default function SignupPage() {
             Create an Account
           </CardTitle>
           <CardDescription>
-            Join Flight Blu to start your next adventure
+            Join TripMate to start your next adventure
           </CardDescription>
         </CardHeader>
         <Form {...form}>

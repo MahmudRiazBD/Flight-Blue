@@ -99,7 +99,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'Flight Blu'}</span>
+            <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
           </Link>
         </div>
 
@@ -165,7 +165,7 @@ export default function Header() {
                    <SheetTitle>
                      <Link href="/" className="flex items-center gap-2">
                         <Logo className="h-8 w-8 text-primary" />
-                        <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'Flight Blu'}</span>
+                        <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
                     </Link>
                    </SheetTitle>
                 </SheetHeader>

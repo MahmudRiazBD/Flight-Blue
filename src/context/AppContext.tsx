@@ -10,7 +10,7 @@ import type { GlobalSettings } from '@/lib/data';
 
 // Default settings as a fallback
 const defaultSettings: GlobalSettings = {
-    siteTitle: "Flight Blu",
+    siteTitle: "TripMate",
     logoUrl: "/logo.svg",
     faviconUrl: "/favicon.ico",
     searchEngineVisibility: true,

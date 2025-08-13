@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -51,7 +52,7 @@ export default function Footer() {
           <div className="md:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-2">
               <Logo className="h-8 w-8 text-primary" />
-              <span className="font-bold font-headline text-xl">{settings?.siteTitle || "Flight Blu"}</span>
+              <span className="font-bold font-headline text-xl">{settings?.siteTitle || "TripMate"}</span>
             </Link>
             <p className="text-sm text-muted-foreground">{settings?.footerDescription}</p>
              {settings?.socialLinks?.length > 0 && (
@@ -105,7 +106,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} {settings?.siteTitle || "Flight Blu"}. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {settings?.siteTitle || "TripMate"}. All Rights Reserved.</p>
         </div>
       </div>
     </footer>
