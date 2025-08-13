@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 
 export default function PackagesPage() {
@@ -26,9 +26,12 @@ export default function PackagesPage() {
             try {
                 const db = getFirestore(getFirebaseApp());
                 const packagesCollection = collection(db, 'packages');
-                const packagesQuery = query(packagesCollection, where("deletedAt", "==", null));
+                const packagesQuery = query(packagesCollection); // Removed incorrect where clause
                 const packagesSnapshot = await getDocs(packagesQuery);
-                const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
+                const packagesList = packagesSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() } as Package))
+                    .filter(pkg => !pkg.deletedAt); // Filter for active packages on client-side
+
                 setAllPackages(packagesList);
 
                 if (packagesList.length > 0) {
