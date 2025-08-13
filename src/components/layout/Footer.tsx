@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Logo from "../icons/Logo";
 import { Twitter, Facebook, Instagram, Linkedin, Youtube, Loader2 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
+import Image from "next/image";
 
 type SocialLink = {
     id: string;
@@ -51,8 +53,12 @@ export default function Footer() {
           {/* Column 1: Logo, Description, Socials */}
           <div className="md:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <Logo className="h-8 w-8 text-primary" />
-              <span className="font-bold font-headline text-xl">{settings?.siteTitle || "TripMate"}</span>
+                {settings?.logoUrl ? (
+                    <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+                ) : (
+                    <Logo className="h-8 w-8 text-primary" />
+                )}
+                <span className="font-bold font-headline text-xl">{settings?.siteTitle || "TripMate"}</span>
             </Link>
             <p className="text-sm text-muted-foreground">{settings?.footerDescription}</p>
              {settings?.socialLinks?.length > 0 && (

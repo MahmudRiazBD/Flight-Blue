@@ -31,7 +31,7 @@ import {
   FileText,
   LogOut,
   Settings,
-  Image,
+  Image as ImageIconLucide,
   ChevronDown,
   Mail,
   User as UserIcon,
@@ -40,6 +40,7 @@ import {
   File,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth, User } from "@/hooks/use-auth.tsx"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
@@ -94,7 +95,7 @@ const menuItems = [
         { href: "/admin/blog/categories", label: "Categories" },
     ]
   },
-  { href: "/admin/media", label: "Media", icon: Image },
+  { href: "/admin/media", label: "Media", icon: ImageIconLucide },
 ]
 
 function AdminAccessDenied() {
@@ -138,7 +139,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading, logout } = useAuth();
+  const { user, setUser, loading } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
@@ -229,8 +230,12 @@ export default function AdminLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2 p-2">
-            <Logo className="size-8 text-sidebar-primary" />
+           <div className="flex items-center gap-2 p-2">
+            {settings?.logoUrl ? (
+                <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+            ) : (
+                <Logo className="size-8 text-sidebar-primary" />
+            )}
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
               {settings?.siteTitle || "TripMate"}
             </span>

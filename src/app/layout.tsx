@@ -1,9 +1,6 @@
 
 
-"use client";
-
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter } from "next/tree/node_modules/@next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Header from "@/components/layout/Header";
@@ -11,28 +8,52 @@ import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import Chatbot from "@/components/chatbot/Chatbot";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
-import { usePathname } from "next/navigation";
 import ContactForm from "@/components/ContactForm";
 import { AppProvider, useAppContext } from "@/context/AppContext";
-import { useEffect } from "react";
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
+import type { Metadata } from 'next';
+
+const defaultSettings = {
+    siteTitle: "TripMate",
+    faviconUrl: "/favicon.ico",
+    searchEngineVisibility: true,
+};
+
+// This function generates metadata dynamically on the server.
+export async function generateMetadata(): Promise<Metadata> {
+  let settings = defaultSettings;
+  try {
+    const db = getFirestore(getFirebaseApp());
+    const settingsDoc = await getDoc(doc(db, "settings", "global"));
+    if (settingsDoc.exists()) {
+      settings = { ...defaultSettings, ...settingsDoc.data() };
+    }
+  } catch (error) {
+    console.error("Could not fetch settings for metadata, using defaults.", error);
+  }
+  
+  return {
+    title: settings.siteTitle,
+    icons: {
+      icon: settings.faviconUrl,
+    },
+    robots: {
+      index: settings.searchEngineVisibility,
+      follow: settings.searchEngineVisibility,
+    }
+  };
+}
 
 
 const SiteLayout = ({ children }: { children: React.ReactNode }) => {
-  const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/admin');
   const { settings, loading } = useAppContext();
 
-  useEffect(() => {
-    if (!loading && settings) {
-      document.title = settings.siteTitle || "TripMate";
-    }
-  }, [settings, loading]);
+  const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
   return (
       <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Favicon link can be made dynamic similarly if needed */}
-        <link rel="icon" href={settings?.faviconUrl || "/favicon.ico"} type="image/x-icon" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -43,10 +64,6 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=PT+Sans:wght@400;700&display=swap"
           rel="stylesheet"
         />
-        {/* Discourage search engine indexing if the setting is turned off */}
-        {settings?.searchEngineVisibility === false && (
-          <meta name="robots" content="noindex, nofollow" />
-        )}
       </head>
       <body
         className={cn(

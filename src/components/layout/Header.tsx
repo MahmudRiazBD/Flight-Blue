@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -24,6 +25,7 @@ import { Page } from "@/lib/data";
 import { useState, useEffect } from "react";
 import { getFirestore, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
+import Image from "next/image";
 
 
 const defaultNavLinks = [
@@ -98,7 +100,11 @@ export default function Header() {
       <div className="container flex h-16 items-center justify-between">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <Logo className="h-8 w-8 text-primary" />
+            {settings?.logoUrl ? (
+                <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+            ) : (
+                <Logo className="h-8 w-8 text-primary" />
+            )}
             <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
           </Link>
         </div>
@@ -164,7 +170,11 @@ export default function Header() {
                 <SheetHeader className="p-6 pb-0">
                    <SheetTitle>
                      <Link href="/" className="flex items-center gap-2">
-                        <Logo className="h-8 w-8 text-primary" />
+                        {settings?.logoUrl ? (
+                            <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+                        ) : (
+                            <Logo className="h-8 w-8 text-primary" />
+                        )}
                         <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
                     </Link>
                    </SheetTitle>
