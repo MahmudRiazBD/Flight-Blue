@@ -29,7 +29,13 @@ async function checkSetupStatus(request: NextRequest): Promise<boolean> {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|css|js)$/)) {
+    // Skip middleware for static files, API routes, and Next.js internals
+    if (pathname.startsWith('/_next') || pathname.startsWith('/api/') || pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|css|js)$/)) {
+        return NextResponse.next();
+    }
+    
+    // Specifically allow the /api/setup-check route to be accessed
+    if (pathname === '/api/setup-check') {
         return NextResponse.next();
     }
     
@@ -48,6 +54,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
