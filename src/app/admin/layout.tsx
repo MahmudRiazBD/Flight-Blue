@@ -139,7 +139,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading } = useAuth();
+  const { user, setUser, loading, logout } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
