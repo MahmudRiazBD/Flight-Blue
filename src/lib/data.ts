@@ -1,6 +1,7 @@
-
-
 import { Timestamp } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+
 
 export type Page = {
   id: string;
@@ -176,6 +177,44 @@ export type MediaFile = {
   deletedAt?: Timestamp | null;
   dataAiHint?: string;
 };
+
+// Default settings as a fallback, used by getGlobalSettings
+const defaultSettings: GlobalSettings = {
+    siteTitle: "TripMate",
+    logoUrl: "/logo.svg",
+    faviconUrl: "/favicon.ico",
+    searchEngineVisibility: true,
+    footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
+    quickLinks: {
+        title: "Quick Links",
+        links: []
+    },
+    supportLinks: {
+        title: "Support",
+        links: []
+    },
+    socialLinks: [],
+    googleMapEmbedCode: ''
+};
+
+
+// New server-side function to fetch global settings
+export async function getGlobalSettings(): Promise<GlobalSettings> {
+  try {
+    const db = getFirestore(getFirebaseApp());
+    const settingsDoc = await getDoc(doc(db, "settings", "global"));
+    if (settingsDoc.exists()) {
+      // Combine fetched data with defaults to ensure all keys are present
+      return { ...defaultSettings, ...settingsDoc.data() } as GlobalSettings;
+    }
+    return defaultSettings;
+  } catch (error) {
+    console.error("Could not fetch settings, using defaults.", error);
+    // In case of error (e.g., during build time if Firebase isn't available), return defaults
+    return defaultSettings;
+  }
+}
+
 
 export const destinations: Destination[] = [
     { id: "dest-1", name: "Paris, France", imageUrl: "https://images.pexels.com/photos/1850619/pexels-photo-1850619.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },

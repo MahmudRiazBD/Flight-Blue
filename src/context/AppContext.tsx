@@ -1,31 +1,9 @@
 
-
 "use client";
 
 import { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
 import type { GlobalSettings } from '@/lib/data';
 
-
-// Default settings as a fallback
-const defaultSettings: GlobalSettings = {
-    siteTitle: "TripMate",
-    logoUrl: "/logo.svg",
-    faviconUrl: "/favicon.ico",
-    searchEngineVisibility: true,
-    footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
-    quickLinks: {
-        title: "Quick Links",
-        links: []
-    },
-    supportLinks: {
-        title: "Support",
-        links: []
-    },
-    socialLinks: [],
-    googleMapEmbedCode: ''
-};
 
 interface AppContextType {
   isContactFormOpen: boolean;
@@ -37,32 +15,18 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children, initialSettings }: { children: ReactNode, initialSettings: GlobalSettings }) {
   const [isContactFormOpen, setContactFormOpen] = useState(false);
-  const [settings, setSettings] = useState<GlobalSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<GlobalSettings | null>(initialSettings);
+  const [loading, setLoading] = useState(false); // No longer loading from client, data is passed in
 
   useEffect(() => {
-    const fetchSettings = async () => {
-        setLoading(true);
-        try {
-            const db = getFirestore(getFirebaseApp());
-            const settingsDoc = await getDoc(doc(db, "settings", "global"));
-            if (settingsDoc.exists()) {
-                setSettings(settingsDoc.data() as GlobalSettings);
-            } else {
-                setSettings(defaultSettings);
-            }
-        } catch (error) {
-            console.error("Error fetching global settings:", error);
-            setSettings(defaultSettings); // Fallback on error
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    fetchSettings();
-  }, []);
+    // If initialSettings change (e.g., on a full page reload with new data), update the state.
+    if (initialSettings) {
+        setSettings(initialSettings);
+    }
+  }, [initialSettings]);
+
 
   return (
     <AppContext.Provider value={{ isContactFormOpen, setContactFormOpen, settings, setSettings, loading }}>

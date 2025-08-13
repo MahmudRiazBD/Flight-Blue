@@ -2,35 +2,13 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { AppProvider } from "@/context/AppContext";
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
 import type { Metadata } from 'next';
 import SiteLayoutClient from "@/components/layout/SiteLayoutClient";
-
-const defaultSettings = {
-    siteTitle: "TripMate",
-    faviconUrl: "/favicon.ico",
-    searchEngineVisibility: true,
-};
+import { getGlobalSettings, type GlobalSettings } from "@/lib/data";
 
 // This function generates metadata dynamically on the server.
 export async function generateMetadata(): Promise<Metadata> {
-  let settings = defaultSettings;
-  try {
-    const db = getFirestore(getFirebaseApp());
-    const settingsDoc = await getDoc(doc(db, "settings", "global"));
-    if (settingsDoc.exists()) {
-      const data = settingsDoc.data();
-      settings = { 
-        ...defaultSettings, 
-        siteTitle: data.siteTitle || defaultSettings.siteTitle,
-        faviconUrl: data.faviconUrl || defaultSettings.faviconUrl,
-        searchEngineVisibility: data.searchEngineVisibility ?? defaultSettings.searchEngineVisibility,
-      };
-    }
-  } catch (error) {
-    console.error("Could not fetch settings for metadata, using defaults.", error);
-  }
+  const settings = await getGlobalSettings();
   
   return {
     title: {
@@ -47,11 +25,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const settings = await getGlobalSettings();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -67,7 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AppProvider>
+        <AppProvider initialSettings={settings}>
             <AuthProvider>
                 <SiteLayoutClient>
                     {children}
