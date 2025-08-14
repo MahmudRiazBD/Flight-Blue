@@ -8,11 +8,25 @@ import Chatbot from "@/components/chatbot/Chatbot";
 import ContactForm from "@/components/ContactForm";
 import { usePathname } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
+import React from "react";
 
 export default function SiteLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { settings, loading } = useAppContext();
+  const { settings } = useAppContext();
   const isAdminRoute = pathname.startsWith('/admin');
+
+  React.useEffect(() => {
+    if (settings?.faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = settings.faviconUrl;
+    }
+  }, [settings?.faviconUrl]);
+
 
   return (
     <div
