@@ -1,3 +1,4 @@
+
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
@@ -46,7 +47,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning={true}>
         <AppProvider initialSettings={settings}>
             <AuthProvider>
                 <SiteLayoutClient>
