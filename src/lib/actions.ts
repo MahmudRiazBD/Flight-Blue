@@ -350,3 +350,4 @@ export async function resetApplication() {
         return { success: false, message: `Failed to reset application: ${error.message}` };
     }
 }
+
