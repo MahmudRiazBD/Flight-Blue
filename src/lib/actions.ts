@@ -139,14 +139,15 @@ async function seedDatabase(adminId: string) {
         return rest;
     });
 
+    const svgDataUri = "data:image/svg+xml,%3Csvg viewBox='0 -0.5 17 17' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='si-glyph si-glyph-paper-plane' fill='%23000000' stroke='%23000000'%3E%3Cg id='SVGRepo_bgCarrier' stroke-width='0'%3E%3C/g%3E%3Cg id='SVGRepo_tracerCarrier' stroke-linecap='round' stroke-linejoin='round'%3E%3C/g%3E%3Cg id='SVGRepo_iconCarrier'%3E%3Ctitle%3E924%3C/title%3E%3Cdefs%3E%3C/defs%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cpath d='M17,1.042 L11.436,14.954 L7.958,11.477 L8.653,13.563 L7.03,14.958 L7.03,11.563 L14.984,3.375 L6.047,9.969 L1,8.694 L17,1.042 Z' fill='%23007BFF' class='si-glyph-fill'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E";
 
     // Seed settings
     const batch = adminDb.batch();
     const globalSettingsRef = adminDb.collection("settings").doc("global");
     batch.set(globalSettingsRef, {
         siteTitle: "TripMate",
-        logoUrl: "/logo.svg",
-        faviconUrl: "/favicon.ico",
+        logoUrl: svgDataUri,
+        faviconUrl: svgDataUri,
         searchEngineVisibility: true,
         footerDescription: "Your adventure starts here. Discover breathtaking destinations with us.",
         quickLinks: {
