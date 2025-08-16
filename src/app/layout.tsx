@@ -1,4 +1,5 @@
 
+
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
@@ -17,7 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${settings.siteTitle}`,
     },
     icons: {
-      icon: settings.faviconUrl,
+      icon: [
+        { url: settings.faviconUrl, type: 'image/svg+xml' },
+      ]
     },
     robots: {
       index: settings.searchEngineVisibility,
