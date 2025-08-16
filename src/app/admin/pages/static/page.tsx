@@ -30,10 +30,10 @@ export default function AdminStaticPages() {
                     setSettings(settingsDoc.data() as SitePagesSettings);
                 } else {
                     setSettings({
-                        aboutUs: { title: "", content: "" },
-                        faq: { title: "", items: [] },
-                        terms: { title: "", content: "" },
-                        privacy: { title: "", content: "" },
+                        aboutUs: { title: "", content: "", status: 'published' },
+                        faq: { title: "", items: [], status: 'published' },
+                        terms: { title: "", content: "", status: 'published' },
+                        privacy: { title: "", content: "", status: 'published' },
                     });
                 }
             } catch (error) {
@@ -110,7 +110,7 @@ export default function AdminStaticPages() {
         </Card>
 
         {/* About Us Section */}
-        <Card>
+        <Card id="about-us">
             <CardHeader>
                 <CardTitle>About Us Page</CardTitle>
             </CardHeader>
@@ -127,7 +127,7 @@ export default function AdminStaticPages() {
         </Card>
         
         {/* FAQ Section */}
-        <Card>
+        <Card id="faq">
             <CardHeader>
                 <CardTitle>FAQ Page</CardTitle>
             </CardHeader>
@@ -158,7 +158,7 @@ export default function AdminStaticPages() {
         </Card>
         
         {/* Terms of Service Section */}
-         <Card>
+         <Card id="terms-of-service">
             <CardHeader>
                 <CardTitle>Terms of Service Page</CardTitle>
             </CardHeader>
@@ -175,7 +175,7 @@ export default function AdminStaticPages() {
         </Card>
         
         {/* Privacy Policy Section */}
-        <Card>
+        <Card id="privacy-policy">
             <CardHeader>
                 <CardTitle>Privacy Policy Page</CardTitle>
             </CardHeader>

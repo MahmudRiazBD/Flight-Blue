@@ -23,6 +23,7 @@ export type HomePageSettings = {
   heroSubtitle: string;
   heroButtonLabel: string;
   heroButtonLink: string;
+  status?: 'published' | 'draft';
 }
 
 export type SocialLinkPlatform = 'twitter' | 'facebook' | 'instagram' | 'linkedin' | 'youtube';
@@ -63,23 +64,21 @@ export type FaqItem = {
     answer: string;
 }
 
+type StaticPageSection = {
+    title: string;
+    content: string;
+    status: 'published' | 'draft';
+};
+
 export type SitePagesSettings = {
-    aboutUs: {
-        title: string;
-        content: string;
-    };
+    aboutUs: StaticPageSection;
     faq: {
         title: string;
         items: FaqItem[];
+        status: 'published' | 'draft';
     };
-    terms: {
-        title: string;
-        content: string;
-    };
-    privacy: {
-        title: string;
-        content: string;
-    };
+    terms: StaticPageSection;
+    privacy: StaticPageSection;
 }
 
 export type GalleryImage = {

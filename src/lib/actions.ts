@@ -178,13 +178,15 @@ async function seedDatabase(adminId: string) {
       heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with TripMate.",
       heroButtonLabel: "Explore Packages",
       heroButtonLink: "/packages",
+      status: "published",
     }, { merge: true });
 
     const sitePagesSettingsRef = adminDb.collection("settings").doc("sitePages");
     batch.set(sitePagesSettingsRef, {
         aboutUs: {
             title: "About TripMate",
-            content: "Founded in 2024, TripMate was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\\n\\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey."
+            content: "Founded in 2024, TripMate was born from a passion for exploration and a desire to make extraordinary travel experiences accessible to everyone. We believe that travel is more than just visiting new places; it's about creating lasting memories, forging new connections, and discovering the world from a different perspective.\\n\\nOur mission is to provide impeccably planned journeys that blend comfort, adventure, and cultural immersion. From the spiritual serenity of Hajj and Umrah to the romantic streets of Paris and the vibrant energy of Tokyo, our curated packages are designed to cater to a wide range of travel styles and interests. We handle all the details, so you can focus on what truly matters: enjoying your journey.",
+            status: "published",
         },
         faq: {
             title: "Frequently Asked Questions",
@@ -193,15 +195,18 @@ async function seedDatabase(adminId: string) {
                 {id: "faq-2", question: "What is included in the package price?", answer: "Each package is different. Please refer to the 'Inclusions' and 'Exclusions' sections on the specific package page for detailed information."},
                 {id: "faq-3", question: "Can I customize a tour package?", answer: "We may be able to accommodate customization requests for private group tours. Please contact us with your specific requirements, and we will do our best to create a tailored itinerary for you."},
                 {id: "faq-4", question: "What are the visa requirements?", answer: "Visa requirements vary by destination and your nationality. While we provide visa processing assistance for many packages (like Hajj and Umrah), you are ultimately responsible for ensuring you have the correct travel documents. We recommend checking with the relevant embassy or consulate."},
-            ]
+            ],
+            status: "published",
         },
         terms: {
             title: "Terms of Service",
-            content: "By accessing and using the TripMate website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \\n\\nCancellations made within 30 days of departure are subject to cancellation fees. TripMate acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services."
+            content: "By accessing and using the TripMate website and its services, you agree to comply with and be bound by the following terms and conditions. All bookings are subject to availability and confirmation. A deposit is required to secure your booking, with the full balance due before the departure date. \\n\\nCancellations made within 30 days of departure are subject to cancellation fees. TripMate acts as an agent for third-party suppliers, such as airlines and hotels, and is not liable for any failure by these third parties to provide their services.",
+            status: "published",
         },
         privacy: {
             title: "Privacy Policy",
-            content: "TripMate is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \\n\\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy."
+            content: "TripMate is committed to protecting your privacy. We collect personal information such as your name, email, and phone number solely for the purpose of processing your bookings and providing you with our services. \\n\\nWe do not share your personal information with third parties, except as necessary to fulfill your travel arrangements (e.g., providing your name to an airline). We use appropriate security measures to protect your data from unauthorized access. By using our services, you consent to the collection and use of your information as described in this policy.",
+            status: "published",
         }
     }, { merge: true });
 
@@ -349,4 +354,42 @@ export async function resetApplication() {
         return { success: false, message: `Failed to reset application: ${error.message}` };
     }
 }
-    
+
+export async function updatePageStatus(id: string, type: 'Dynamic' | 'Static' | 'Home', status: 'published' | 'draft') {
+    try {
+        const db = getAdminFirestore();
+        if (type === 'Dynamic') {
+            const pageRef = db.collection('pages').doc(id);
+            await pageRef.update({ status });
+        } else if (type === 'Home') {
+            const settingsRef = db.collection('settings').doc('homePage');
+            await settingsRef.set({ status }, { merge: true });
+        } else if (type === 'Static') {
+            const settingsRef = db.collection('settings').doc('sitePages');
+            const pageKey = id.replace(/-/g, '_'); // e.g., 'about-us' -> 'about_us'
+            
+            // This is a simplified mapping. A more robust solution might be needed if IDs are complex.
+            const fieldMapping: { [key: string]: string } = {
+                'about-us': 'aboutUs',
+                'faq': 'faq',
+                'terms-of-service': 'terms',
+                'privacy-policy': 'privacy'
+            };
+
+            const fieldToUpdate = fieldMapping[id];
+
+            if (!fieldToUpdate) {
+                throw new Error(`Invalid static page ID: ${id}`);
+            }
+
+            // Using dot notation to update a nested field
+            await settingsRef.set({
+                [fieldToUpdate]: { status }
+            }, { merge: true });
+        }
+        return { success: true };
+    } catch (error: any) {
+        console.error(`Failed to update status for ${id}:`, error);
+        return { success: false, message: error.message };
+    }
+}

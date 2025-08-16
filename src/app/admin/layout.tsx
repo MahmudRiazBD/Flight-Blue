@@ -37,6 +37,7 @@ import {
   ShieldAlert,
   Loader2,
   File,
+  Home,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -74,6 +75,7 @@ const menuItems = [
     subItems: [
         { href: "/admin/pages/all", label: "All Pages"},
         { href: "/admin/pages/new", label: "Add New"},
+        { href: "/admin/pages/home", label: "Home Page", icon: Home},
         { href: "/admin/pages/static", label: "Static Pages"},
     ]
   },
@@ -276,6 +278,7 @@ export default function AdminLayout({
                               <SidebarMenuSubItem key={subItem.href}>
                                   <SidebarMenuSubButton asChild isActive={pathname === subItem.href} onClick={() => setOpenMobile(false)}>
                                       <Link href={subItem.href}>
+                                          {subItem.icon && <subItem.icon className="mr-2 h-4 w-4"/>}
                                           <span>{subItem.label}</span>
                                       </Link>
                                   </SidebarMenuSubButton>
