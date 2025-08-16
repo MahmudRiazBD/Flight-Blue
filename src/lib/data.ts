@@ -250,7 +250,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
         { url: 'https://images.pexels.com/photos/2082101/pexels-photo-2082101.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'louvre museum exterior' },
         { url: 'https://images.pexels.com/photos/2363/mont-saint-michel-france-normandy-europe.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'mont saint michel' }
     ],
-    videoUrl: "https://www.youtube.com/watch?v=g3284iK2_gA",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Experience the magic of Paris, from the Eiffel Tower to the charming streets of Montmartre. This tour is a perfect blend of art, culture, and romance, offering an unforgettable journey through the City of Lights. Walk along the Seine, indulge in delicious pastries, and create memories that will last a lifetime.",
     itinerary: [
       { day: "1", title: "Arrival in Paris", details: "Check into your hotel and enjoy a welcome dinner cruise on the Seine River, witnessing the city's landmarks sparkle at night." },
@@ -280,7 +280,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
         { url: 'https://images.pexels.com/photos/5436662/pexels-photo-5436662.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'pilgrims praying' },
         { url: 'https://images.pexels.com/photos/14493979/pexels-photo-14493979.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'madinah mosque interior' },
     ],
-    videoUrl: "https://www.youtube.com/watch?v=a_gI8L5JAtA",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Perform the sacred pilgrimage of Hajj with utmost comfort and peace of mind. Our premium package includes 5-star hotels near the Haramain, dedicated scholarly guidance, and private transportation to ensure a focused and spiritually uplifting journey.",
     itinerary: [
       { day: "1-10", title: "Stay in Makkah", details: "Perform Umrah upon arrival. Days dedicated to Ibadah in Masjid al-Haram, with your 5-star hotel just steps away. Attend daily lectures and spiritual reminders." },
@@ -302,7 +302,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
     rating: 4.5,
     imageUrl: "https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "kaaba mecca pilgrimage",
-    videoUrl: "https://www.youtube.com/watch?v=F4qfu8sE-go",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "An affordable, well-organized package to fulfill your spiritual journey of Umrah. This package includes clean, comfortable hotels and reliable group ground transportation, allowing you to focus on your prayers and supplications.",
     itinerary: [
       { day: "1-5", title: "Stay in Makkah", details: "Arrival in Jeddah and transfer to your hotel in Makkah. Perform Umrah with our group leader. Dedicated time for prayers and personal Ibadah." },
@@ -328,7 +328,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
         { url: 'https://images.pexels.com/photos/236111/pexels-photo-236111.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'shibuya crossing' },
         { url: 'https://images.pexels.com/photos/672358/pexels-photo-672358.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'bamboo forest arashiyama' },
     ],
-    videoUrl: "https://www.youtube.com/watch?v=Flq-IHSv5jA",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Explore the vibrant contrast of Tokyo, from ancient temples to futuristic skyscrapers. This journey through Japan's dynamic capital offers a deep dive into its culture, cuisine, and cutting-edge technology.",
     itinerary: [
         { day: "1", title: "Arrival in Tokyo", details: "Arrive at Narita/Haneda Airport and transfer to your hotel in the lively Shinjuku district. Enjoy an evening orientation walk." },
@@ -359,7 +359,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
         { url: 'https://images.pexels.com/photos/753639/pexels-photo-753639.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'trevi fountain' },
         { url: 'https://images.pexels.com/photos/2249959/pexels-photo-2249959.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'vatican city square' }
     ],
-    videoUrl: "https://www.youtube.com/watch?v=T4zU-3jL9bA",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Step back in time and walk in the footsteps of emperors and gladiators. Discover the ancient wonders, Renaissance art, and vibrant culture of the Eternal City, Rome. This short, immersive trip is perfect for first-time visitors.",
     itinerary: [
         { day: "1", title: "Benvenuti a Roma!", details: "Arrive in Rome, transfer to your charming hotel, and enjoy a traditional Italian welcome dinner in the Trastevere neighborhood." },
@@ -387,7 +387,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
         { url: 'https://images.pexels.com/photos/2245436/pexels-photo-2245436.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'turkish lanterns bazaar' },
         { url: 'https://images.pexels.com/photos/262963/pexels-photo-262963.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'turkish tea' }
     ],
-    videoUrl: "https://www.youtube.com/watch?v=CqM2cGY-p2M",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Discover the city where East meets West. Explore historic mosques, bustling bazaars, magnificent palaces, and savor delicious Turkish cuisine. This tour immerses you in the vibrant culture and rich history of Istanbul.",
     itinerary: [
         { day: "1", title: "Welcome to Istanbul", details: "Arrive and transfer to your hotel in the historic Sultanahmet district. Enjoy a welcome tea and briefing." },
@@ -411,7 +411,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
     rating: 4.9,
     imageUrl: "https://images.pexels.com/photos/1131458/pexels-photo-1131458.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "swiss alps village",
-    videoUrl: "https://www.youtube.com/watch?v=y3-AMSdSx3M",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Embark on a breathtaking journey through the Swiss Alps. Experience stunning mountain scenery, pristine lakes, and charming alpine villages. This tour is a perfect mix of nature, adventure, and relaxation.",
     itinerary: [
       { day: "1", title: "Arrival in Zurich", details: "Arrive in Zurich, transfer to your hotel, and explore the beautiful lakeside city at your leisure." },
@@ -437,7 +437,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
     rating: 5.0,
     imageUrl: "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "maldives bungalow water",
-    videoUrl: "https://www.youtube.com/watch?v=cITYP03sVVs",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     description: "Escape to paradise with a luxurious stay in an overwater bungalow in the Maldives. Enjoy crystal-clear turquoise waters, white sandy beaches, and ultimate relaxation in one of the world's most beautiful destinations.",
     itinerary: [
       { day: "1", title: "Arrival in Paradise", details: "Arrive at Malé International Airport and take a scenic seaplane transfer to your luxurious private island resort." },
@@ -474,7 +474,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     ],
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-15T10:00:00Z',
-    videoUrl: 'https://www.youtube.com/watch?v=wv2-t-1g5w4',
+    videoUrl: 'http://youtube.com/watch?v=6WJc3PL9yYI',
     categoryId: 'cat-1',
   },
   {
@@ -493,7 +493,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-05-20T12:30:00Z',
     categoryId: 'cat-2',
-    videoUrl: 'https://www.youtube.com/watch?v=sB4hRA_t_ao',
+    videoUrl: 'http://youtube.com/watch?v=6WJc3PL9yYI',
   },
    {
     id: 'post-3',
@@ -510,7 +510,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-01T08:00:00Z',
-    videoUrl: "https://www.youtube.com/watch?v=deoY-m_3sI8",
+    videoUrl: "http://youtube.com/watch?v=6WJc3PL9yYI",
     categoryId: 'cat-3',
   },
   {
@@ -528,7 +528,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     ],
     authorId: 'user-2-admin', // Reference to Admin User
     publishedAt: '2024-06-10T09:00:00Z',
-    videoUrl: 'https://www.youtube.com/watch?v=0GOK5a7L9m0',
+    videoUrl: 'http://youtube.com/watch?v=6WJc3PL9yYI',
     categoryId: 'cat-3',
   },
   {
@@ -546,7 +546,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-18T15:00:00Z',
-    videoUrl: 'https://www.youtube.com/watch?v=E73v2hAqsL8',
+    videoUrl: 'http://youtube.com/watch?v=6WJc3PL9yYI',
     categoryId: 'cat-4',
   },
 ];
