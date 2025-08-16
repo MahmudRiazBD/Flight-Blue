@@ -8,6 +8,9 @@ import type { Metadata } from 'next';
 import SiteLayoutClient from "@/components/layout/SiteLayoutClient";
 import { getGlobalSettings, type GlobalSettings } from "@/lib/data";
 
+// This forces the layout to be dynamically rendered, ensuring fresh data on each request.
+export const dynamic = 'force-dynamic';
+
 // This function generates metadata dynamically on the server.
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getGlobalSettings();
