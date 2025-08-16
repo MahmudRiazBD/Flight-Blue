@@ -1,30 +1,47 @@
 
 import { NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirebaseApp } from '@/lib/firebase-admin';
 
-// This forces the route to be dynamically rendered and not cached.
-// It ensures we always get the latest status from the database.
-export const dynamic = 'force-dynamic';
+export async function GET() {
+  try {
+    const db = getFirestore(getFirebaseApp());
+    const mediaCollection = collection(db, 'media');
+    
+    // This query specifically requires the composite index that was causing the error.
+    const q = query(
+        mediaCollection, 
+        where('deletedAt', '==', null), 
+        orderBy('uploadedAt', 'desc'), 
+        limit(1)
+    );
 
-export async function GET(request: Request) {
-    try {
-        const adminDb = getAdminFirestore();
-        const statusRef = adminDb.collection('settings').doc('siteStatus');
-        const statusDoc = await statusRef.get();
-        
-        const isSetupComplete = statusDoc.exists && statusDoc.data()?.isSetupComplete === true;
-        
-        return NextResponse.json({ isSetupComplete });
+    await getDocs(q);
+    
+    // If we reach here, the query was successful, meaning the index likely exists.
+    return NextResponse.json({ needsIndex: false });
+  } catch (error: any) {
+    // Firestore throws a 'failed-precondition' error code if an index is missing.
+    if (error.code === 'failed-precondition' || (error.details && error.details.includes('index'))) {
+      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'your-firebase-project-id';
+      const databaseId = '(default)';
+      
+      // This is a generic link structure that pre-fills the fields for creating the required index.
+      // NOTE: The fields in the create_composite query param must be in the correct order.
+      const indexDefinition = 'CkVwcm9qZWN0cy9' + projectId + '/databases/' + databaseId + '/collectionGroups/media/indexes/firebase-auto-index-' + Date.now();
+      const indexCreationLink = `https://console.firebase.google.com/project/${projectId}/firestore/indexes?create_composite=${btoa(indexDefinition)}`;
 
-    } catch (error: any) {
-        console.error("API error checking setup status:", error.message);
-        // This can happen if credentials are not set up.
-        // In this case, setup is definitely not complete.
-        if (error.code === 'app/no-app' || error.message.includes('Credential') || error.message.includes('GOOGLE_APPLICATION_CREDENTIALS')) {
-            return NextResponse.json({ isSetupComplete: false });
-        }
-        
-        // For other errors, we default to assuming setup is not complete to be safe.
-        return NextResponse.json({ isSetupComplete: false, error: error.message });
+      const errorMessage = error.message || "An error occured";
+      const linkFromError = errorMessage.match(/https:\/\/[^\s]+/);
+
+      return NextResponse.json({ 
+        needsIndex: true, 
+        indexCreationLink: linkFromError ? linkFromError[0] : indexCreationLink
+      });
     }
+    
+    // For any other errors, we'll assume the index is fine and log the error.
+    console.error("Error checking Firestore index:", error);
+    return NextResponse.json({ error: 'An unexpected error occurred while checking setup.' }, { status: 500 });
+  }
 }

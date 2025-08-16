@@ -54,6 +54,17 @@ import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { getFirebaseApp } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppContext } from "@/context/AppContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -150,12 +161,41 @@ export default function AdminLayout({
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const isAuthorized = user?.role === "admin" || user?.role === "superadmin" || user?.role === "staff";
+  const [showIndexPrompt, setShowIndexPrompt] = useState(false);
+  const [indexCreationLink, setIndexCreationLink] = useState("");
+
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+
+  useEffect(() => {
+    const checkFirestoreIndex = async () => {
+      // Only run this check for superadmins to avoid bothering other users.
+      // And only run it once per session.
+      if (user?.role === 'superadmin' && !sessionStorage.getItem('firestoreIndexCheckComplete')) {
+        try {
+          const response = await fetch('/api/setup-check');
+          const data = await response.json();
+          if (data.needsIndex) {
+            setIndexCreationLink(data.indexCreationLink);
+            setShowIndexPrompt(true);
+          }
+          // Mark the check as complete for this session
+          sessionStorage.setItem('firestoreIndexCheckComplete', 'true');
+        } catch (error) {
+          console.error("Failed to check Firestore index:", error);
+        }
+      }
+    };
+
+    if (user) {
+      checkFirestoreIndex();
+    }
+  }, [user]);
 
 
   if (loading) {
@@ -376,6 +416,25 @@ export default function AdminLayout({
             isEditingSelf={true}
         />
       )}
+      <AlertDialog open={showIndexPrompt} onOpenChange={setShowIndexPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Action Required: Create Firestore Index</AlertDialogTitle>
+            <AlertDialogDescription>
+              To ensure optimal performance and prevent potential errors, a Firestore index is required for querying media files. 
+              This is a one-time setup. Please click the button below to create the necessary index in your Firebase project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Later</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <a href={indexCreationLink} target="_blank" rel="noopener noreferrer">
+                Create Index
+              </a>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
