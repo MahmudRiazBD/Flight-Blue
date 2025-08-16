@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 import { getFirebaseApp } from '@/lib/firebase';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -217,7 +218,7 @@ export async function getGlobalSettings(): Promise<GlobalSettings> {
 
 
 export const destinations: Destination[] = [
-    { id: "dest-1", name: "Paris, France", imageUrl: "https://images.pexels.com/photos/1850619/pexels-photo-1850619.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
+    { id: "dest-1", name: "Paris, France", imageUrl: "https://images.pexels.com/photos/2363/mont-saint-michel-france-normandy-europe.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
     { id: "dest-2", name: "Makkah & Madinah, Saudi Arabia", imageUrl: "https://images.pexels.com/photos/1683543/pexels-photo-1683543.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
     { id: "dest-3", name: "Tokyo, Japan", imageUrl: "https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
     { id: "dest-4", name: "Rome, Italy", imageUrl: "https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
@@ -246,7 +247,6 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
     imageUrl: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     imageHint: "paris eiffel tower",
     galleryImages: [
-        { url: 'https://images.pexels.com/photos/1850619/pexels-photo-1850619.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'paris street cafe' },
         { url: 'https://images.pexels.com/photos/2082101/pexels-photo-2082101.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'louvre museum exterior' },
         { url: 'https://images.pexels.com/photos/2363/mont-saint-michel-france-normandy-europe.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'mont saint michel' }
     ],
@@ -255,7 +255,7 @@ export const packages: Omit<Package, 'deletedAt'>[] = [
     itinerary: [
       { day: "1", title: "Arrival in Paris", details: "Check into your hotel and enjoy a welcome dinner cruise on the Seine River, witnessing the city's landmarks sparkle at night." },
       { day: "2", title: "Iconic Landmarks", details: "Visit the Eiffel Tower for breathtaking views, then proceed to the Arc de Triomphe and walk down the famous Champs-Élysées." },
-      { day: "3", title: "Art & Culture", details: "Explore the Louvre Museum and see world-famous masterpieces like the Mona Lisa. Enjoy an afternoon stroll in the Tuileries Garden." },
+      { day: "3", title: "Art & Culture", details: "Explore the Louvre Museum and see world-famous masterpieces. Enjoy an afternoon stroll in the Tuileries Garden." },
       { day: "4", title: "Versailles Palace", details: "A full-day trip to the magnificent Palace of Versailles. Explore the Hall of Mirrors, the King's Grand Apartments, and the stunning gardens designed by Le Nôtre." },
       { day: "5", title: "Montmartre & Sacré-Cœur", details: "Discover the artistic heart of Paris in Montmartre, watch artists at work in Place du Tertre, and visit the beautiful Sacré-Cœur Basilica." },
       { day: "6", title: "Shopping & Leisure", details: "Free day for shopping at Galeries Lafayette, exploring hidden streets, or revisiting your favorite spot. An optional cooking class is available." },
@@ -510,7 +510,7 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
     publishedAt: '2024-06-01T08:00:00Z',
-    videoUrl: "https://youtube.com/watch?v=6WJc3PL9yYI",
+    videoUrl: 'https://youtube.com/watch?v=6WJc3PL9yYI',
     categoryId: 'cat-3',
   },
   {
@@ -536,12 +536,11 @@ export const posts: Omit<Post, 'deletedAt'>[] = [
     slug: 'how-to-enjoy-coffee-like-an-italian-in-rome',
     title: 'How to Enjoy Coffee Like an Italian in Rome',
     content: 'Coffee in Italy is a culture, not just a beverage. It\'s a ritual with unwritten rules. This post explores how to drink coffee in Rome like a true local. Learn why you should only order your cappuccino in the morning, how to order an espresso "al banco" (at the counter) for a quick and cheap caffeine hit, and the different types of coffee you can find. From a simple "caffè" (an espresso) to a "macchiato" or "corretto" (with a shot of grappa), we will guide you through the rich and delicious coffee traditions of the Eternal City.',
-    featuredImageUrl: 'https://images.pexels.com/photos/1684223/pexels-photo-1684223.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    featuredImageUrl: 'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
     featuredImageHint: 'rome coffee shop',
     galleryImages: [
         { url: 'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'cappuccino art' },
         { url: 'https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'colosseum view' },
-        { url: 'https://images.pexels.com/photos/531649/pexels-photo-531649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'italian pastries' },
         { url: 'https://images.pexels.com/photos/97906/italian-breakfast-coffee-brioche-97906.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', hint: 'coffee breakfast' },
     ],
     authorId: 'user-3-staff', // Reference to Staff Member
